@@ -1,0 +1,51 @@
+[settings]
+auto_install = true
+experimental = true
+lockfile = true
+
+[tools]
+rust = "stable"
+
+[env]
+CARGO_TERM_COLOR = "always"
+RUST_BACKTRACE = "1"
+
+[tasks.build]
+description = "Build all workspace crates (debug)"
+run = "cargo build --workspace"
+
+[tasks."build:release"]
+description = "Build release binary"
+run = "cargo build --release"
+
+[tasks.check]
+description = "Type-check workspace without building"
+run = "cargo check --workspace"
+
+[tasks.test]
+description = "Run all tests"
+run = "cargo test --workspace"
+
+[tasks."test:unit"]
+description = "Run qed-core unit tests"
+run = "cargo test --package qed-core"
+
+[tasks."test:integration"]
+description = "Run integration test harness"
+run = "cargo test --package qed-tests"
+
+[tasks.fmt]
+description = "Format all code"
+run = "cargo fmt"
+
+[tasks."fmt:check"]
+description = "Check formatting (CI mode)"
+run = "cargo fmt --check"
+
+[tasks.lint]
+description = "Run clippy with warnings-as-errors"
+run = "cargo clippy --workspace -- -D warnings"
+
+[tasks.ci]
+description = "Run all CI checks (fmt, lint, test)"
+depends = ["fmt:check", "lint", "test"]
