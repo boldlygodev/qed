@@ -9,10 +9,12 @@ from as early as possible.
 
 ## Guiding Principles
 
-**AST and fragment types first.**
-Both the parser and the compiler build against these types.
-Defining them before either layer exists prevents churn caused by one layer
-making assumptions the other has to work around.
+**Type-first where it matters; harness-first for feedback.**
+The harness is independent infrastructure with no dependency on implementation
+types — it can be built and run (with failing tests) before any code exists.
+Shift it to Phase 1 so the test signal is available from the start of real work.
+Core types still precede their consumers (parser before executor), but type
+definitions are incremental rather than exhaustive upfront.
 
 **Parser POC before full parser work.**
 The recursive descent and chumsky spikes are evaluated against a representative
@@ -23,12 +25,13 @@ restructuring a partial parser mid-way.
 **Walking skeleton early.**
 A minimal end-to-end path — one selector, one processor, stdin to stdout —
 is established as soon as the core types and parser approach are settled.
-The harness is wired up at the same time, so the first test going green
+The harness is already wired from Phase 1, so the first test going green
 is the signal that the skeleton works.
 
-**Harness-driven development from the skeleton onward.**
-Every subsequent feature is driven by test scenarios going from red to green.
-The golden files are already written — use them.
+**Integration tests as the primary signal from Phase 4 onward.**
+Every feature beyond the skeleton is driven by test scenarios going from red to green.
+The golden files are already written — integration tests become the specification
+as implementation proceeds.
 
 ---
 
@@ -48,20 +51,60 @@ No logic yet — just structure.
 
 ---
 
-## Phase 1 — Core Types
+## Phase 1 — Test Harness Infrastructure
 
-**Goal:** the types that every other phase builds against exist and are stable.
-No parser, no compiler, no executor yet — just type definitions and their unit tests.
+**Goal:** the integration test harness is built and ready to register failing tests
+before any implementation exists.
 
-### `span`
+The harness has **zero dependency on `qed-core` implementation types** at compile time.
+Only `libtest-mimic` and `toml` are required.
+Trials can register and fail gracefully at `eval "$INVOCATION"` until the CLI works.
+
+### Test harness — Rust layer
+
+- Manifest `[[scenario]]` parsing with `toml`
+- `scenario.sh` generation for a single invocation
+- `Trial` registration with `libtest-mimic`
+- Temp directory lifecycle (create before, remove after)
+- `bash run-scenario.sh <tmpdir>` invocation and pass/fail capture
+- Trial naming convention: `<suite>::<scenario-id>::<invocation-index>`
+
+### Test harness — bash layer
+
+- `run-scenario.sh` — sources `scenario.sh`, sets up files, runs invocation, calls comparison
+- `compare-golden.sh` — `.txt` exact match, `.pattern` full-string regex, `.*` glob
+- No mock support yet (added in Phase 7)
+
+### Test scenario files
+
+Read and validate all scenario manifests in `.claude/tests/`:
+- `selectors.md`, `processors.md`, `patterns.md`, `invocation.md`, `error-handling.md`,
+  `generation.md`, `stream-control.md`, `external-processors.md`, `script-files.md`
+- And their corresponding `-edge-cases.md` variants, plus `usecases.md`
+
+**Checkpoint:** `cargo test --package qed-tests` runs and registers all trials.
+No trials pass yet — invocations fail at `eval "$INVOCATION"` because `qed` doesn't exist.
+But the harness itself is correct and ready to drive implementation from here forward.
+
+---
+
+## Phase 2 — Core Types and Fragmentation Algorithm
+
+**Goal:** define the types that the parser, compiler, and executor build against.
+Implement the fragmentation algorithm as a unit-tested component independent
+of parser and compiler logic.
+
+### Core Types
+
+Define only what the parser (Phase 3) and executor need. Later phases add variants
+as features are implemented. Type definitions are stable but not exhaustive.
+
+#### `span`
 
 - `Span { start: usize, end: usize }`
 - `Spanned<T> { node: T, span: Span }`
 
-### `parse/ast`
-
-The complete AST type tree.
-No parsing logic — just the types the parser will produce.
+#### `parse/ast` — Parser output
 
 - `Program`, `Statement`, `SelectActionNode`
 - `Selector`, `SimpleSelector`, `SelectorOp`
@@ -72,11 +115,11 @@ No parsing logic — just the types the parser will produce.
 - `Param`, `ParamValue`
 - `NthExpr`, `NthTerm`
 
-### Identity newtypes
+#### Identity newtypes
 
-- `StatementId(usize)`, `SelectorId(usize)`
+- `StatementId(usize)`, `SelectorId(usize)` (never pass raw `usize` to functions expecting these)
 
-### `exec` — buffer and fragment model
+#### `exec` — buffer and fragment model
 
 - `Buffer { content: String, line_offsets: Vec<usize> }` with constructor and `slice(LineRange) -> &str`
 - `LineRange { start: usize, end: usize }`
@@ -84,7 +127,7 @@ No parsing logic — just the types the parser will produce.
 - `Fragment` — `Passthrough(FragmentContent)` / `Selected { content, tags }`
 - `FragmentList` type alias
 
-### `compile` — IR types
+#### `compile` — IR types (interpreter output)
 
 - `Script { statements: Vec<Statement>, selectors: Vec<RegistryEntry> }`
 - `Statement { id, selector, processor, fallback }`
@@ -95,28 +138,20 @@ No parsing logic — just the types the parser will produce.
 - `PatternMatcher` — `Literal(String)` / `Regex(regex::Regex)`
 - `OnError` enum
 
-### `processor` — trait and error type
+#### `processor` — trait and error type
 
 - `Processor` trait: `fn execute(&self, input: String) -> Result<String, ProcessorError>`
 - `ProcessorError` enum — `NoMatch`, `ProcessorFailed`, `ExternalFailed`
 
-### `error`
+#### `error`
 
 - `CompileError` enum with all variants from the implementation design
 - `SymbolKind` enum
 
-**Checkpoint:** `cargo test --workspace` passes with unit tests covering the
-`Buffer` constructor and slice, `FragmentContent` variants, and newtype accessors.
+### Fragmentation Algorithm
 
----
-
-## Phase 2 — Fragmentation Algorithm
-
-**Goal:** the fragmentation algorithm is fully implemented and unit-tested,
-independent of the parser and compiler.
-
-The algorithm takes a `&Buffer` and a set of `(StatementId, SelectorId,
-&CompiledSelector)` pairs and produces a `FragmentList`.
+Implement the algorithm that takes a `&Buffer` and selector matches and produces
+a `FragmentList`, ready for processor dispatch.
 
 - Parallel match collection using `rayon`
 - Boundary event decomposition (`Start` / `End` events)
@@ -134,9 +169,11 @@ Unit tests cover:
 - `from > to` compound → correct inclusive/exclusive boundary variants
 - Negated pattern → lines not matching are selected
 
-**Checkpoint:** all fragmentation unit tests pass.
-The algorithm compiles and is correct in isolation before any selector matching
-logic exists in the compiler or executor.
+**Checkpoint:** `cargo test --workspace` passes with unit tests covering the
+`Buffer` constructor and slice, `FragmentContent` variants, newtype accessors,
+and all fragmentation edge cases.
+The algorithm is correct in isolation before any selector matching logic
+exists in the compiler.
 
 ---
 
@@ -195,12 +232,14 @@ and `cargo build --workspace` is clean.
 
 ---
 
-## Phase 4 — Walking Skeleton + Harness
+## Phase 4 — Walking Skeleton
 
 **Goal:** one test scenario passes end-to-end: `selectors::at-literal::0`.
 
 This is the most important milestone in the project.
 Every component touches every other at this phase.
+The harness from Phase 1 is already ready — this phase wires the implementation
+to make the first test green.
 
 ### Minimal parser
 
@@ -245,27 +284,16 @@ Wire the compiler output through the fragmentation algorithm to output.
 - Write output to stdout
 - Wire: parse CLI → read input → parse script → compile → execute → print output
 
-### Test harness — Rust layer
-
-- Manifest `[[scenario]]` parsing with `toml`
-- `scenario.sh` generation for a single invocation
-- `Trial` registration with `libtest-mimic`
-- Temp directory lifecycle (create before, remove after)
-- `bash run-scenario.sh <tmpdir>` invocation and pass/fail capture
-
-### Test harness — bash layer
-
-- `run-scenario.sh` — sources `scenario.sh`, sets up files, runs invocation, calls comparison
-- `compare-golden.sh` — `.txt` exact match, `.pattern` full-string regex, `.*` glob
-- No mock support yet
-
 **Checkpoint:** `cargo test --package qed-tests selectors::at-literal::0` passes.
+The harness is now driving implementation and will remain the primary signal
+through all remaining phases.
 
 ---
 
 ## Phase 5 — Full Parser
 
-**Goal:** the parser handles the complete `qed` grammar.
+**Goal:** the parser handles the complete `qed` grammar and drives integration
+tests to green as new productions are added.
 
 Build out the parser chosen in Phase 3 to cover every grammar production.
 Work through productions roughly in dependency order:
@@ -426,12 +454,12 @@ Then the use case suites:
 | Phase | Deliverable | Key checkpoint |
 |---|---|---|
 | 0 | Workspace scaffold | `cargo build --workspace` clean |
-| 1 | Core types | Buffer and fragment unit tests pass |
-| 2 | Fragmentation algorithm | All fragmentation unit tests pass |
+| 1 | Test harness infrastructure | `cargo test --package qed-tests` registers all trials (failing) |
+| 2 | Core types + fragmentation algorithm | Buffer, fragment, and fragmentation unit tests pass |
 | 3 | Parser POC evaluation | One parser remains, routing removed |
-| 4 | Walking skeleton + harness | `selectors::at-literal::0` green |
-| 5 | Full parser | All grammar productions parsed and unit-tested |
-| 6 | Full compiler | `selectors` integration suite green |
+| 4 | Walking skeleton | `selectors::at-literal::0` green |
+| 5 | Full parser | All grammar productions parsed; `selectors` suite green |
+| 6 | Full compiler | `selectors` integration suite fully green |
 | 7 | Processor coverage | `processors` + `external-processors` suites green |
 | 8 | Generation processors | `generation` suite green |
 | 9 | Invocation features | `invocation` + `stream-control` suites green |
