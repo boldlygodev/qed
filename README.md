@@ -9,7 +9,7 @@ A modern stream editor for source files and config files.
 
 > **⚠️ In development.** `qed` is not yet released. This documentation describes the intended design. APIs and behavior may change before the first release.
 
------
+---
 
 ## What is qed?
 
@@ -32,7 +32,7 @@ before(target) | echo "// Deprecated: use New* equivalent instead."
 ' main.go
 ```
 
------
+---
 
 ## Installation
 
@@ -68,7 +68,7 @@ cd qed
 cargo build --release
 ```
 
------
+---
 
 ## Quick Start
 
@@ -98,7 +98,7 @@ Use a script file with `-f` for multi-statement scripts:
 qed -f transform.qed input.txt
 ```
 
------
+---
 
 ## CLI Reference
 
@@ -141,19 +141,19 @@ set -o pipefail
 qed 'at(/\bERROR\b/)' app.log | wc -l
 ```
 
------
+---
 
 ## Quick Reference
 
 ### Selectors
 
-| Selector | Description |
-| -------- | ----------- |
-| `after`  | Insertion point immediately after matching lines |
-| `at`     | Selects matching lines |
+| Selector | Description                                       |
+| -------- | ------------------------------------------------- |
+| `after`  | Insertion point immediately after matching lines  |
+| `at`     | Selects matching lines                            |
 | `before` | Insertion point immediately before matching lines |
-| `from`   | Selects lines beginning from matching lines |
-| `to`     | Selects lines up to matching lines |
+| `from`   | Selects lines beginning from matching lines       |
+| `to`     | Selects lines up to matching lines                |
 
 ```
 at(pattern?, nth:…, on_error:fail|warn|skip)
@@ -203,7 +203,7 @@ qed:random(N, alphabet:numeric|alpha|upper|alnum|hex|HEX|
            base32|crockford|bech32|base58|base62|base64url|ascii|symbol|"custom")
 ```
 
------
+---
 
 ## The Select-Action Model
 
@@ -232,7 +232,7 @@ from("start") >
     to("end") | qed:delete()
 ```
 
------
+---
 
 ## Selectors
 
@@ -241,11 +241,11 @@ from("start") >
 Selects lines matching a pattern.
 With no pattern, selects every line in the stream.
 
-|Parameter |Type                    |Default        |Description                               |
-|----------|------------------------|---------------|------------------------------------------|
-|`pattern` |literal, regex, or name |—              |Pattern to match; omit to select all lines|
-|`nth`     |nth-expr                |all occurrences|Which occurrences to select               |
-|`on_error`|`fail` | `warn` | `skip`|`fail`         |Behaviour when no lines match             |
+| Parameter  | Type                    | Default         | Description                                |
+| ---------- | ----------------------- | --------------- | ------------------------------------------ | ------ | ----------------------------- |
+| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to select all lines |
+| `nth`      | nth-expr                | all occurrences | Which occurrences to select                |
+| `on_error` | `fail`                  | `warn`          | `skip`                                     | `fail` | Behaviour when no lines match |
 
 ```sh
 qed 'at("bar") | qed:delete()'              # lines containing "bar"
@@ -261,11 +261,11 @@ Insertion point immediately after lines matching `pattern`.
 The processor receives empty stdin; its stdout is inserted at the cursor.
 With no pattern, targets the end of the stream.
 
-|Parameter |Type                    |Default        |Description                                   |
-|----------|------------------------|---------------|----------------------------------------------|
-|`pattern` |literal, regex, or name |—              |Pattern to match; omit to target end of stream|
-|`nth`     |nth-expr                |all occurrences|Which occurrences to insert after             |
-|`on_error`|`fail` | `warn` | `skip`|`fail`         |Behaviour when no lines match                 |
+| Parameter  | Type                    | Default         | Description                                    |
+| ---------- | ----------------------- | --------------- | ---------------------------------------------- | ------ | ----------------------------- |
+| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to target end of stream |
+| `nth`      | nth-expr                | all occurrences | Which occurrences to insert after              |
+| `on_error` | `fail`                  | `warn`          | `skip`                                         | `fail` | Behaviour when no lines match |
 
 ```sh
 qed 'after("header") | echo "new line"'   # insert after each "header" line
@@ -277,11 +277,11 @@ qed 'after() | cat footer.txt'            # append to end of stream
 Insertion point immediately before lines matching `pattern`.
 With no pattern, targets the beginning of the stream.
 
-|Parameter |Type                    |Default        |Description                                     |
-|----------|------------------------|---------------|------------------------------------------------|
-|`pattern` |literal, regex, or name |—              |Pattern to match; omit to target start of stream|
-|`nth`     |nth-expr                |all occurrences|Which occurrences to insert before              |
-|`on_error`|`fail` | `warn` | `skip`|`fail`         |Behaviour when no lines match                   |
+| Parameter  | Type                    | Default         | Description                                      |
+| ---------- | ----------------------- | --------------- | ------------------------------------------------ | ------ | ----------------------------- |
+| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to target start of stream |
+| `nth`      | nth-expr                | all occurrences | Which occurrences to insert before               |
+| `on_error` | `fail`                  | `warn`          | `skip`                                           | `fail` | Behaviour when no lines match |
 
 ```sh
 qed 'before(/^func /) | cat license.txt'  # insert before every function
@@ -293,12 +293,12 @@ qed 'before() | echo "---"'               # prepend to start of stream
 Selects a range of lines between two boundary patterns.
 Boundaries are exclusive by default — use `+` on a boundary pattern to make it inclusive.
 
-|Parameter     |Type                    |Default  |Description                                                 |
-|--------------|------------------------|---------|------------------------------------------------------------|
-|`from` pattern|literal, regex, or name |required |Start boundary                                              |
-|`to` pattern  |literal, regex, or name |required |End boundary                                                |
-|`+` suffix    |boundary modifier       |exclusive|Include the matching boundary line in the region            |
-|`on_error`    |`fail` | `warn` | `skip`|`fail`   |Behaviour when boundaries are not found; specified on `from`|
+| Parameter      | Type                    | Default   | Description                                      |
+| -------------- | ----------------------- | --------- | ------------------------------------------------ | ------ | ------------------------------------------------------------ |
+| `from` pattern | literal, regex, or name | required  | Start boundary                                   |
+| `to` pattern   | literal, regex, or name | required  | End boundary                                     |
+| `+` suffix     | boundary modifier       | exclusive | Include the matching boundary line in the region |
+| `on_error`     | `fail`                  | `warn`    | `skip`                                           | `fail` | Behaviour when boundaries are not found; specified on `from` |
 
 ```sh
 qed 'from("start") > to("end") | qed:delete()'       # exclude both boundaries
@@ -363,11 +363,11 @@ nth:1...3,-2   first through third, and second to last
 
 ### `on_error` — no-match behaviour
 
-|Value |Description                        |
-|------|-----------------------------------|
-|`fail`|Exit non-zero (default)            |
-|`warn`|Emit a warning to stderr, exit zero|
-|`skip`|Silently continue, exit zero       |
+| Value  | Description                         |
+| ------ | ----------------------------------- |
+| `fail` | Exit non-zero (default)             |
+| `warn` | Emit a warning to stderr, exit zero |
+| `skip` | Silently continue, exit zero        |
 
 Per-selector `on_error` overrides the global `--on-error` flag:
 
@@ -378,7 +378,7 @@ at("optional") | qed:delete()                  # inherits global: skip
 ' input.txt
 ```
 
------
+---
 
 ## Built-in Processors
 
@@ -439,9 +439,9 @@ The surrounding content always survives in the pipeline form.
 
 Narrows the selected region to the matched span; the rest of the line is discarded.
 
-|Parameter|Type            |Required|Description                       |
-|---------|----------------|--------|----------------------------------|
-|`pattern`|literal or regex|yes     |Pattern whose matched span to keep|
+| Parameter | Type             | Required | Description                        |
+| --------- | ---------------- | -------- | ---------------------------------- |
+| `pattern` | literal or regex | yes      | Pattern whose matched span to keep |
 
 ```sh
 qed 'at(/\d+/) | qed:substring(/\d+/)'   # keep only the matched digits on each line
@@ -466,10 +466,10 @@ qed 'at() | qed:trim()'
 
 Prepends each line in the selected region with `width` repetitions of `char`.
 
-|Parameter|Type   |Default      |Description                     |
-|---------|-------|-------------|--------------------------------|
-|`width`  |integer|required     |Number of characters to indent  |
-|`char`   |string |`" "` (space)|Character to use for indentation|
+| Parameter | Type    | Default       | Description                      |
+| --------- | ------- | ------------- | -------------------------------- |
+| `width`   | integer | required      | Number of characters to indent   |
+| `char`    | string  | `" "` (space) | Character to use for indentation |
 
 ```sh
 qed 'at() | qed:indent(width:4)'              # indent by 4 spaces
@@ -489,9 +489,9 @@ qed 'at() | qed:dedent()'
 
 Word-wraps each line in the selected region at the given column width.
 
-|Parameter|Type   |Required|Description            |
-|---------|-------|--------|-----------------------|
-|`width`  |integer|yes     |Column width to wrap at|
+| Parameter | Type    | Required | Description             |
+| --------- | ------- | -------- | ----------------------- |
+| `width`   | integer | yes      | Column width to wrap at |
 
 ```sh
 qed 'at(/^[^|].{80,}/) | qed:wrap(width:80)'
@@ -501,9 +501,9 @@ qed 'at(/^[^|].{80,}/) | qed:wrap(width:80)'
 
 Prepends `text` to each line in the selected region.
 
-|Parameter|Type  |Required|Description    |
-|---------|------|--------|---------------|
-|`text`   |string|yes     |Text to prepend|
+| Parameter | Type   | Required | Description     |
+| --------- | ------ | -------- | --------------- |
+| `text`    | string | yes      | Text to prepend |
 
 ```sh
 qed 'at() | qed:prefix(text:"// ")'
@@ -513,9 +513,9 @@ qed 'at() | qed:prefix(text:"// ")'
 
 Appends `text` to each line in the selected region.
 
-|Parameter|Type  |Required|Description   |
-|---------|------|--------|--------------|
-|`text`   |string|yes     |Text to append|
+| Parameter | Type   | Required | Description    |
+| --------- | ------ | -------- | -------------- |
+| `text`    | string | yes      | Text to append |
 
 ```sh
 qed 'at() | qed:suffix(text:" \\")'
@@ -525,10 +525,10 @@ qed 'at() | qed:suffix(text:" \\")'
 
 Prefixes each line in the selected region with its line number and a colon-space separator.
 
-|Parameter|Type   |Default           |Description                                                       |
-|---------|-------|------------------|------------------------------------------------------------------|
-|`start`  |integer|stream line number|Origin for numbering; `start:1` gives region-relative numbering   |
-|`width`  |integer|minimal           |Minimum digit width; numbers are right-aligned with leading spaces|
+| Parameter | Type    | Default            | Description                                                        |
+| --------- | ------- | ------------------ | ------------------------------------------------------------------ |
+| `start`   | integer | stream line number | Origin for numbering; `start:1` gives region-relative numbering    |
+| `width`   | integer | minimal            | Minimum digit width; numbers are right-aligned with leading spaces |
 
 ```sh
 qed 'at() | qed:number()'                  # stream line numbers:    3: foo
@@ -542,11 +542,11 @@ qed 'at() | qed:number(start:1, width:4)'  # both:                1: foo
 Inserts a copy of the selected region at a target position.
 Exactly one destination parameter is required.
 
-|Parameter|Type                   |Description                                      |
-|---------|-----------------------|-------------------------------------------------|
-|`after`  |literal, regex, or name|Insert copy after lines matching this pattern    |
-|`before` |literal, regex, or name|Insert copy before lines matching this pattern   |
-|`at`     |literal, regex, or name|Overwrite lines matching this pattern with a copy|
+| Parameter | Type                    | Description                                       |
+| --------- | ----------------------- | ------------------------------------------------- |
+| `after`   | literal, regex, or name | Insert copy after lines matching this pattern     |
+| `before`  | literal, regex, or name | Insert copy before lines matching this pattern    |
+| `at`      | literal, regex, or name | Overwrite lines matching this pattern with a copy |
 
 ```sh
 qed 'at("source") | qed:copy(after:"target")'    # copy to after target
@@ -590,7 +590,7 @@ Debugging aids. `qed:debug:count()` emits the match count to stderr.
 `qed:debug:print()` echoes the selected region to stderr while passing it through unchanged.
 Neither takes parameters.
 
------
+---
 
 ## Generation Processors
 
@@ -602,11 +602,11 @@ and with `after`/`before` for direct insertion.
 
 Generates a UUID.
 
-|Parameter  |Type                          |Default|Description                                                           |
-|-----------|------------------------------|-------|----------------------------------------------------------------------|
-|`version`  |`4` | `5` | `7`               |`7`    |UUID version                                                          |
-|`namespace`|`url` | `dns` | `oid` | `x500`|—      |Required for v5                                                       |
-|`name`     |string                        |—      |Required for v5; hashed with namespace to produce a deterministic UUID|
+| Parameter   | Type   | Default | Description                                                            |
+| ----------- | ------ | ------- | ---------------------------------------------------------------------- | ------ | ------------ | --------------- |
+| `version`   | `4`    | `5`     | `7`                                                                    | `7`    | UUID version |
+| `namespace` | `url`  | `dns`   | `oid`                                                                  | `x500` | —            | Required for v5 |
+| `name`      | string | —       | Required for v5; hashed with namespace to produce a deterministic UUID |
 
 ```sh
 qed 'at(/\{\{uuid\}\}/) | qed:replace("{{uuid}}", qed:uuid())'
@@ -619,10 +619,10 @@ after(header) | qed:uuid()     # insert directly as a new line
 
 Generates a timestamp.
 
-|Parameter |Type                                                    |Default        |Description            |
-|----------|--------------------------------------------------------|---------------|-----------------------|
-|`format`  |`iso8601` | `unix` | `datetime` | custom strftime string|`iso8601`      |Output format          |
-|`timezone`|IANA timezone name or `UTC`                             |system timezone|Timezone for formatting|
+| Parameter  | Type                        | Default         | Description             |
+| ---------- | --------------------------- | --------------- | ----------------------- | ---------------------- | --------- | ------------- |
+| `format`   | `iso8601`                   | `unix`          | `datetime`              | custom strftime string | `iso8601` | Output format |
+| `timezone` | IANA timezone name or `UTC` | system timezone | Timezone for formatting |
 
 ```sh
 qed 'at(/\{\{ts\}\}/) | qed:replace("{{ts}}", qed:timestamp())'
@@ -636,29 +636,29 @@ after(header) | qed:timestamp(format:datetime, timezone:UTC)
 
 Generates a random string of the given length drawn from the given alphabet.
 
-|Parameter |Type                           |Default  |Description                     |
-|----------|-------------------------------|---------|--------------------------------|
-|`length`  |integer                        |required |Number of characters to generate|
-|`alphabet`|named alphabet or custom string|`numeric`|Character set to draw from      |
+| Parameter  | Type                            | Default   | Description                      |
+| ---------- | ------------------------------- | --------- | -------------------------------- |
+| `length`   | integer                         | required  | Number of characters to generate |
+| `alphabet` | named alphabet or custom string | `numeric` | Character set to draw from       |
 
 Named alphabets:
 
-|Name       |Characters                              |
-|-----------|----------------------------------------|
-|`numeric`  |`0-9`                                   |
-|`alpha`    |`a-z`                                   |
-|`upper`    |`A-Z`                                   |
-|`alnum`    |`a-zA-Z0-9`                             |
-|`hex`      |`0-9a-f`                                |
-|`HEX`      |`0-9A-F`                                |
-|`base32`   |RFC 4648 `A-Z2-7`                       |
-|`crockford`|`0-9A-Z` excluding `I`, `L`, `O`, `U`   |
-|`bech32`   |`qpzry9x8gf2tvdw0s3jn54khce6mua7l`      |
-|`base58`   |Bitcoin alphabet — no `0`, `O`, `I`, `l`|
-|`base62`   |`a-zA-Z0-9`                             |
-|`base64url`|URL-safe base64                         |
-|`ascii`    |All printable ASCII                     |
-|`symbol`   |Printable non-alphanumeric ASCII        |
+| Name        | Characters                               |
+| ----------- | ---------------------------------------- |
+| `numeric`   | `0-9`                                    |
+| `alpha`     | `a-z`                                    |
+| `upper`     | `A-Z`                                    |
+| `alnum`     | `a-zA-Z0-9`                              |
+| `hex`       | `0-9a-f`                                 |
+| `HEX`       | `0-9A-F`                                 |
+| `base32`    | RFC 4648 `A-Z2-7`                        |
+| `crockford` | `0-9A-Z` excluding `I`, `L`, `O`, `U`    |
+| `bech32`    | `qpzry9x8gf2tvdw0s3jn54khce6mua7l`       |
+| `base58`    | Bitcoin alphabet — no `0`, `O`, `I`, `l` |
+| `base62`    | `a-zA-Z0-9`                              |
+| `base64url` | URL-safe base64                          |
+| `ascii`     | All printable ASCII                      |
+| `symbol`    | Printable non-alphanumeric ASCII         |
 
 ```sh
 qed 'at(/\{\{token\}\}/) | qed:replace("{{token}}", qed:random(32))'
@@ -667,7 +667,7 @@ qed 'at(/\{\{token\}\}/) | qed:replace("{{token}}", qed:random(8, alphabet:"abc1
 after(header) | qed:random(16, alphabet:hex)
 ```
 
------
+---
 
 ## External Processors
 
@@ -716,7 +716,7 @@ upper          — alias if defined, else resolved via PATH
 \upper         — bypass alias, PATH only
 ```
 
------
+---
 
 ## Script Files
 
@@ -741,7 +741,7 @@ chmod +x transform.qed
 ./transform.qed < input.go
 ```
 
------
+---
 
 ## Comparison
 
@@ -834,22 +834,22 @@ top-level Go functions.
 `--in-place` is atomic on all platforms — the original file is replaced only
 after the full transformation succeeds.
 
------
+---
 
 ### Summary
 
-|Capability                          |sed          |awk           |perl         |qed          |
-|------------------------------------|-------------|--------------|-------------|-------------|
-|Multi-line range selection          |✗ fragile    |△ stateful    |△ slurp+regex|✓ native     |
-|In-place editing (cross-platform)   |△ flag varies|✗ temp file   |✓            |✓ atomic     |
-|External processor pipeline         |✗            |✗             |✗            |✓ any command|
-|Named patterns and aliases          |✗            |✗             |✗            |✓            |
-|Guaranteed linear-time regex        |✗            |△ impl-defined|✗            |✓ RE2        |
-|Insertion at arbitrary positions    |✗            |△             |✗            |✓            |
-|Generation (UUID, timestamp, random)|✗            |✗             |△ modules    |✓ built-in   |
-|`$EDITOR` compatible                |△            |✗             |△            |✓            |
+| Capability                           | sed           | awk            | perl          | qed           |
+| ------------------------------------ | ------------- | -------------- | ------------- | ------------- |
+| Multi-line range selection           | ✗ fragile     | △ stateful     | △ slurp+regex | ✓ native      |
+| In-place editing (cross-platform)    | △ flag varies | ✗ temp file    | ✓             | ✓ atomic      |
+| External processor pipeline          | ✗             | ✗              | ✗             | ✓ any command |
+| Named patterns and aliases           | ✗             | ✗              | ✗             | ✓             |
+| Guaranteed linear-time regex         | ✗             | △ impl-defined | ✗             | ✓ RE2         |
+| Insertion at arbitrary positions     | ✗             | △              | ✗             | ✓             |
+| Generation (UUID, timestamp, random) | ✗             | ✗              | △ modules     | ✓ built-in    |
+| `$EDITOR` compatible                 | △             | ✗              | △             | ✓             |
 
------
+---
 
 ## Use Cases
 
@@ -970,7 +970,7 @@ at(/\{\{generated_at\}\}/) |
 
 ### Document processing
 
-```sh
+````sh
 # Promote all headings by one level
 qed 'at(/^##/) | qed:replace(/^##/, "#")' doc.md
 
@@ -987,9 +987,9 @@ qed 'at(/^[^|].{80,}/) | qed:wrap(width:80)' README.md
 qed --in-place '
 after(/^## Installation/) | printf "\n_Last updated: %s_\n" "$(date +%Y-%m-%d)"
 ' README.md
-```
+````
 
------
+---
 
 ## AI-Assisted Transformation
 
@@ -1023,7 +1023,7 @@ before(func_start) |
 ' main.go
 ```
 
------
+---
 
 ## `$EDITOR` Integration
 
@@ -1074,7 +1074,7 @@ The `-i` shorthand keeps `$EDITOR` assignments concise:
 export EDITOR="qed -if ~/.config/qed/transform.qed"
 ```
 
------
+---
 
 ## Diagnostics
 
@@ -1090,3 +1090,10 @@ Each event is one line; no summary is emitted at the end of a run.
 
 Exit codes: `0` on success, `1` on any error.
 Warnings do not affect the exit code.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites, build instructions,
+and the development workflow.

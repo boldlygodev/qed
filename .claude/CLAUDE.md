@@ -11,15 +11,15 @@ Implemented as a Cargo workspace with three crates.
 Read these before writing any code.
 They are the authoritative source for all design decisions.
 
-| Document | What it covers |
-|---|---|
-| `docs/qed-design.md` | Language design, selectors, processors, invocation flags, formal grammar |
-| `docs/qed-implementation-design.md` | Pipeline architecture, buffer/fragment model, AST types, IR types, compilation pass, error routing, CLI struct |
-| `docs/qed-project-structure.md` | Workspace layout, crate responsibilities, module breakdown, feature flag wiring |
-| `docs/qed-roadmap.md` | Phased build plan — what to build, in what order, with checkpoints |
-| `docs/qed-rust-conventions.md` | Codebase conventions: error handling, visibility, naming, newtypes, trait objects, ownership |
-| `docs/qed-dev-workflow.md` | Build, run, test, lint commands; switching parser feature flags; adding dependencies |
-| `.claude/tests/harness.md` | Integration test harness specification — Rust/bash split, `scenario.sh` format, golden comparison rules, mock scripts |
+| Document                            | What it covers                                                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `docs/qed-design.md`                | Language design, selectors, processors, invocation flags, formal grammar                                              |
+| `docs/qed-implementation-design.md` | Pipeline architecture, buffer/fragment model, AST types, IR types, compilation pass, error routing, CLI struct        |
+| `docs/qed-project-structure.md`     | Workspace layout, crate responsibilities, module breakdown, feature flag wiring                                       |
+| `docs/qed-roadmap.md`               | Phased build plan — what to build, in what order, with checkpoints                                                    |
+| `docs/qed-rust-conventions.md`      | Codebase conventions: error handling, visibility, naming, newtypes, trait objects, ownership                          |
+| `docs/qed-dev-workflow.md`          | Build, run, test, lint commands; switching parser feature flags; adding dependencies                                  |
+| `.claude/tests/harness.md`          | Integration test harness specification — Rust/bash split, `scenario.sh` format, golden comparison rules, mock scripts |
 
 Test scenarios (inputs, scripts, goldens, manifests) live in the per-feature `.md` files under `.claude/tests/`:
 `selectors.md`, `processors.md`, `patterns.md`, `invocation.md`, `error-handling.md`,
@@ -33,6 +33,9 @@ and their corresponding `-edge-cases.md` variants, plus `usecases.md`.
 ```
 qed/
   Cargo.toml              # workspace root
+  mise.toml               # tool versions, env vars, mise tasks
+  mise.lock               # generated lockfile (committed)
+  rust-toolchain.toml     # Rust stable channel pin
   .claude/CLAUDE.md       # this file
   qed-core/               # library crate — all domain logic
     Cargo.toml
