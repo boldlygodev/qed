@@ -1,0 +1,13 @@
+[package]
+name = "qed-tests"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "qed-tests"
+path = "src/main.rs"
+
+[dependencies]
+qed-core = { path = "../qed-core" }
+libtest-mimic = "0.7"
+toml = "0.8"

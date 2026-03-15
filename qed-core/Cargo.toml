@@ -1,0 +1,14 @@
+[package]
+name = "qed-core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["parser-rd"]
+parser-rd = []
+parser-chumsky = ["dep:chumsky"]
+
+[dependencies]
+regex = "1"
+rayon = "1"
+chumsky = { version = "0.9", optional = true }
