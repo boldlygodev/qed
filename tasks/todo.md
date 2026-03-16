@@ -40,17 +40,17 @@
 - [x] `parse/ast.rs`: `NthExpr`, `NthTerm`
 - [x] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
 
-### 2c — Exec and IR types + Processor trait
+### 2c — Exec and IR types + Processor trait ✓
 
-- [ ] `exec/`: `LineRange { start, end }`, `FragmentContent` (`Borrowed(LineRange)` / `Owned(String)`), `Fragment` (`Passthrough(FragmentContent)` / `Selected { content, tags }`), `FragmentList` type alias
-- [ ] `exec/`: `Buffer { content: String, line_offsets: Vec<usize> }` with constructor and `slice(LineRange) -> &str`
-- [ ] `compile/`: `Script { statements, selectors }`, `Statement { id, selector, processor, fallback }`
-- [ ] `compile/`: `RegistryEntry` (`Simple(CompiledSelector)` / `Compound(CompoundSelector)`), `CompiledSelector`, `CompoundSelector`
-- [ ] `compile/`: `SelectorOp` with per-variant fields, `CompiledPattern { matcher, negated, inclusive }`, `PatternMatcher` (`Literal(String)` / `Regex(regex::Regex)`)
-- [ ] `compile/`: `OnError` enum
-- [ ] `processor/`: `Processor` trait (`fn execute(&self, input: String) -> Result<String, ProcessorError>`), `ProcessorError` enum (`NoMatch`, `ProcessorFailed`, `ExternalFailed`)
-- [ ] Unit tests for `Buffer::new()` (line offset construction) and `Buffer::slice()` (correct line extraction)
-- [ ] Checkpoint: buffer unit tests pass, `cargo build --workspace` clean
+- [x] `exec/`: `LineRange { start, end }`, `FragmentContent` (`Borrowed(LineRange)` / `Owned(String)`), `Fragment` (`Passthrough(FragmentContent)` / `Selected { content, tags }`), `FragmentList` type alias
+- [x] `exec/`: `Buffer { content: String, line_offsets: Vec<usize> }` with constructor and `slice(LineRange) -> &str`
+- [x] `compile/`: `Script { statements, selectors }`, `Statement { id, selector, processor, fallback }`
+- [x] `compile/`: `RegistryEntry` (`Simple(CompiledSelector)` / `Compound(CompoundSelector)`), `CompiledSelector`, `CompoundSelector`
+- [x] `compile/`: `SelectorOp` with per-variant fields, `CompiledPattern { matcher, negated, inclusive }`, `PatternMatcher` (`Literal(String)` / `Regex(regex::Regex)`)
+- [x] `compile/`: `OnError` enum
+- [x] `processor/`: `Processor` trait (`fn execute(&self, input: &str) -> Result<String, ProcessorError>`), `ProcessorError` enum (`NoMatch`, `ProcessorFailed`, `ExternalFailed`)
+- [x] Unit tests for `Buffer::new()` (line offset construction) and `Buffer::slice()` (correct line extraction)
+- [x] Checkpoint: buffer unit tests pass, `cargo build --workspace` clean
 
 ### 2d — Fragmentation algorithm
 

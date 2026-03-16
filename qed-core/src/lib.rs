@@ -4,9 +4,9 @@
 pub mod span;
 pub mod error;
 pub(crate) mod parse;
-mod compile;
+pub(crate) mod compile;
 mod exec;
-mod processor;
+pub(crate) mod processor;
 
 /// Uniquely identifies a statement within a compiled script.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
