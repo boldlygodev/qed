@@ -1,0 +1,109 @@
+# ── fallback forms ────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "fallback-processor-chain-only"
+description = "|| fallback can be a processor-chain without a selector; it runs against the original input"
+script = "fallback-processor-chain.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nested-fallback"
+description = "a fallback select-action can itself have a fallback; the chain resolves to the first succeeding branch"
+script = "nested-fallback.qed"
+input = "three-lines.txt"
+stdout = "foo-upper-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-upper-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── multi-statement failure behaviour ─────────────────────────────────────────
+
+[[scenario]]
+id = "multiple-statements-first-fails"
+description = "when the first of multiple statements fails with no fallback, qed exits non-zero; lines with no remaining statement tags before the tagged region are emitted"
+script = "multiple-statements-first-fails.qed"
+input = "three-lines.txt"
+stdout = "foo.txt"
+stderr = "error-no-match-first-statement.txt"
+output = "foo.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]
+
+[[scenario]]
+id = "multiple-statements-second-fails"
+description = "when the second of multiple statements fails with no fallback, qed exits non-zero; the first statement's output and all untagged lines are emitted before the failure"
+script = "multiple-statements-second-fails.qed"
+input = "three-lines.txt"
+stdout = "foo-upper-bar-baz.txt"
+stderr = "error-no-match-second-statement.txt"
+output = "foo-upper-bar-baz.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]
+
+# ── on_error does not trigger fallback ────────────────────────────────────────
+
+[[scenario]]
+id = "on-error-warn-fallback-not-triggered"
+description = "on_error:warn does not trigger || fallback even when fallback is present; stream passes through unchanged"
+script = "fallback-skips-on-warn.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "warn-no-match.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "on-error-skip-fallback-not-triggered"
+description = "on_error:skip does not trigger || fallback even when fallback is present; stream passes through unchanged"
+script = "fallback-skips-on-skip.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

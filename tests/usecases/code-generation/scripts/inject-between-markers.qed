@@ -1,0 +1,3 @@
+marker_start=/\/\/ CODE GENERATED START/
+marker_end=/\/\/ CODE GENERATED END/
+from(marker_start+) > to(marker_end) | generate-routes

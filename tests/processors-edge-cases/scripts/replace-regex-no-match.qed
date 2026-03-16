@@ -1,0 +1,1 @@
+at("foo bar foo") | qed:replace(/\d+/, "NUM")

@@ -1,0 +1,3 @@
+section=/^\[database\]/
+section_end=/^\[/
+from(section+) > to(section_end) | qed:prefix(text:"# ")

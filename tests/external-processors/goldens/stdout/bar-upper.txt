@@ -1,0 +1,4 @@
+foo
+BAR
+[path:upper]
+baz

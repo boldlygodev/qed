@@ -1,0 +1,144 @@
+# tests/patterns/manifest.toml
+
+# ── named patterns ────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "named-literal"
+description = "a named literal pattern is defined and referenced by bare identifier in a selector"
+script = "named-literal.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "named-regex"
+description = "a named regex pattern is defined and referenced by bare identifier in a selector"
+script = "named-regex.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "named-negated"
+description = "a named pattern prefixed with ! negates the match; lines not matching the pattern are selected"
+script = "named-negated.qed"
+input = "three-lines.txt"
+stdout = "bar.txt"
+stderr = "empty.txt"
+output = "bar.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "named-inclusive"
+description = "a named pattern with + in from position includes the matching line in the selected region"
+script = "named-inclusive.qed"
+input = "five-lines.txt"
+stdout = "alpha-bravo.txt"
+stderr = "empty.txt"
+output = "alpha-bravo.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── inline patterns ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "inline-literal"
+description = "an inline literal string pattern matches the exact text; no regex interpretation"
+script = "inline-literal.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inline-regex"
+description = "an inline regex pattern uses RE2 semantics for matching"
+script = "inline-regex.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inline-negated-literal"
+description = "an inline literal prefixed with ! selects lines that do not contain the literal"
+script = "inline-negated-literal.qed"
+input = "three-lines.txt"
+stdout = "bar.txt"
+stderr = "empty.txt"
+output = "bar.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inline-negated-regex"
+description = "an inline regex prefixed with ! selects lines that do not match the regex"
+script = "inline-negated-regex.qed"
+input = "three-lines.txt"
+stdout = "bar.txt"
+stderr = "empty.txt"
+output = "bar.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── environment variable expansion ───────────────────────────────────────────
+
+[[scenario]]
+id = "env-expand-pattern"
+description = "${VAR} in a pattern value is expanded from the environment before matching"
+script = "env-expand-pattern.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+env = { QED_PAT = "bar" }
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "env-expand-escaped"
+description = "\\${VAR} is treated as the literal string ${VAR} and is not expanded"
+script = "env-expand-escaped.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

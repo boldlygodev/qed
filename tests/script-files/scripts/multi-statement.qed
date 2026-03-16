@@ -1,0 +1,2 @@
+at("bar") | qed:delete()
+at("baz") | qed:upper()

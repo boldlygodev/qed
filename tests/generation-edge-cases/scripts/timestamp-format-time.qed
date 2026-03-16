@@ -1,0 +1,1 @@
+at(/\{\{ts\}\}/) | qed:replace("{{ts}}", qed:timestamp(format:time))

@@ -1,0 +1,7 @@
+26/02/2026 09:00:01 INFO  server started
+26/02/2026 09:00:02 DEBUG loading config
+26/02/2026 09:00:03 ERROR connection refused: db.internal:5432
+26/02/2026 09:00:04 INFO  retrying connection
+26/02/2026 09:00:05 DEBUG retry attempt 1
+26/02/2026 09:00:06 ERROR connection refused: db.internal:5432
+26/02/2026 09:00:07 INFO  giving up

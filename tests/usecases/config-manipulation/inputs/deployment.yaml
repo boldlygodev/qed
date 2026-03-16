@@ -1,0 +1,9 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  annotations:
+    deploy-time: "2026-01-01"
+    owner: "team-a"
+  labels:
+    app: myapp

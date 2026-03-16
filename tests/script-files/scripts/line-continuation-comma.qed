@@ -1,0 +1,2 @@
+at("bar",
+    on_error:fail) | qed:delete()

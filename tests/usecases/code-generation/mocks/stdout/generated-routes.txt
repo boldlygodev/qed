@@ -1,0 +1,3 @@
+// CODE GENERATED START
+func newRoute() {}
+func anotherRoute() {}

@@ -1,0 +1,3 @@
+transform=qed:upper() |
+          qed:prefix(text:">> ")
+at("bar") | transform

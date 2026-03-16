@@ -1,0 +1,139 @@
+# tests/error-handling/manifest.toml
+
+# ── fallback: selector no-match ───────────────────────────────────────────────
+
+[[scenario]]
+id = "fallback-on-selector-no-match"
+description = "|| fallback is triggered when the primary selector finds no match; fallback selects from original input"
+script = "fallback-selector.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── fallback: processor failure ───────────────────────────────────────────────
+
+[[scenario]]
+id = "fallback-on-processor-failure"
+description = "|| fallback is triggered when the processor exits non-zero; fallback processor runs against original input"
+script = "fallback-processor.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "processor-failed.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── fallback: chained ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "fallback-chain"
+description = "fallback is itself a full select-action expression with its own selector and processor"
+script = "fallback-chain.qed"
+input = "three-lines.txt"
+stdout = "fallback-result.txt"
+stderr = "empty.txt"
+output = "fallback-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── on_error:fail triggers || ─────────────────────────────────────────────────
+
+[[scenario]]
+id = "on-error-fail-triggers-fallback"
+description = "on_error:fail (default) triggers || fallback on no-match; on_error:warn and skip do not"
+script = "on-error-fail-triggers-fallback.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── on_error:warn does not trigger || ────────────────────────────────────────
+
+[[scenario]]
+id = "on-error-warn-does-not-trigger-fallback"
+description = "on_error:warn emits to stderr and succeeds; || fallback is not triggered"
+script = "on-error-warn-no-fallback.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "warn-no-match.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── on_error:skip does not trigger || ────────────────────────────────────────
+
+[[scenario]]
+id = "on-error-skip-does-not-trigger-fallback"
+description = "on_error:skip succeeds silently; || fallback is not triggered"
+script = "on-error-skip-no-fallback.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── processor failure triggers || ─────────────────────────────────────────────
+
+[[scenario]]
+id = "processor-fail-triggers-fallback"
+description = "a processor error always triggers || fallback regardless of on_error"
+script = "processor-fail-triggers-fallback.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "processor-failed.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── fallback itself fails ─────────────────────────────────────────────────────
+
+[[scenario]]
+id = "fallback-fail"
+description = "if the fallback processor also fails, qed exits non-zero; the selected line is never emitted and downstream lines are blocked behind it"
+script = "fallback-fail.qed"
+input = "foo-only.txt"
+stdout = "empty.txt"
+stderr = "fallback-processor-failed.txt"
+output = "empty.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]

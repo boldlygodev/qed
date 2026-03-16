@@ -1,0 +1,113 @@
+# tests/script-files/manifest.toml
+
+# ── shebang ───────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "shebang"
+description = "a script file with a shebang line can be executed directly; the shebang is not treated as a statement"
+script = "shebang.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── multi-statement ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "multi-statement"
+description = "multiple statements execute sequentially; each statement sees the output of the prior one"
+script = "multi-statement.qed"
+input = "three-lines.txt"
+stdout = "foo-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── aliases ───────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "alias-simple"
+description = "an alias binds a name to a processor chain and can be referenced in select-action statements"
+script = "alias-simple.qed"
+input = "three-lines.txt"
+stdout = "foo-baz-prefixed.txt"
+stderr = "empty.txt"
+output = "foo-baz-prefixed.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "alias-composed"
+description = "an alias can reference another alias; composed aliases chain their processor steps"
+script = "alias-composed.qed"
+input = "three-lines.txt"
+stdout = "foo-baz-prefixed.txt"
+stderr = "empty.txt"
+output = "foo-baz-prefixed.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "alias-override-short-name"
+description = "a short alias name like 'delete' resolves to the alias definition rather than PATH"
+script = "alias-override-short.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── line continuation ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "line-continuation-pipe"
+description = "a line ending with | continues the statement on the next line"
+script = "line-continuation-pipe.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "line-continuation-comma"
+description = "a line ending with , continues the statement on the next line"
+script = "line-continuation-comma.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "line-continuation-narrowing"
+description = "a line ending with > continues the statement on the next line"
+script = "line-continuation-narrowing.qed"
+input = "five-lines.txt"
+stdout = "alpha-bravo-delta-echo.txt"
+stderr = "empty.txt"
+output = "alpha-bravo-delta-echo.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

@@ -1,0 +1,178 @@
+# ── empty input / output edge cases ──────────────────────────────────────────
+
+[[scenario]]
+id = "external-empty-input"
+description = "an external command receiving empty stdin is still called and its stdout replaces the region"
+script = "external-empty-input.qed"
+input = "empty.txt"
+stdout = "inserted-line.txt"
+stderr = "empty.txt"
+output = "inserted-line.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "addline"
+input = "empty.txt"
+stdout = "inserted-line.txt"
+
+[[scenario]]
+id = "external-empty-output"
+description = "an external command returning empty stdout replaces the selected region with nothing"
+script = "external-empty-output.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "devnull"
+input = "bar.txt"
+stdout = "empty.txt"
+
+# ── processor failure ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "external-nonzero-triggers-fallback"
+description = "an external command exiting non-zero triggers the || fallback"
+script = "external-nonzero-exit.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "external-failed.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "failcmd"
+input = "bar.txt"
+exit_code = 1
+stderr = "external-failed.txt"
+
+[[scenario]]
+id = "external-nonzero-no-fallback"
+description = "an external command exiting non-zero with no fallback causes qed to exit non-zero"
+script = "external-nonzero-no-fallback.qed"
+input = "three-lines.txt"
+stdout = "empty.txt"
+stderr = "external-failed.txt"
+output = "empty.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]
+
+[[scenario.mock]]
+command = "failcmd"
+input = "bar.txt"
+exit_code = 1
+stderr = "external-failed.txt"
+
+# ── qed:file() scope ──────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "file-then-stdin-pipeline"
+description = "${QED_FILE} is scoped to the immediately downstream command; the next command in the chain receives stdout via stdin normally"
+script = "file-then-stdin.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-upper-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "readfile"
+expected_args = ["${QED_FILE}"]
+input = "bar.txt"
+stdout = "bar.txt"
+
+[[scenario.mock]]
+command = "upcase"
+input = "bar.txt"
+stdout = "bar-upper.txt"
+
+# ── stderr passthrough ────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "external-stderr-passthrough"
+description = "stderr written by an external command is passed through to qed's own stderr"
+script = "external-stderr-passthrough.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "noise.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "noisycmd"
+input = "bar.txt"
+stdout = "empty.txt"
+stderr = "noise.txt"
+
+# ── qed:file() warning ────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "file-on-insertion-point"
+description = "qed:file() on an after() insertion point is warned and ignored; the empty region passes through unchanged"
+script = "file-on-insertion-point.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "file-on-insertion-point.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── insertion-point side-effect-only ─────────────────────────────────────────
+
+[[scenario]]
+id = "insertion-point-no-output"
+description = "an external command at an after() insertion point that writes nothing to stdout inserts nothing; stream passes through unchanged"
+script = "insertion-point-no-output.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "sidefx"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"

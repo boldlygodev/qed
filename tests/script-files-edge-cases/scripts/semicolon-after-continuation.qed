@@ -1,0 +1,2 @@
+at("foo") |
+    qed:upper(); at("bar") | qed:delete()

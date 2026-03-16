@@ -1,0 +1,1 @@
+at("${QED_PATTERN}") | qed:skip()

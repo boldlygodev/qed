@@ -1,0 +1,1 @@
+at(/\{\{name\}\}/) | qed:replace("{{name}}", echo world)

@@ -1,0 +1,2 @@
+#!/usr/bin/env qed -f
+at("bar") | qed:delete()

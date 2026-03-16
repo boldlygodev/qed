@@ -1,0 +1,1 @@
+before("target") | echo inserted

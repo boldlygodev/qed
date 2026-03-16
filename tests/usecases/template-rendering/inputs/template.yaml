@@ -1,0 +1,3 @@
+name: {{APP_NAME}}
+version: {{VERSION}}
+image: myrepo/{{APP_NAME}}:{{VERSION}}

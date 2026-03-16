@@ -1,0 +1,1 @@
+at("quux") | qed:delete() || at("quux2") | qed:delete() || at("foo") | qed:upper()

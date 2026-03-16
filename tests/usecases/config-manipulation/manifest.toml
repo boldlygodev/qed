@@ -1,0 +1,41 @@
+# tests/usecases/config-manipulation/manifest.toml
+
+[[scenario]]
+id = "update-toml-version"
+description = "update the version field in a TOML file using regex replacement"
+script = "update-toml-version.qed"
+input = "Cargo.toml"
+stdout = "Cargo-updated.toml"
+stderr = "empty.txt"
+output = "Cargo-updated.toml"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "comment-out-ini-section"
+description = "comment out an INI section from its header to the start of the next section using from > to with prefix"
+script = "comment-out-ini-section.qed"
+input = "config.ini"
+stdout = "config-commented.ini"
+stderr = "empty.txt"
+output = "config-commented.ini"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "delete-yaml-block"
+description = "delete a YAML key block from its key line to the start of the next sibling key"
+script = "delete-yaml-block.qed"
+input = "deployment.yaml"
+stdout = "deployment-no-annotations.yaml"
+stderr = "empty.txt"
+output = "deployment-no-annotations.yaml"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

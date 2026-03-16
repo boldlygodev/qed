@@ -1,0 +1,353 @@
+# tests/selectors/manifest.toml
+
+# ── at() ──────────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "at-entire-stream"
+description = "at() with no pattern selects the entire stream; every line is transformed"
+script = "at-entire-stream.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── at(pattern) ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "at-literal-single-match"
+description = "at() with a literal string selects all matching lines; unselected lines pass through"
+script = "at-bar-delete.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-literal-multi-match"
+description = "at() selects all occurrences when the pattern appears on multiple lines"
+script = "at-x-delete.qed"
+input = "repeated.txt"
+stdout = "y-y.txt"
+stderr = "empty.txt"
+output = "y-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-regex-match"
+description = "at() with a regex selects all lines matching the pattern"
+script = "at-regex-b-delete.qed"
+input = "five-lines.txt"
+stdout = "five-minus-bravo.txt"
+stderr = "empty.txt"
+output = "five-minus-bravo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-negated"
+description = "at() with a negated pattern selects all lines that do not match; matching lines pass through"
+script = "at-negated-bar-delete.qed"
+input = "three-lines.txt"
+stdout = "bar.txt"
+stderr = "empty.txt"
+output = "bar.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── after(pattern) ────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "after-literal"
+description = "after() is an empty insertion point immediately after the matching line; processor stdout is inserted there"
+script = "after-bar-insert.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-inserted-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-inserted-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── before(pattern) ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "before-literal"
+description = "before() is an empty insertion point immediately before the matching line; processor stdout is inserted there"
+script = "before-bar-insert.qed"
+input = "three-lines.txt"
+stdout = "foo-inserted-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-inserted-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── from(pattern) ─────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "from-exclusive"
+description = "from() selects from after the matching line to end of stream; the matching line is excluded"
+script = "from-charlie-delete.qed"
+input = "five-lines.txt"
+stdout = "alpha-bravo-charlie.txt"
+stderr = "empty.txt"
+output = "alpha-bravo-charlie.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-inclusive"
+description = "from() with + includes the matching line in the selected region"
+script = "from-charlie-inclusive-delete.qed"
+input = "five-lines.txt"
+stdout = "alpha-bravo.txt"
+stderr = "empty.txt"
+output = "alpha-bravo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── to(pattern) ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "to-exclusive"
+description = "to() selects from start of stream to before the matching line; the matching line is excluded"
+script = "to-charlie-delete.qed"
+input = "five-lines.txt"
+stdout = "charlie-delta-echo.txt"
+stderr = "empty.txt"
+output = "charlie-delta-echo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "to-inclusive"
+description = "to() with + includes the matching line in the selected region"
+script = "to-charlie-inclusive-delete.qed"
+input = "five-lines.txt"
+stdout = "delta-echo.txt"
+stderr = "empty.txt"
+output = "delta-echo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── from > to ─────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "from-to-both-exclusive"
+description = "from > to selects lines between two patterns; both boundary lines are excluded by default"
+script = "from-bravo-to-delta-delete.qed"
+input = "five-lines.txt"
+stdout = "alpha-bravo-delta-echo.txt"
+stderr = "empty.txt"
+output = "alpha-bravo-delta-echo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-to-from-inclusive"
+description = "from+ > to includes the from boundary line; the to boundary line remains excluded"
+script = "from-bravo-inclusive-to-delta-delete.qed"
+input = "five-lines.txt"
+stdout = "alpha-delta-echo.txt"
+stderr = "empty.txt"
+output = "alpha-delta-echo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-to-both-inclusive"
+description = "from+ > to+ includes both boundary lines in the selected region"
+script = "from-bravo-to-delta-inclusive-delete.qed"
+input = "five-lines.txt"
+stdout = "alpha-echo.txt"
+stderr = "empty.txt"
+output = "alpha-echo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── > narrowing ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "at-narrowing"
+description = "> intersects two at() regions; only lines matched by both selectors are selected"
+script = "at-narrowing-delete.qed"
+input = "narrowing.txt"
+stdout = "narrowing-minus-foo-bar.txt"
+stderr = "empty.txt"
+output = "narrowing-minus-foo-bar.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── nth ───────────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "nth-first"
+description = "nth:1 selects only the first occurrence of a matching line"
+script = "at-x-nth-first-delete.qed"
+input = "repeated.txt"
+stdout = "y-x-y-x.txt"
+stderr = "empty.txt"
+output = "y-x-y-x.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-last"
+description = "nth:-1 selects only the last occurrence of a matching line"
+script = "at-x-nth-last-delete.qed"
+input = "repeated.txt"
+stdout = "x-y-x-y.txt"
+stderr = "empty.txt"
+output = "x-y-x-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-specific"
+description = "nth:N selects only the Nth occurrence of a matching line"
+script = "at-x-nth-second-delete.qed"
+input = "repeated.txt"
+stdout = "x-y-y-x.txt"
+stderr = "empty.txt"
+output = "x-y-y-x.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-range"
+description = "nth:a...b selects occurrences a through b inclusive"
+script = "at-x-nth-range-delete.qed"
+input = "repeated.txt"
+stdout = "y-y-x.txt"
+stderr = "empty.txt"
+output = "y-y-x.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-step"
+description = "nth:an+b selects every ath occurrence offset by b; 2n+1 selects the 1st, 3rd, 5th, ..."
+script = "at-x-nth-step-delete.qed"
+input = "repeated.txt"
+stdout = "y-x-y.txt"
+stderr = "empty.txt"
+output = "y-x-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── on_error ──────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "on-error-fail"
+description = "on_error:fail (default) exits non-zero when no lines match; unselected lines pass through to stdout before the failure is detected"
+script = "at-quux-fail.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "error-no-match.txt"
+output = "foo-bar-baz.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]
+
+[[scenario]]
+id = "on-error-warn"
+description = "on_error:warn emits a warning to stderr and exits zero when no lines match; the stream passes through unchanged"
+script = "at-quux-warn.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "warn-no-match.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "on-error-skip"
+description = "on_error:skip exits zero silently when no lines match; the stream passes through unchanged"
+script = "at-quux-skip.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

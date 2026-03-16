@@ -1,0 +1,191 @@
+# ── no-match edge cases ───────────────────────────────────────────────────────
+
+[[scenario]]
+id = "named-literal-no-match"
+description = "a named literal pattern that matches nothing succeeds silently with on_error:skip"
+script = "named-literal-no-match.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inline-regex-no-match"
+description = "an inline regex that matches nothing succeeds silently with on_error:skip"
+script = "inline-regex-no-match.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── literal vs regex metacharacters ──────────────────────────────────────────
+
+[[scenario]]
+id = "literal-special-chars"
+description = "a literal string pattern treats regex metacharacters as plain characters; only the exact line matches"
+script = "literal-special-chars.qed"
+input = "special-chars.txt"
+stdout = "special-chars-literal-result.txt"
+stderr = "empty.txt"
+output = "special-chars-literal-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "regex-special-chars"
+description = "a regex pattern interprets metacharacters structurally; . matches any single character"
+script = "regex-special-chars.qed"
+input = "special-chars.txt"
+stdout = "special-chars-regex-result.txt"
+stderr = "empty.txt"
+output = "special-chars-regex-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── unicode ───────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "regex-unicode"
+description = "regex patterns support Unicode character classes"
+script = "regex-unicode.qed"
+input = "unicode.txt"
+stdout = "unicode-result.txt"
+stderr = "empty.txt"
+output = "unicode-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── regex flags ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "regex-multiline-flag"
+description = "(?m) flag within a regex pattern does not break line-oriented matching"
+script = "regex-multiline-flag.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── named pattern features ────────────────────────────────────────────────────
+
+[[scenario]]
+id = "named-pattern-forward-ref"
+description = "a named pattern can be referenced before its definition; forward references are permitted"
+script = "named-pattern-forward-ref.qed"
+input = "forward-ref.txt"
+stdout = "other-only.txt"
+stderr = "empty.txt"
+output = "other-only.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "named-pattern-reused"
+description = "a named pattern can be referenced in multiple statements without redefinition"
+script = "named-pattern-reused.qed"
+input = "forward-ref.txt"
+stdout = "named-reused-result.txt"
+stderr = "empty.txt"
+output = "named-reused-result.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── negation edge cases ───────────────────────────────────────────────────────
+
+[[scenario]]
+id = "negated-matches-all"
+description = "a negated pattern that nothing matches selects all lines"
+script = "negated-on-all-lines.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── named pattern in range positions ─────────────────────────────────────────
+
+[[scenario]]
+id = "named-regex-in-from-to"
+description = "named regex patterns work correctly in from > to boundary positions"
+script = "named-regex-in-from-to.qed"
+input = "copy-move-source.txt"
+stdout = "range-deleted-result.txt"
+stderr = "empty.txt"
+output = "range-deleted-result.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "named-pattern-in-from-to"
+description = "named literal patterns work correctly in from > to boundary positions"
+script = "named-pattern-in-from-to.qed"
+input = "range-source.txt"
+stdout = "alpha-echo.txt"
+stderr = "empty.txt"
+output = "alpha-echo.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inclusive-to-boundary"
+description = "+ on a to() boundary includes the matching line in the deleted region"
+script = "inclusive-in-to.qed"
+input = "copy-move-source.txt"
+stdout = "inclusive-to-result.txt"
+stderr = "empty.txt"
+output = "inclusive-to-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── duplicate pattern name warning ────────────────────────────────────────────
+
+[[scenario]]
+id = "duplicate-pattern-name"
+description = "redefining a named pattern emits a warning and uses the last definition"
+script = "duplicate-pattern-name.qed"
+input = "three-lines.txt"
+stdout = "foo-bar.txt"
+stderr = "duplicate-pattern-name.txt"
+output = "foo-bar.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

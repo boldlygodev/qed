@@ -1,0 +1,1 @@
+at("foo", on_error:skip) | qed:delete()

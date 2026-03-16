@@ -1,0 +1,1 @@
+qed: error:   1:1-25:  at("quux", on_error:fail): no lines matched

@@ -1,0 +1,1 @@
+at(/\{\{uuid\}\}/) | qed:replace("{{uuid}}", qed:uuid(version:5, namespace:url, name:"https://example.com"))

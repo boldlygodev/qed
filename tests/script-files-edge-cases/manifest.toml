@@ -1,0 +1,124 @@
+# tests/script-files-edge-cases/manifest.toml
+
+# ── empty and comment-only scripts ────────────────────────────────────────────
+
+[[scenario]]
+id = "empty-script"
+description = "an empty script file produces no transformations; input passes through unchanged"
+script = "empty.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "comments-only-script"
+description = "a script containing only comments and blank lines produces no transformations"
+script = "comments-only.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inline-comment"
+description = "a comment appearing after a statement on the same line is ignored; the statement executes correctly"
+script = "comment-inline.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── statement separators ──────────────────────────────────────────────────────
+
+[[scenario]]
+id = "semicolon-separator"
+description = "two statements on one line separated by ; execute sequentially"
+script = "semicolon-separator.qed"
+input = "three-lines.txt"
+stdout = "foo-upper-baz.txt"
+stderr = "empty.txt"
+output = "foo-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "semicolon-after-continuation"
+description = "a ; separator works correctly after a statement that used implicit line continuation"
+script = "semicolon-after-continuation.qed"
+input = "three-lines.txt"
+stdout = "foo-upper-baz.txt"
+stderr = "empty.txt"
+output = "foo-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── alias edge cases ──────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "alias-forward-ref"
+description = "an alias can be referenced before its definition; forward references are permitted"
+script = "alias-forward-ref.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "alias-takes-precedence-over-path"
+description = "without \\, an alias name takes precedence over a same-named command on PATH"
+script = "alias-shadowed-by-path.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-upper-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "multiline-alias"
+description = "an alias definition that spans multiple lines via implicit continuation is parsed correctly"
+script = "multiline-alias.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-transformed-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-transformed-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "name-redefined-last-wins"
+description = "when a name is defined twice the last definition wins; a warning is emitted"
+script = "pattern-and-alias-same-name.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-upper-baz.txt"
+stderr = "redefine-warn.txt"
+output = "foo-bar-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

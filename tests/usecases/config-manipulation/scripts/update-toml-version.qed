@@ -1,0 +1,1 @@
+at(/^version = /) | qed:replace(/=.*/, "= \"2.0.0\"")

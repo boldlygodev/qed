@@ -1,0 +1,217 @@
+# tests/generation/manifest.toml
+
+# ── qed:uuid() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "uuid-v7-replace"
+description = "qed:uuid() default produces a UUID v7 replacing a placeholder; output matches UUID v7 format"
+script = "uuid-v7-replace.qed"
+input = "uuid-placeholder.txt"
+stdout = "uuid-v7-line.pattern"
+stderr = "empty.txt"
+output = "uuid-v7-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "uuid-v4-replace"
+description = "qed:uuid(version:4) produces a random UUID v4 replacing a placeholder"
+script = "uuid-v4-replace.qed"
+input = "uuid-placeholder.txt"
+stdout = "uuid-v4-line.pattern"
+stderr = "empty.txt"
+output = "uuid-v4-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "uuid-v5-replace"
+description = "qed:uuid(version:5, namespace:url, name:...) produces a deterministic UUID v5; exact output is verified"
+script = "uuid-v5-replace.qed"
+input = "uuid-placeholder.txt"
+stdout = "uuid-v5-line.*"
+stderr = "empty.txt"
+output = "uuid-v5-line.*"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "uuid-v7-after"
+description = "qed:uuid() composes with after() to insert a UUID after a matching line"
+script = "uuid-v7-after.qed"
+input = "one-line.txt"
+stdout = "uuid-v7-inserted.pattern"
+stderr = "empty.txt"
+output = "uuid-v7-inserted.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:timestamp() ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "timestamp-iso8601-replace"
+description = "qed:timestamp() default produces an ISO 8601 UTC timestamp replacing a placeholder"
+script = "timestamp-iso8601-replace.qed"
+input = "timestamp-placeholder.txt"
+stdout = "timestamp-iso8601-line.pattern"
+stderr = "empty.txt"
+output = "timestamp-iso8601-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "timestamp-unix-replace"
+description = "qed:timestamp(format:unix) produces a Unix epoch seconds timestamp replacing a placeholder"
+script = "timestamp-unix-replace.qed"
+input = "timestamp-placeholder.txt"
+stdout = "timestamp-unix-line.pattern"
+stderr = "empty.txt"
+output = "timestamp-unix-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "timestamp-custom-format-replace"
+description = "qed:timestamp(format:\"...\") produces a timestamp in a custom LDML format replacing a placeholder"
+script = "timestamp-custom-format-replace.qed"
+input = "timestamp-placeholder.txt"
+stdout = "timestamp-custom-format-line.pattern"
+stderr = "empty.txt"
+output = "timestamp-custom-format-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "timestamp-timezone-replace"
+description = "qed:timestamp(timezone:...) produces a timestamp adjusted to the specified IANA timezone"
+script = "timestamp-timezone-replace.qed"
+input = "timestamp-placeholder.txt"
+stdout = "timestamp-timezone-line.pattern"
+stderr = "empty.txt"
+output = "timestamp-timezone-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "timestamp-after"
+description = "qed:timestamp() composes with after() to insert a timestamp after a matching line"
+script = "timestamp-after.qed"
+input = "one-line.txt"
+stdout = "timestamp-inserted.pattern"
+stderr = "empty.txt"
+output = "timestamp-inserted.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:random() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "random-numeric-replace"
+description = "qed:random(N) default produces a numeric string of length N replacing a placeholder"
+script = "random-numeric-replace.qed"
+input = "random-placeholder.txt"
+stdout = "random-numeric-line.pattern"
+stderr = "empty.txt"
+output = "random-numeric-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "random-alpha-replace"
+description = "qed:random(N, alphabet:alpha) produces a lowercase alphabetic string of length N"
+script = "random-alpha-replace.qed"
+input = "random-placeholder.txt"
+stdout = "random-alpha-line.pattern"
+stderr = "empty.txt"
+output = "random-alpha-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "random-alnum-replace"
+description = "qed:random(N, alphabet:alnum) produces an alphanumeric string of length N"
+script = "random-alnum-replace.qed"
+input = "random-placeholder.txt"
+stdout = "random-alnum-line.pattern"
+stderr = "empty.txt"
+output = "random-alnum-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "random-hex-replace"
+description = "qed:random(N, alphabet:hex) produces a lowercase hex string of length N"
+script = "random-hex-replace.qed"
+input = "random-placeholder.txt"
+stdout = "random-hex-line.pattern"
+stderr = "empty.txt"
+output = "random-hex-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "random-custom-alphabet-replace"
+description = "qed:random(N, alphabet:\"...\") produces a string of length N drawn from a custom character set"
+script = "random-custom-alphabet-replace.qed"
+input = "random-placeholder.txt"
+stdout = "random-custom-alphabet-line.pattern"
+stderr = "empty.txt"
+output = "random-custom-alphabet-line.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "random-after"
+description = "qed:random() composes with after() to insert a random string after a matching line"
+script = "random-after.qed"
+input = "one-line.txt"
+stdout = "random-inserted.pattern"
+stderr = "empty.txt"
+output = "random-inserted.pattern"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

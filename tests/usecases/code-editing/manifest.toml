@@ -1,0 +1,41 @@
+# tests/usecases/code-editing/manifest.toml
+
+[[scenario]]
+id = "delete-todo-comments"
+description = "delete all TODO comment lines from a Go source file"
+script = "delete-todo-comments.qed"
+input = "main-with-todos.go"
+stdout = "no-todos.go"
+stderr = "empty.txt"
+output = "no-todos.go"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "delete-function"
+description = "delete a named function and its body using from > to inclusive boundaries"
+script = "delete-function.qed"
+input = "main-with-function.go"
+stdout = "no-function.go"
+stderr = "empty.txt"
+output = "no-function.go"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "add-deprecation-notice"
+description = "insert a deprecation comment before every function matching a naming convention"
+script = "add-deprecation-notice.qed"
+input = "main-with-old-funcs.go"
+stdout = "with-deprecation.go"
+stderr = "empty.txt"
+output = "with-deprecation.go"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

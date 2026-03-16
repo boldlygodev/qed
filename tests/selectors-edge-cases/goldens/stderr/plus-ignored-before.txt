@@ -1,0 +1,1 @@
+qed: warning: 1:1-15:  before("bar"+): + ignored on before

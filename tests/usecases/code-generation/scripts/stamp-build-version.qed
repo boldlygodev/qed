@@ -1,0 +1,1 @@
+at(/^var Version = /) | qed:replace(/=.*/, "= \"${BUILD_VERSION}\"")

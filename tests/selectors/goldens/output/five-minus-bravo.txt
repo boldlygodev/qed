@@ -1,0 +1,4 @@
+alpha
+charlie
+delta
+echo

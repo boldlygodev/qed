@@ -1,0 +1,2 @@
+fence=/^```/
+from(fence+) > to(fence+) | qed:skip()

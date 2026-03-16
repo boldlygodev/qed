@@ -1,0 +1,8 @@
+spec:
+  containers:
+    - name: myapp
+      image: myrepo/myapp:latest
+      ports:
+        - containerPort: 8080
+          cpu: "500m"
+          memory: "256Mi"

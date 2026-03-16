@@ -1,0 +1,6 @@
+clean=qed:delete()
+markup=qed:prefix(text:"> ")
+transform=clean | markup
+target="bar"
+at(target) | transform
+at() | markup

@@ -1,0 +1,1 @@
+qed: warning: 1:1-10:  at("quux"): no lines matched

@@ -1,0 +1,2 @@
+from("bravo") >
+    to("delta") | qed:delete()

@@ -1,0 +1,1 @@
+at("x", nth:-2n) | qed:delete()

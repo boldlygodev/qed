@@ -1,0 +1,409 @@
+# tests/selectors-edge-cases/manifest.toml
+
+# ── at() edge cases ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "at-empty-input"
+description = "at() on empty input produces empty output; no match is found and on_error:skip suppresses the failure"
+script = "at-empty-input.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-entire-stream-empty"
+description = "at() with no pattern on empty input produces empty output"
+script = "at-entire-stream-empty.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-single-line"
+description = "at() on a single-line input deletes the only line, producing empty output"
+script = "at-single-line.qed"
+input = "single-line.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-match-first-line"
+description = "at() correctly selects and deletes a pattern that appears on the first line"
+script = "at-match-first-line.qed"
+input = "match-first-line.txt"
+stdout = "middle-last.txt"
+stderr = "empty.txt"
+output = "middle-last.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-match-last-line"
+description = "at() correctly selects and deletes a pattern that appears on the last line"
+script = "at-match-last-line.qed"
+input = "match-last-line.txt"
+stdout = "first-middle.txt"
+stderr = "empty.txt"
+output = "first-middle.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-match-only-line"
+description = "at() deletes the only line in a single-line input, producing empty output"
+script = "at-match-only-line.qed"
+input = "match-only-line.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "at-adjacent-matches"
+description = "at() correctly selects all occurrences when the pattern appears on consecutive lines"
+script = "at-adjacent-matches.qed"
+input = "adjacent-matches.txt"
+stdout = "y-only.txt"
+stderr = "empty.txt"
+output = "y-only.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── from() edge cases ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "from-first-line-inclusive"
+description = "from() with + matching the first line selects the entire stream"
+script = "from-first-line-inclusive.qed"
+input = "match-first-line.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-last-line-exclusive"
+description = "from() exclusive matching the last line selects nothing; on_error:skip suppresses failure"
+script = "from-last-line-exclusive.qed"
+input = "match-last-line.txt"
+stdout = "first-middle-target.txt"
+stderr = "empty.txt"
+output = "first-middle-target.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-only-line-exclusive"
+description = "from() exclusive on the only line selects nothing; stream passes through unchanged"
+script = "from-only-line.qed"
+input = "match-only-line.txt"
+stdout = "target-only.txt"
+stderr = "empty.txt"
+output = "target-only.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── to() edge cases ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "to-first-line-exclusive"
+description = "to() exclusive matching the first line selects nothing; stream passes through unchanged"
+script = "to-first-line-exclusive.qed"
+input = "match-first-line.txt"
+stdout = "target-middle-last.txt"
+stderr = "empty.txt"
+output = "target-middle-last.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "to-last-line-inclusive"
+description = "to() with + matching the last line selects the entire stream"
+script = "to-last-line-inclusive.qed"
+input = "match-last-line.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "to-only-line-exclusive"
+description = "to() exclusive on the only line selects nothing; stream passes through unchanged"
+script = "to-only-line.qed"
+input = "match-only-line.txt"
+stdout = "target-only.txt"
+stderr = "empty.txt"
+output = "target-only.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── after() / before() edge cases ─────────────────────────────────────────────
+
+[[scenario]]
+id = "after-first-line"
+description = "after() on the first line inserts content between the first and second lines"
+script = "after-first-line.qed"
+input = "single-line.txt"
+stdout = "foo-inserted.txt"
+stderr = "empty.txt"
+output = "foo-inserted.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "after-last-line"
+description = "after() on the last line appends content at the end of the stream"
+script = "after-last-line.qed"
+input = "match-last-line.txt"
+stdout = "first-middle-target-inserted.txt"
+stderr = "empty.txt"
+output = "first-middle-target-inserted.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "before-first-line"
+description = "before() on the first line prepends content at the start of the stream"
+script = "before-first-line.qed"
+input = "match-first-line.txt"
+stdout = "inserted-target-middle-last.txt"
+stderr = "empty.txt"
+output = "inserted-target-middle-last.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "before-last-line"
+description = "before() on the last line inserts content between the second-to-last and last lines"
+script = "before-last-line.qed"
+input = "single-line.txt"
+stdout = "inserted-foo.txt"
+stderr = "empty.txt"
+output = "inserted-foo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── from > to edge cases ──────────────────────────────────────────────────────
+
+[[scenario]]
+id = "from-to-same-pattern"
+description = "from > to where both match the same line and both are exclusive selects nothing"
+script = "from-to-same-pattern.qed"
+input = "five-lines.txt"
+stdout = "five-lines.txt"
+stderr = "empty.txt"
+output = "five-lines.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "from-to-adjacent"
+description = "from > to where boundaries are adjacent lines and both exclusive selects nothing between them"
+script = "from-to-adjacent.qed"
+input = "five-lines.txt"
+stdout = "five-lines.txt"
+stderr = "empty.txt"
+output = "five-lines.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── nth edge cases ────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "nth-adjacent"
+description = "nth:1 correctly selects only the first of two consecutive matching lines"
+script = "nth-adjacent.qed"
+input = "adjacent-matches.txt"
+stdout = "x-y.txt"
+stderr = "empty.txt"
+output = "x-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-exceeds-count"
+description = "nth:N where N exceeds the number of matches produces no selection; on_error:skip suppresses failure"
+script = "nth-exceeds-count.qed"
+input = "repeated.txt"
+stdout = "repeated.txt"
+stderr = "empty.txt"
+output = "repeated.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-negative-step"
+description = "nth:-2n selects every second occurrence from the end (end-positions 2, 4, 6...)"
+script = "nth-negative-step.qed"
+input = "repeated.txt"
+stdout = "x-y-y-x.txt"
+stderr = "empty.txt"
+output = "x-y-y-x.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── + warning ─────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "plus-ignored-on-at"
+description = "+ on at() is warned and ignored; the selector still matches and the processor runs"
+script = "plus-ignored-on-at.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "plus-ignored-at.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "plus-ignored-on-after"
+description = "+ on after() is warned and ignored; the insertion point still fires"
+script = "plus-ignored-on-after.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "plus-ignored-after.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "plus-ignored-on-before"
+description = "+ on before() is warned and ignored; the insertion point still fires"
+script = "plus-ignored-on-before.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "plus-ignored-before.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── nth warning ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "nth-zero-warned"
+description = "nth:0 has no meaning; a warning is emitted and the term is ignored, leaving no selection"
+script = "nth-zero-warned.qed"
+input = "repeated.txt"
+stdout = "repeated.txt"
+stderr = "nth-zero-warned.txt"
+output = "repeated.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-duplicate-bare"
+description = "nth:1,1...3 warns that occurrence 1 is a duplicate and deduplicates to nth:1...3"
+script = "nth-duplicate-bare.qed"
+input = "repeated.txt"
+stdout = "y-y.txt"
+stderr = "nth-duplicate-bare.txt"
+output = "y-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "nth-duplicate-in-range"
+description = "nth:1...3,2 warns that occurrence 2 is already covered by the range and deduplicates to nth:1...3"
+script = "nth-duplicate-in-range.qed"
+input = "repeated.txt"
+stdout = "y-y.txt"
+stderr = "nth-duplicate-range.txt"
+output = "y-y.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

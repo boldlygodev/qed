@@ -1,0 +1,2 @@
+at(/\{\{APP_NAME\}\}/) | qed:replace("{{APP_NAME}}", "${APP_NAME}")
+at(/\{\{VERSION\}\}/)  | qed:replace("{{VERSION}}", "${VERSION}")

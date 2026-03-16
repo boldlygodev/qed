@@ -1,0 +1,129 @@
+# tests/invocation/manifest.toml
+
+# -- --output ------------------------------------------------------------------
+
+[[scenario]]
+id = "output-flag"
+description = "--output writes transformed content to the specified file; stdout is empty"
+script = "delete-bar.qed"
+input = "three-lines.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" --output "$OUTPUT" "$INPUT" > "$STDOUT" 2> "$STDERR" """,
+]
+
+# -- --in-place ----------------------------------------------------------------
+
+[[scenario]]
+id = "in-place"
+description = "--in-place modifies the input file directly via atomic write; stdout is empty"
+script = "delete-bar.qed"
+input = "three-lines.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """
+  qed -f "$SCRIPT" --in-place "$INPUT" > "$STDOUT" 2> "$STDERR"
+  cp "$INPUT" "$OUTPUT"
+  """,
+]
+
+# -- --extract -----------------------------------------------------------------
+
+[[scenario]]
+id = "extract"
+description = "--extract suppresses passthrough output; only the selected region is written to stdout"
+script = "extract-bar.qed"
+input = "three-lines.txt"
+stdout = "bar.txt"
+stderr = "empty.txt"
+output = "bar.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --extract < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --extract < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# -- --dry-run -----------------------------------------------------------------
+
+[[scenario]]
+id = "dry-run"
+description = "--dry-run writes a unified diff of the proposed changes to stdout; the input file is not modified"
+script = "dry-run-delete-bar.qed"
+input = "three-lines.txt"
+stdout = "dry-run-delete-bar.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """
+  qed -f "$SCRIPT" --dry-run "$INPUT" > "$STDOUT" 2> "$STDERR"
+  cp /dev/null "$OUTPUT"
+  """,
+]
+
+# -- --on-error ----------------------------------------------------------------
+
+[[scenario]]
+id = "global-on-error-skip"
+description = "--on-error=skip sets the global no-match behaviour to skip; per-selector on_error overrides it"
+script = "global-on-error-skip.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=skip < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "global-on-error-warn"
+description = "--on-error=warn sets the global no-match behaviour to warn; unmatched selectors emit to stderr but exit zero"
+script = "global-on-error-warn.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "warn-no-match.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --on-error=warn < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --on-error=warn < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# -- --no-env ------------------------------------------------------------------
+
+[[scenario]]
+id = "no-env-suppresses-expansion"
+description = "--no-env treats ${VAR} as a literal string rather than expanding it"
+script = "no-env-literal.qed"
+input = "env-pattern.txt"
+stdout = "env-pattern.txt"
+stderr = "empty.txt"
+output = "env-pattern.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" --no-env < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" --no-env < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "env-expansion"
+description = "Without --no-env, ${VAR} in patterns is expanded from the environment"
+script = "env-expand.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+env = { QED_PATTERN = "bar" }
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

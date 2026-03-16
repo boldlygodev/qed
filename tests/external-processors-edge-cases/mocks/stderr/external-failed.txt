@@ -1,0 +1,1 @@
+failcmd: exiting with non-zero status

@@ -1,0 +1,1 @@
+at(/\bERROR\b/) | qed:skip()

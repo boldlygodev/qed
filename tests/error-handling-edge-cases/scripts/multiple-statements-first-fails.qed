@@ -1,0 +1,2 @@
+at("quux") | qed:delete()
+at("bar") | qed:upper()

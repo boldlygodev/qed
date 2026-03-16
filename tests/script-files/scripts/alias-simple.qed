@@ -1,0 +1,4 @@
+markup=qed:prefix(text:"> ")
+target="bar"
+at(target) | qed:delete()
+at() | markup

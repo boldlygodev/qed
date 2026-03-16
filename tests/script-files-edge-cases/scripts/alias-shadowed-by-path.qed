@@ -1,0 +1,2 @@
+cat=qed:upper()
+at("bar") | cat

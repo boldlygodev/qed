@@ -1,0 +1,297 @@
+# tests/processors/manifest.toml
+
+# ── qed:delete() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "delete"
+description = "qed:delete() removes the selected region from the stream"
+script = "delete.qed"
+input = "three-lines.txt"
+stdout = "foo-baz.txt"
+stderr = "empty.txt"
+output = "foo-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:duplicate() ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "duplicate"
+description = "qed:duplicate() emits the selected region twice consecutively"
+script = "duplicate.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:copy() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "copy-after"
+description = "qed:copy(after:p) inserts a copy of the selected region after the target pattern; the original remains in place"
+script = "copy-after.qed"
+input = "copy-source.txt"
+stdout = "copy-source-copy-after.txt"
+stderr = "empty.txt"
+output = "copy-source-copy-after.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "copy-before"
+description = "qed:copy(before:p) inserts a copy of the selected region before the target pattern; the original remains in place"
+script = "copy-before.qed"
+input = "copy-source.txt"
+stdout = "copy-source-copy-before.txt"
+stderr = "empty.txt"
+output = "copy-source-copy-before.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "copy-at"
+description = "qed:copy(at:p) overwrites the target pattern's lines with a copy of the selected region"
+script = "copy-at.qed"
+input = "copy-source.txt"
+stdout = "copy-source-copy-at.txt"
+stderr = "empty.txt"
+output = "copy-source-copy-at.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:move() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "move-after"
+description = "qed:move(after:p) inserts a copy of the selected region after the target pattern and removes the original"
+script = "move-after.qed"
+input = "copy-source.txt"
+stdout = "copy-source-moved-after.txt"
+stderr = "empty.txt"
+output = "copy-source-moved-after.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:replace() ─────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "replace-literal"
+description = "qed:replace() with literal match and literal replacement substitutes the matched span; surrounding content survives"
+script = "replace-literal.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-replaced-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-replaced-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "replace-regex-template"
+description = "qed:replace() with a regex pattern and /template/ replacement expands capture group references"
+script = "replace-regex-template.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-replaced-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-replaced-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "replace-pipeline"
+description = "qed:replace() with a processor pipeline as the replacement argument runs the pipeline against the matched span and splices the output in place"
+script = "replace-pipeline.qed"
+input = "placeholder.txt"
+stdout = "placeholder-pipeline-replaced.txt"
+stderr = "empty.txt"
+output = "placeholder-pipeline-replaced.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:substring() ───────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "substring"
+description = "qed:substring() narrows the selected region to the matched span; the rest of the line is discarded"
+script = "substring.qed"
+input = "three-lines.txt"
+stdout = "bar-substring.txt"
+stderr = "empty.txt"
+output = "bar-substring.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:trim() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "trim"
+description = "qed:trim() strips leading and trailing whitespace from each line in the selected region"
+script = "trim.qed"
+input = "indented.txt"
+stdout = "foo-bar-baz-trimmed.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-trimmed.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:upper() ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "upper"
+description = "qed:upper() converts all characters in the selected region to uppercase"
+script = "upper.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:lower() ───────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "lower"
+description = "qed:lower() converts all characters in the selected region to lowercase"
+script = "lower.qed"
+input = "foo-bar-baz-upper.txt"
+stdout = "foo-bar-baz-lower.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-lower.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:indent() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "indent"
+description = "qed:indent() prepends each line in the selected region with the specified number of spaces"
+script = "indent.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-indented.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-indented.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:dedent() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "dedent"
+description = "qed:dedent() removes the common leading whitespace prefix from all lines in the selected region"
+script = "dedent.qed"
+input = "indented.txt"
+stdout = "foo-bar-baz-dedented.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-dedented.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:wrap() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "wrap"
+description = "qed:wrap() word-wraps each line in the selected region at the specified column width"
+script = "wrap.qed"
+input = "long-lines.txt"
+stdout = "foo-bar-baz-wrapped.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-wrapped.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:prefix() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "prefix"
+description = "qed:prefix() prepends the specified text to each line in the selected region"
+script = "prefix.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-prefixed.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-prefixed.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:suffix() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "suffix"
+description = "qed:suffix() appends the specified text to each line in the selected region"
+script = "suffix.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-suffixed.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-suffixed.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:number() ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "number"
+description = "qed:number() prefixes each line in the selected region with its line number"
+script = "number.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-numbered.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-numbered.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

@@ -1,0 +1,33 @@
+# tests/usecases/editor-integration/manifest.toml
+
+[[scenario]]
+id = "git-commit-cleanup"
+description = "trim trailing whitespace and remove git comment lines from a commit message file using --in-place"
+script = "git-commit-cleanup.qed"
+input = "commit-msg.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "commit-msg-clean.txt"
+exit_code = 0
+invoke = [
+  """
+  qed -f "$SCRIPT" --in-place "$INPUT" > "$STDOUT" 2> "$STDERR"
+  cp "$INPUT" "$OUTPUT"
+  """,
+]
+
+[[scenario]]
+id = "kubectl-enforce-limits"
+description = "insert resource limit lines after the limits: key using --in-place as an EDITOR substitute"
+script = "kubectl-enforce-limits.qed"
+input = "deployment.yaml"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "deployment-with-limits.yaml"
+exit_code = 0
+invoke = [
+  """
+  qed -f "$SCRIPT" --in-place "$INPUT" > "$STDOUT" 2> "$STDERR"
+  cp "$INPUT" "$OUTPUT"
+  """,
+]

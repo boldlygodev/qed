@@ -1,0 +1,91 @@
+# tests/stream-control/manifest.toml
+
+# ── qed:warn() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "warn"
+description = "qed:warn() emits the selected region to stderr and continues; the stream is unaffected"
+script = "warn.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "warn-region.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:fail() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "fail"
+description = "qed:fail() exits non-zero; lines before the selected region pass through, lines after are blocked"
+script = "fail.qed"
+input = "three-lines.txt"
+stdout = "foo.txt"
+stderr = "fail-region.txt"
+output = "foo.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]
+
+# ── qed:skip() ────────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "skip"
+description = "qed:skip() is a no-op passthrough; the selected region passes through unchanged"
+script = "skip.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:debug:count() ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "debug-count"
+description = "qed:debug:count() emits the match count to stderr; the stream is unaffected"
+script = "debug-count.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "debug-count.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:debug:print() ─────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "debug-print"
+description = "qed:debug:print() echoes the selected region to stderr; the stream is unaffected"
+script = "debug-print.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz.txt"
+stderr = "debug-print.txt"
+output = "foo-bar-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

@@ -1,0 +1,2 @@
+upper=qed:upper()
+at("bar") | \upper

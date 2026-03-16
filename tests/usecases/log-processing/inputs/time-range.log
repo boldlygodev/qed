@@ -1,0 +1,5 @@
+2026-02-26 08:59:00 INFO  pre-window event
+2026-02-26 09:00:00 INFO  window start
+2026-02-26 09:00:30 INFO  mid-window event
+2026-02-26 09:01:00 INFO  window end
+2026-02-26 09:01:30 INFO  post-window event

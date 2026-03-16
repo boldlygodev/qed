@@ -1,0 +1,2 @@
+target=/^func Old/
+before(target) | echo "// Deprecated: use New* equivalent instead."

@@ -1,0 +1,3 @@
+key=/^  annotations:/
+next_key=/^  [a-z]/
+from(key+) > to(next_key) | qed:delete()

@@ -1,0 +1,42 @@
+# tests/usecases/log-processing/manifest.toml
+
+[[scenario]]
+id = "extract-errors"
+description = "extract only ERROR lines from a log file using --extract"
+script = "extract-errors.qed"
+input = "app.log"
+stdout = "errors-only.log"
+stderr = "empty.txt"
+output = "errors-only.log"
+exit_code = 0
+invoke = [
+  """qed --extract "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed --extract -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "extract-time-range"
+description = "extract a time window from a log file using --extract with from > to inclusive boundaries"
+script = "extract-time-range.qed"
+input = "time-range.log"
+stdout = "time-range-extracted.log"
+stderr = "empty.txt"
+output = "time-range-extracted.log"
+exit_code = 0
+invoke = [
+  """qed --extract -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "reformat-timestamp"
+description = "reformat yyyy-mm-dd timestamps to dd/mm/yyyy in every log line using capture group replacement"
+script = "reformat-timestamp.qed"
+input = "app.log"
+stdout = "reformatted.log"
+stderr = "empty.txt"
+output = "reformatted.log"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

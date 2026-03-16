@@ -1,0 +1,1 @@
+at("bar") | false || at("bar") | qed:delete()

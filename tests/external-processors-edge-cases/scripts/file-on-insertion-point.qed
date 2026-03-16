@@ -1,0 +1,1 @@
+after("bar") | qed:file() | qed:upper()

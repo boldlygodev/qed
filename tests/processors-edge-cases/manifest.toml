@@ -1,0 +1,285 @@
+# ── qed:delete() edge cases ───────────────────────────────────────────────────
+
+[[scenario]]
+id = "delete-empty-input"
+description = "qed:delete() on empty input produces empty output"
+script = "delete-empty.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "delete-single-line"
+description = "qed:delete() on the only line in a single-line input produces empty output"
+script = "delete-single.qed"
+input = "single-line.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:duplicate() edge cases ────────────────────────────────────────────────
+
+[[scenario]]
+id = "duplicate-single-line"
+description = "qed:duplicate() on a single-line input emits that line twice"
+script = "duplicate-single.qed"
+input = "single-line.txt"
+stdout = "foo-foo.txt"
+stderr = "empty.txt"
+output = "foo-foo.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:upper() / qed:lower() edge cases ─────────────────────────────────────
+
+[[scenario]]
+id = "upper-empty-input"
+description = "qed:upper() on empty input produces empty output"
+script = "upper-empty.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "upper-single-line"
+description = "qed:upper() on a single-line input uppercases that line"
+script = "upper-single.qed"
+input = "single-line.txt"
+stdout = "foo-upper.txt"
+stderr = "empty.txt"
+output = "foo-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:replace() edge cases ──────────────────────────────────────────────────
+
+[[scenario]]
+id = "replace-literal-no-match"
+description = "qed:replace() where the literal does not appear in the region leaves the line unchanged"
+script = "replace-literal-no-match.qed"
+input = "replace-source.txt"
+stdout = "replace-source.txt"
+stderr = "empty.txt"
+output = "replace-source.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "replace-regex-no-match"
+description = "qed:replace() where the regex matches nothing in the region leaves the line unchanged"
+script = "replace-regex-no-match.qed"
+input = "replace-source.txt"
+stdout = "replace-source.txt"
+stderr = "empty.txt"
+output = "replace-source.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "replace-multiple-occurrences"
+description = "qed:replace() replaces all occurrences of the pattern within the selected region"
+script = "replace-multiple-occurrences.qed"
+input = "replace-source.txt"
+stdout = "replace-multiple-result.txt"
+stderr = "empty.txt"
+output = "replace-multiple-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "replace-adjacent-matches"
+description = "qed:replace() with adjacent matches replaces each span without skipping"
+script = "replace-adjacent-matches.qed"
+input = "replace-source.txt"
+stdout = "replace-adjacent-result.txt"
+stderr = "empty.txt"
+output = "replace-adjacent-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:substring() edge cases ────────────────────────────────────────────────
+
+[[scenario]]
+id = "substring-no-match-on-line"
+description = "qed:substring() on a line where the pattern does not match passes the line through unchanged"
+script = "substring-no-match-on-line.qed"
+input = "substring-source.txt"
+stdout = "substring-no-match-result.txt"
+stderr = "empty.txt"
+output = "substring-no-match-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "substring-multiple-spans"
+description = "qed:substring() with multiple spans on a line keeps only the first match (RE2 leftmost semantics)"
+script = "substring-multiple-matches.qed"
+input = "substring-source.txt"
+stdout = "substring-multiple-result.txt"
+stderr = "empty.txt"
+output = "substring-multiple-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:trim() edge cases ─────────────────────────────────────────────────────
+
+[[scenario]]
+id = "trim-no-whitespace"
+description = "qed:trim() on lines with no leading or trailing whitespace leaves them unchanged"
+script = "trim-no-whitespace.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "trim-whitespace-only-lines"
+description = "qed:trim() on whitespace-only lines produces empty lines"
+script = "trim-whitespace-only.qed"
+input = "whitespace-lines.txt"
+stdout = "trim-whitespace-result.txt"
+stderr = "empty.txt"
+output = "trim-whitespace-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:dedent() edge cases ───────────────────────────────────────────────────
+
+[[scenario]]
+id = "dedent-mixed-indent"
+description = "qed:dedent() removes only the common leading whitespace prefix; lines with more indent retain their relative indent"
+script = "dedent-mixed-indent.qed"
+input = "mixed-indent.txt"
+stdout = "dedent-mixed-result.txt"
+stderr = "empty.txt"
+output = "dedent-mixed-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:wrap() edge cases ─────────────────────────────────────────────────────
+
+[[scenario]]
+id = "wrap-short-lines"
+description = "qed:wrap() on lines already under the wrap width leaves them unchanged"
+script = "wrap-short-lines.qed"
+input = "short-lines.txt"
+stdout = "short-lines.txt"
+stderr = "empty.txt"
+output = "short-lines.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:number() edge cases ───────────────────────────────────────────────────
+
+[[scenario]]
+id = "number-empty-input"
+description = "qed:number() on empty input produces empty output"
+script = "number-empty.qed"
+input = "empty.txt"
+stdout = "empty.txt"
+stderr = "empty.txt"
+output = "empty.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "number-single-line"
+description = "qed:number() on a single-line input prefixes the line with 1"
+script = "number-single.qed"
+input = "single-line.txt"
+stdout = "number-single-result.txt"
+stderr = "empty.txt"
+output = "number-single-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+# ── qed:copy() / qed:move() edge cases ───────────────────────────────────────
+
+[[scenario]]
+id = "copy-range"
+description = "qed:copy() with a from > to region as the source copies the entire range to the destination"
+script = "copy-range.qed"
+input = "copy-move-source.txt"
+stdout = "copy-range-result.txt"
+stderr = "empty.txt"
+output = "copy-range-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "move-range"
+description = "qed:move() with a from > to region removes the source and inserts it at the destination"
+script = "move-range.qed"
+input = "copy-move-source.txt"
+stdout = "move-range-result.txt"
+stderr = "empty.txt"
+output = "move-range-result.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

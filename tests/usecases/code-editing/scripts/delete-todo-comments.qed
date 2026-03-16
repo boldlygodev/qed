@@ -1,0 +1,1 @@
+at(/^\s*\/\/\s*TODO:/) | qed:delete()

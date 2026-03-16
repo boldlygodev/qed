@@ -1,0 +1,1 @@
+at(/\{\{token\}\}/) | qed:replace("{{token}}", qed:random(128, alphabet:alnum))

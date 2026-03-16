@@ -1,0 +1,1 @@
+at(/foo/) > at(/bar/) | qed:delete()

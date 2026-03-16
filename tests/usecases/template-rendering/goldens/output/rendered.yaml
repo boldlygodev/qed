@@ -1,0 +1,3 @@
+name: myservice
+version: 3.1.0
+image: myrepo/myservice:3.1.0

@@ -1,0 +1,34 @@
+# tests/usecases/code-generation/manifest.toml
+
+[[scenario]]
+id = "inject-between-markers"
+description = "replace the region between generation markers with fresh output from an external generator"
+script = "inject-between-markers.qed"
+input = "routes.go"
+stdout = "routes-generated.go"
+stderr = "empty.txt"
+output = "routes-generated.go"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "generate-routes"
+input = "routes-region.txt"
+stdout = "generated-routes.txt"
+
+[[scenario]]
+id = "stamp-build-version"
+description = "replace the version sentinel with a build version injected via environment variable"
+script = "stamp-build-version.qed"
+input = "version.go"
+stdout = "version-stamped.go"
+stderr = "empty.txt"
+output = "version-stamped.go"
+exit_code = 0
+env = { BUILD_VERSION = "1.4.2" }
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

@@ -1,0 +1,29 @@
+# tests/usecases/template-rendering/manifest.toml
+
+[[scenario]]
+id = "replace-env-placeholders"
+description = "replace multiple {{PLACEHOLDER}} tokens with environment variable values using sequential statements"
+script = "replace-env-placeholders.qed"
+input = "template.yaml"
+stdout = "rendered.yaml"
+stderr = "empty.txt"
+output = "rendered.yaml"
+exit_code = 0
+env = { APP_NAME = "myservice", VERSION = "3.1.0" }
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario]]
+id = "inject-uuid"
+description = "replace a {{uuid}} placeholder with a generated UUID v7; output matches UUID v7 format"
+script = "inject-uuid.qed"
+input = "template.sql"
+stdout = "uuid-injected.sql.*"
+stderr = "empty.txt"
+output = "uuid-injected.sql.*"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]

@@ -1,0 +1,140 @@
+# tests/external-processors/manifest.toml
+
+# ── stdin handoff ─────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "external-stdin"
+description = "the selected region is passed to an external command as stdin; its stdout replaces the region"
+script = "external-stdin.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "upcase"
+input = "three-lines.txt"
+stdout = "three-lines-upper.txt"
+
+# ── qed:file() materialization ────────────────────────────────────────────────
+
+[[scenario]]
+id = "external-file"
+description = "qed:file() materializes the selected region to a temp file; ${QED_FILE} is injected into the command environment"
+script = "external-file.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-sorted.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-sorted.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "sortfile"
+expected_args = ["${QED_FILE}"]
+input = "three-lines.txt"
+stdout = "three-lines-sorted.txt"
+
+# ── external command with arguments ───────────────────────────────────────────
+
+[[scenario]]
+id = "external-args"
+description = "external commands can be invoked with arguments; arguments are passed through to the command"
+script = "external-args.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-prefixed.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-prefixed.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "prefixer"
+expected_args = ["> "]
+input = "three-lines.txt"
+stdout = "three-lines-prefixed.txt"
+
+# ── alias bypass ──────────────────────────────────────────────────────────────
+
+[[scenario]]
+id = "alias-bypass"
+description = "\\command bypasses alias resolution and invokes the command from PATH directly"
+script = "alias-bypass.qed"
+input = "three-lines.txt"
+stdout = "bar-upper.txt"
+stderr = "empty.txt"
+output = "bar-upper.txt"
+exit_code = 0
+invoke = [
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "upper"
+input = "bar.txt"
+stdout = "bar-with-marker.txt"
+
+# ── processor pipeline composition ────────────────────────────────────────────
+
+[[scenario]]
+id = "external-pipeline"
+description = "external tools compose in a processor pipeline; output of each is passed as stdin to the next"
+script = "external-pipeline.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-baz-upper.txt"
+stderr = "empty.txt"
+output = "foo-bar-baz-upper.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "upcase"
+input = "three-lines.txt"
+stdout = "three-lines-upper.txt"
+
+[[scenario.mock]]
+command = "passthrough"
+input = "three-lines-upper.txt"
+stdout = "three-lines-upper.txt"
+
+# ── external tool in replace pipeline ─────────────────────────────────────────
+
+[[scenario]]
+id = "external-replace-pipeline"
+description = "an external tool used as the pipeline replacement argument in qed:replace() receives the matched span as stdin"
+script = "external-replace-pipeline.qed"
+input = "json-lines.txt"
+stdout = "json-name-extracted.txt"
+stderr = "empty.txt"
+output = "json-name-extracted.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "extract-name"
+expected_args = ["-r", ".name"]
+input = "alice-json.txt"
+stdout = "alice.txt"
+
+[[scenario.mock]]
+command = "extract-name"
+expected_args = ["-r", ".name"]
+input = "bob-json.txt"
+stdout = "bob.txt"
