@@ -4,7 +4,7 @@
 
 - [x] Phase 0 — Workspace Scaffold
 - [x] Phase 1 — Test Harness Infrastructure
-- [ ] Phase 2 — Core Types and Fragmentation Algorithm
+- [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [ ] Phase 3 — Parser POC Evaluation
 - [ ] Phase 4 — Walking Skeleton
 - [ ] Phase 5 — Full Parser
@@ -52,21 +52,21 @@
 - [x] Unit tests for `Buffer::new()` (line offset construction) and `Buffer::slice()` (correct line extraction)
 - [x] Checkpoint: buffer unit tests pass, `cargo build --workspace` clean
 
-### 2d — Fragmentation algorithm
+### 2d — Fragmentation algorithm ✓
 
-- [ ] Implement parallel match collection using `rayon`
-- [ ] Boundary event decomposition (`Start` / `End` events per match)
-- [ ] Sort events (line ascending, `Start` before `End`, `StatementId` ascending)
-- [ ] Sweep with `BTreeSet` active tag set producing the `FragmentList`
-- [ ] `inclusive` boundary logic per `CompiledPattern`
-- [ ] `nth` filtering on match results
-- [ ] Unit test: single selector, single match → one `Selected` fragment flanked by `Passthrough`
-- [ ] Unit test: single selector, no match → all `Passthrough`
-- [ ] Unit test: two overlapping selectors → multi-tagged `Selected` fragment
-- [ ] Unit test: `nth:2` → only second match selected
-- [ ] Unit test: `from > to` compound → correct inclusive/exclusive boundary variants
-- [ ] Unit test: negated pattern → lines not matching are selected
-- [ ] Checkpoint: all fragmentation unit tests pass
+- [x] Implement parallel match collection using `rayon`
+- [x] Boundary event decomposition (`Start` / `End` events per match)
+- [x] Sort events (line ascending, `Start` before `End`, `StatementId` ascending)
+- [x] Sweep with `BTreeSet` active tag set producing the `FragmentList`
+- [x] `inclusive` boundary logic per `CompiledPattern`
+- [x] `nth` filtering on match results
+- [x] Unit test: single selector, single match → one `Selected` fragment flanked by `Passthrough`
+- [x] Unit test: single selector, no match → all `Passthrough`
+- [x] Unit test: two overlapping selectors → multi-tagged `Selected` fragment
+- [x] Unit test: `nth:2` → only second match selected
+- [x] Unit test: `from > to` compound → correct inclusive/exclusive boundary variants
+- [x] Unit test: negated pattern → lines not matching are selected
+- [x] Checkpoint: all fragmentation unit tests pass
 
 ---
 
@@ -85,3 +85,9 @@ See `docs/qed-roadmap.md` for full details.
 ## Phases 5–12
 
 See `docs/qed-roadmap.md` for full details.
+
+---
+
+## Deferred
+
+- [ ] Switch `collect_all_matches` in `exec/fragment.rs` to `rayon` parallel iteration (dependency already present)

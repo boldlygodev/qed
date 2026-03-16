@@ -1,3 +1,5 @@
+mod fragment;
+
 use crate::{SelectorId, StatementId};
 
 // ── Line ranges ─────────────────────────────────────────────────────
@@ -68,6 +70,11 @@ impl Buffer {
     /// Number of lines in the buffer.
     pub(crate) fn line_count(&self) -> usize {
         self.line_offsets.len()
+    }
+
+    /// Text of a single line (including its trailing newline, if any).
+    pub(crate) fn line(&self, idx: usize) -> &str {
+        self.slice(LineRange { start: idx, end: idx + 1 })
     }
 
     /// Extract the text for a half-open line range.
