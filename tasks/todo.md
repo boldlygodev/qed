@@ -1,0 +1,87 @@
+# qed — Implementation TODOs
+
+## Status
+
+- [x] Phase 0 — Workspace Scaffold
+- [x] Phase 1 — Test Harness Infrastructure
+- [ ] Phase 2 — Core Types and Fragmentation Algorithm
+- [ ] Phase 3 — Parser POC Evaluation
+- [ ] Phase 4 — Walking Skeleton
+- [ ] Phase 5 — Full Parser
+- [ ] Phase 6 — Full Compiler
+- [ ] Phase 7 — Processor Coverage
+- [ ] Phase 8 — Generation Processors
+- [ ] Phase 9 — Invocation Features
+- [ ] Phase 10 — Diagnostics
+- [ ] Phase 11 — Edge Cases and Use Cases
+- [ ] Phase 12 — Release Polish
+
+---
+
+## Phase 2 — Core Types and Fragmentation Algorithm
+
+### 2a — Foundation types
+
+- [ ] `span.rs`: define `Span { start: usize, end: usize }` and `Spanned<T> { node: T, span: Span }`
+- [ ] Identity newtypes: `StatementId(usize)`, `SelectorId(usize)` with accessor methods
+- [ ] `error.rs`: `CompileError` enum (all variants from implementation design), `SymbolKind` enum
+- [ ] Wire module declarations in `lib.rs` (`mod span`, `mod error`, `mod parse`, `mod compile`, `mod exec`, `mod processor`)
+- [ ] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
+
+### 2b — AST types
+
+- [ ] `parse/ast.rs`: `Program`, `Statement`, `SelectActionNode`
+- [ ] `parse/ast.rs`: `Selector`, `SimpleSelector`, `SelectorOp`
+- [ ] `parse/ast.rs`: `PatternValue`, `PatternRef`, `PatternRefValue`
+- [ ] `parse/ast.rs`: `ProcessorChain`, `Processor`, `QedProcessor`, `ExternalProcessor`
+- [ ] `parse/ast.rs`: `QedArg`, `ExternalArg`
+- [ ] `parse/ast.rs`: `Fallback`
+- [ ] `parse/ast.rs`: `Param`, `ParamValue`
+- [ ] `parse/ast.rs`: `NthExpr`, `NthTerm`
+- [ ] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
+
+### 2c — Exec and IR types + Processor trait
+
+- [ ] `exec/`: `LineRange { start, end }`, `FragmentContent` (`Borrowed(LineRange)` / `Owned(String)`), `Fragment` (`Passthrough(FragmentContent)` / `Selected { content, tags }`), `FragmentList` type alias
+- [ ] `exec/`: `Buffer { content: String, line_offsets: Vec<usize> }` with constructor and `slice(LineRange) -> &str`
+- [ ] `compile/`: `Script { statements, selectors }`, `Statement { id, selector, processor, fallback }`
+- [ ] `compile/`: `RegistryEntry` (`Simple(CompiledSelector)` / `Compound(CompoundSelector)`), `CompiledSelector`, `CompoundSelector`
+- [ ] `compile/`: `SelectorOp` with per-variant fields, `CompiledPattern { matcher, negated, inclusive }`, `PatternMatcher` (`Literal(String)` / `Regex(regex::Regex)`)
+- [ ] `compile/`: `OnError` enum
+- [ ] `processor/`: `Processor` trait (`fn execute(&self, input: String) -> Result<String, ProcessorError>`), `ProcessorError` enum (`NoMatch`, `ProcessorFailed`, `ExternalFailed`)
+- [ ] Unit tests for `Buffer::new()` (line offset construction) and `Buffer::slice()` (correct line extraction)
+- [ ] Checkpoint: buffer unit tests pass, `cargo build --workspace` clean
+
+### 2d — Fragmentation algorithm
+
+- [ ] Implement parallel match collection using `rayon`
+- [ ] Boundary event decomposition (`Start` / `End` events per match)
+- [ ] Sort events (line ascending, `Start` before `End`, `StatementId` ascending)
+- [ ] Sweep with `BTreeSet` active tag set producing the `FragmentList`
+- [ ] `inclusive` boundary logic per `CompiledPattern`
+- [ ] `nth` filtering on match results
+- [ ] Unit test: single selector, single match → one `Selected` fragment flanked by `Passthrough`
+- [ ] Unit test: single selector, no match → all `Passthrough`
+- [ ] Unit test: two overlapping selectors → multi-tagged `Selected` fragment
+- [ ] Unit test: `nth:2` → only second match selected
+- [ ] Unit test: `from > to` compound → correct inclusive/exclusive boundary variants
+- [ ] Unit test: negated pattern → lines not matching are selected
+- [ ] Checkpoint: all fragmentation unit tests pass
+
+---
+
+## Phase 3 — Parser POC Evaluation
+
+See `docs/qed-roadmap.md` for full details.
+
+---
+
+## Phase 4 — Walking Skeleton
+
+See `docs/qed-roadmap.md` for full details.
+
+---
+
+## Phases 5–12
+
+See `docs/qed-roadmap.md` for full details.
