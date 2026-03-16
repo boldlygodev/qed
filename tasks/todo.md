@@ -28,17 +28,17 @@
 - [x] Wire module declarations in `lib.rs` (`mod span`, `mod error`, `mod parse`, `mod compile`, `mod exec`, `mod processor`)
 - [x] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
 
-### 2b — AST types
+### 2b — AST types ✓
 
-- [ ] `parse/ast.rs`: `Program`, `Statement`, `SelectActionNode`
-- [ ] `parse/ast.rs`: `Selector`, `SimpleSelector`, `SelectorOp`
-- [ ] `parse/ast.rs`: `PatternValue`, `PatternRef`, `PatternRefValue`
-- [ ] `parse/ast.rs`: `ProcessorChain`, `Processor`, `QedProcessor`, `ExternalProcessor`
-- [ ] `parse/ast.rs`: `QedArg`, `ExternalArg`
-- [ ] `parse/ast.rs`: `Fallback`
-- [ ] `parse/ast.rs`: `Param`, `ParamValue`
-- [ ] `parse/ast.rs`: `NthExpr`, `NthTerm`
-- [ ] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
+- [x] `parse/ast.rs`: `Program`, `Statement`, `SelectActionNode`
+- [x] `parse/ast.rs`: `Selector`, `SimpleSelector`, `SelectorOp`
+- [x] `parse/ast.rs`: `PatternValue`, `PatternRef`, `PatternRefValue`
+- [x] `parse/ast.rs`: `ProcessorChain`, `Processor`, `QedProcessor`, `ExternalProcessor`
+- [x] `parse/ast.rs`: `QedArg`, `ExternalArg`
+- [x] `parse/ast.rs`: `Fallback`
+- [x] `parse/ast.rs`: `Param`, `ParamValue`
+- [x] `parse/ast.rs`: `NthExpr`, `NthTerm`
+- [x] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
 
 ### 2c — Exec and IR types + Processor trait
 

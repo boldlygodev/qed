@@ -3,7 +3,7 @@
 
 pub mod span;
 pub mod error;
-mod parse;
+pub(crate) mod parse;
 mod compile;
 mod exec;
 mod processor;
