@@ -20,13 +20,13 @@
 
 ## Phase 2 — Core Types and Fragmentation Algorithm
 
-### 2a — Foundation types
+### 2a — Foundation types ✓
 
-- [ ] `span.rs`: define `Span { start: usize, end: usize }` and `Spanned<T> { node: T, span: Span }`
-- [ ] Identity newtypes: `StatementId(usize)`, `SelectorId(usize)` with accessor methods
-- [ ] `error.rs`: `CompileError` enum (all variants from implementation design), `SymbolKind` enum
-- [ ] Wire module declarations in `lib.rs` (`mod span`, `mod error`, `mod parse`, `mod compile`, `mod exec`, `mod processor`)
-- [ ] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
+- [x] `span.rs`: define `Span { start: usize, end: usize }` and `Spanned<T> { node: T, span: Span }`
+- [x] Identity newtypes: `StatementId(usize)`, `SelectorId(usize)` with accessor methods
+- [x] `error.rs`: `CompileError` enum (all variants from implementation design), `SymbolKind` enum
+- [x] Wire module declarations in `lib.rs` (`mod span`, `mod error`, `mod parse`, `mod compile`, `mod exec`, `mod processor`)
+- [x] Checkpoint: `cargo build --workspace` and `cargo clippy --workspace` clean
 
 ### 2b — AST types
 
