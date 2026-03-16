@@ -8,17 +8,17 @@ For phase details, deliverables, and checkpoints see `docs/qed-roadmap.md`.
 - [x] **Phase 0 — Workspace Scaffold**
   `cargo build --workspace` clean with both feature flag configurations.
 
-- [ ] **Phase 1 — Core Types**
-  Buffer and fragment unit tests pass.
+- [x] **Phase 1 — Test Harness Infrastructure**
+  `cargo test --package qed-tests` registers all 396 trials (failing).
 
-- [ ] **Phase 2 — Fragmentation Algorithm**
-  All fragmentation unit tests pass.
+- [ ] **Phase 2 — Core Types and Fragmentation Algorithm**
+  Buffer, fragment, and fragmentation unit tests pass.
 
 - [ ] **Phase 3 — Parser POC Evaluation**
   One parser remains, feature flag routing removed, workspace builds clean.
 
-- [ ] **Phase 4 — Walking Skeleton + Harness**
-  `cargo test --package qed-tests selectors::at-literal::0` passes.
+- [ ] **Phase 4 — Walking Skeleton**
+  `cargo test --package qed-tests selectors::at-literal-single-match::0` passes.
 
 - [ ] **Phase 5 — Full Parser**
   All grammar productions parsed and unit-tested; `selectors` suite going green.
