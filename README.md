@@ -241,11 +241,11 @@ from("start") >
 Selects lines matching a pattern.
 With no pattern, selects every line in the stream.
 
-| Parameter  | Type                    | Default         | Description                                |
-| ---------- | ----------------------- | --------------- | ------------------------------------------ | ------ | ----------------------------- |
-| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to select all lines |
-| `nth`      | nth-expr                | all occurrences | Which occurrences to select                |
-| `on_error` | `fail`                  | `warn`          | `skip`                                     | `fail` | Behaviour when no lines match |
+| Parameter  | Type                          | Default         | Description                                |
+| ---------- | ----------------------------- | --------------- | ------------------------------------------ |
+| `pattern`  | literal, regex, or name       | —               | Pattern to match; omit to select all lines |
+| `nth`      | nth-expr                      | all occurrences | Which occurrences to select                |
+| `on_error` | `fail` \| `warn` \| `skip`    | `fail`          | Behaviour when no lines match              |
 
 ```sh
 qed 'at("bar") | qed:delete()'              # lines containing "bar"
@@ -261,11 +261,11 @@ Insertion point immediately after lines matching `pattern`.
 The processor receives empty stdin; its stdout is inserted at the cursor.
 With no pattern, targets the end of the stream.
 
-| Parameter  | Type                    | Default         | Description                                    |
-| ---------- | ----------------------- | --------------- | ---------------------------------------------- | ------ | ----------------------------- |
-| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to target end of stream |
-| `nth`      | nth-expr                | all occurrences | Which occurrences to insert after              |
-| `on_error` | `fail`                  | `warn`          | `skip`                                         | `fail` | Behaviour when no lines match |
+| Parameter  | Type                          | Default         | Description                                    |
+| ---------- | ----------------------------- | --------------- | ---------------------------------------------- |
+| `pattern`  | literal, regex, or name       | —               | Pattern to match; omit to target end of stream |
+| `nth`      | nth-expr                      | all occurrences | Which occurrences to insert after              |
+| `on_error` | `fail` \| `warn` \| `skip`    | `fail`          | Behaviour when no lines match                  |
 
 ```sh
 qed 'after("header") | echo "new line"'   # insert after each "header" line
@@ -277,11 +277,11 @@ qed 'after() | cat footer.txt'            # append to end of stream
 Insertion point immediately before lines matching `pattern`.
 With no pattern, targets the beginning of the stream.
 
-| Parameter  | Type                    | Default         | Description                                      |
-| ---------- | ----------------------- | --------------- | ------------------------------------------------ | ------ | ----------------------------- |
-| `pattern`  | literal, regex, or name | —               | Pattern to match; omit to target start of stream |
-| `nth`      | nth-expr                | all occurrences | Which occurrences to insert before               |
-| `on_error` | `fail`                  | `warn`          | `skip`                                           | `fail` | Behaviour when no lines match |
+| Parameter  | Type                          | Default         | Description                                      |
+| ---------- | ----------------------------- | --------------- | ------------------------------------------------ |
+| `pattern`  | literal, regex, or name       | —               | Pattern to match; omit to target start of stream |
+| `nth`      | nth-expr                      | all occurrences | Which occurrences to insert before               |
+| `on_error` | `fail` \| `warn` \| `skip`    | `fail`          | Behaviour when no lines match                    |
 
 ```sh
 qed 'before(/^func /) | cat license.txt'  # insert before every function
@@ -293,12 +293,12 @@ qed 'before() | echo "---"'               # prepend to start of stream
 Selects a range of lines between two boundary patterns.
 Boundaries are exclusive by default — use `+` on a boundary pattern to make it inclusive.
 
-| Parameter      | Type                    | Default   | Description                                      |
-| -------------- | ----------------------- | --------- | ------------------------------------------------ | ------ | ------------------------------------------------------------ |
-| `from` pattern | literal, regex, or name | required  | Start boundary                                   |
-| `to` pattern   | literal, regex, or name | required  | End boundary                                     |
-| `+` suffix     | boundary modifier       | exclusive | Include the matching boundary line in the region |
-| `on_error`     | `fail`                  | `warn`    | `skip`                                           | `fail` | Behaviour when boundaries are not found; specified on `from` |
+| Parameter      | Type                          | Default   | Description                                                  |
+| -------------- | ----------------------------- | --------- | ------------------------------------------------------------ |
+| `from` pattern | literal, regex, or name       | required  | Start boundary                                               |
+| `to` pattern   | literal, regex, or name       | required  | End boundary                                                 |
+| `+` suffix     | boundary modifier             | exclusive | Include the matching boundary line in the region             |
+| `on_error`     | `fail` \| `warn` \| `skip`    | `fail`    | Behaviour when boundaries are not found; specified on `from` |
 
 ```sh
 qed 'from("start") > to("end") | qed:delete()'       # exclude both boundaries
@@ -602,11 +602,11 @@ and with `after`/`before` for direct insertion.
 
 Generates a UUID.
 
-| Parameter   | Type   | Default | Description                                                            |
-| ----------- | ------ | ------- | ---------------------------------------------------------------------- | ------ | ------------ | --------------- |
-| `version`   | `4`    | `5`     | `7`                                                                    | `7`    | UUID version |
-| `namespace` | `url`  | `dns`   | `oid`                                                                  | `x500` | —            | Required for v5 |
-| `name`      | string | —       | Required for v5; hashed with namespace to produce a deterministic UUID |
+| Parameter   | Type                              | Default | Description                                                            |
+| ----------- | --------------------------------- | ------- | ---------------------------------------------------------------------- |
+| `version`   | `4` \| `5` \| `7`                 | `7`     | UUID version                                                           |
+| `namespace` | `url` \| `dns` \| `oid` \| `x500` | —       | Required for v5                                                        |
+| `name`      | string                            | —       | Required for v5; hashed with namespace to produce a deterministic UUID |
 
 ```sh
 qed 'at(/\{\{uuid\}\}/) | qed:replace("{{uuid}}", qed:uuid())'
@@ -619,10 +619,10 @@ after(header) | qed:uuid()     # insert directly as a new line
 
 Generates a timestamp.
 
-| Parameter  | Type                        | Default         | Description             |
-| ---------- | --------------------------- | --------------- | ----------------------- | ---------------------- | --------- | ------------- |
-| `format`   | `iso8601`                   | `unix`          | `datetime`              | custom strftime string | `iso8601` | Output format |
-| `timezone` | IANA timezone name or `UTC` | system timezone | Timezone for formatting |
+| Parameter  | Type                                                        | Default         | Description             |
+| ---------- | ----------------------------------------------------------- | --------------- | ----------------------- |
+| `format`   | `iso8601` \| `unix` \| `datetime` \| custom strftime string | `iso8601`       | Output format           |
+| `timezone` | IANA timezone name or `UTC`                                 | system timezone | Timezone for formatting |
 
 ```sh
 qed 'at(/\{\{ts\}\}/) | qed:replace("{{ts}}", qed:timestamp())'
