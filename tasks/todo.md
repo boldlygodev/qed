@@ -101,7 +101,82 @@
 
 ---
 
-## Phases 5–12
+## Phase 5 — Full Parser
+
+### 5a — Patterns (regex, negation, inclusive, single-quoted strings)
+
+- [ ] Cursor: `eat_single_quoted_string_literal()` for `'...'` with `\'`, `\\` escapes
+- [ ] Cursor: `eat_regex_literal()` for `/regex/` with `\/` escapes
+- [ ] Cursor: `eat_identifier()` — extract reusable `[a-zA-Z_][a-zA-Z0-9_]*` method
+- [ ] Parser: `parse_pattern_ref()` — `!` prefix, string/regex/identifier dispatch, `+` suffix
+- [ ] Parser: `parse_pattern_value()` — string vs regex discrimination
+- [ ] Parser: rewrite `parse_selector` to call `parse_pattern_ref`
+- [ ] Parser: skip `# comment` lines in `eat_whitespace_and_newlines`
+- [ ] Parser: handle shebang (`#!`) in `parse_program`
+- [ ] Unit tests for all pattern-ref forms (~12 tests)
+- [ ] Checkpoint: `at-regex-match`, `at-negated`, `from-inclusive`, `to-inclusive`, `patterns::inline-*` green
+
+### 5b — Selector parameters + compound selectors
+
+- [ ] Cursor: `peek_at(offset)` for lookahead (disambiguate `|` vs `||`)
+- [ ] Parser: `parse_param_list()` — comma-separated `name:value` pairs
+- [ ] Parser: `parse_param_value()` — identifier, string, integer, nth-expr, pattern-ref
+- [ ] Parser: factor `parse_nth_expr` internals into `parse_nth_expr_from_cursor()` for mid-stream use
+- [ ] Parser: nth `,` vs param `,` disambiguation (lookahead: `[a-zA-Z_]` + `:` = next param)
+- [ ] Parser: selector params `(pattern, nth:..., on_error:...)`
+- [ ] Parser: compound selectors `from(p) > to(p)` with `>` operator
+- [ ] Parser: implicit line continuation after `>` and `,`
+- [ ] Compiler: compound selector compilation (multi-step → `RegistryEntry::Compound`)
+- [ ] Compiler: wire `nth` param → `NthExpr` on compiled selector
+- [ ] Compiler: wire `on_error` param → `OnError` enum
+- [ ] Compiler: support `at()` entire-stream (empty pattern)
+- [ ] Compiler: support `after`/`before`/`from`/`to` selector ops
+- [ ] Unit tests for param parsing, compound selectors (~15 tests)
+- [ ] Checkpoint: `from-to-*`, `at-narrowing`, `nth-*`, `on-error-*`, `after-literal`, `before-literal`, `from-literal`, `to-literal` green
+
+### 5c — Processor arguments + chains + external processors
+
+- [ ] Cursor: `eat_unquoted_arg()` for external processor args
+- [ ] Parser: rewrite `parse_processor` — dispatch `qed:*` vs external
+- [ ] Parser: rewrite `parse_qed_processor` — `qed:name(args, params)` with positional + named args
+- [ ] Parser: colon-separated processor names (`qed:debug:count()`)
+- [ ] Parser: nested processor chain as arg (`qed:replace("x", qed:upper())`)
+- [ ] Parser: `parse_external_processor()` — command/path, escaped `\`, quoted/unquoted args
+- [ ] Parser: rewrite `parse_processor_chain` for multi-processor piping
+- [ ] Parser: `|` vs `||` resolution (1-byte lookahead)
+- [ ] Parser: implicit line continuation after `|`
+- [ ] Compiler: register `UpperProcessor` and `LowerProcessor`
+- [ ] Compiler: processor chain composition
+- [ ] Unit tests for all processor forms (~18 tests)
+- [ ] Checkpoint: `at-entire-stream` green, chain parsing doesn't regress
+
+### 5d — Definitions + fallback + line continuation
+
+- [ ] Parser: `parse_pattern_def()` — `identifier = pattern-value`
+- [ ] Parser: `parse_alias_def()` — `identifier = processor-chain`
+- [ ] Parser: update `parse_statement` — disambiguate PatternDef vs AliasDef vs SelectAction
+- [ ] Parser: fallback `||` in `parse_select_action` — select-action or processor-chain
+- [ ] Parser: implicit line continuation after `||`
+- [ ] Parser: semicolons as statement separators
+- [ ] Compiler: symbol table — collect `PatternDef` and `AliasDef` entries
+- [ ] Compiler: resolve `PatternRefValue::Named` through symbol table
+- [ ] Compiler: fallback compilation on `Statement`
+- [ ] Unit tests for definitions, fallback, semicolons, line continuation (~15 tests)
+- [ ] Checkpoint: `patterns::named-*`, script-file scenarios green
+
+### 5e — Error recovery + polish
+
+- [ ] Parser: improved error recovery — skip to next statement boundary
+- [ ] Parser: span accuracy audit across all productions
+- [ ] Parser: edge cases — empty program, comment-only, EOF without newline
+- [ ] Parser: `\` line continuation in external processor expressions
+- [ ] Parser: trailing whitespace after `\` → hard error
+- [ ] Unit tests for error recovery, spans, edge cases (~10 tests)
+- [ ] Checkpoint: all parser unit tests pass, grammar is complete
+
+---
+
+## Phases 6–12
 
 See `docs/qed-roadmap.md` for full details.
 

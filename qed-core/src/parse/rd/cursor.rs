@@ -23,6 +23,11 @@ impl<'src> Cursor<'src> {
         self.pos
     }
 
+    /// Set the cursor position (for backtracking).
+    pub(super) fn set_pos(&mut self, pos: usize) {
+        self.pos = pos;
+    }
+
     /// True when all input has been consumed.
     pub(super) fn is_eof(&self) -> bool {
         self.pos >= self.source.len()
@@ -103,6 +108,88 @@ impl<'src> Cursor<'src> {
                 Some(ch) => value.push(ch as char),
             }
         }
+    }
+
+    /// Peek at a byte at the given offset from the current position without consuming.
+    pub(super) fn peek_at(&self, offset: usize) -> Option<u8> {
+        self.source.as_bytes().get(self.pos + offset).copied()
+    }
+
+    /// Parse a single-quoted string literal, consuming the opening and closing `'`.
+    /// Returns the inner content with basic escape handling (`\'`, `\\`).
+    /// Assumes the cursor is positioned at the opening `'`.
+    pub(super) fn eat_single_quoted_string_literal(&mut self) -> Option<String> {
+        if self.peek() != Some(b'\'') {
+            return None;
+        }
+        self.advance(); // consume opening '
+
+        let mut value = String::new();
+        loop {
+            match self.advance() {
+                None => return None, // unterminated string
+                Some(b'\'') => return Some(value),
+                Some(b'\\') => match self.advance() {
+                    Some(b'\'') => value.push('\''),
+                    Some(b'\\') => value.push('\\'),
+                    Some(ch) => {
+                        value.push('\\');
+                        value.push(ch as char);
+                    }
+                    None => return None,
+                },
+                Some(ch) => value.push(ch as char),
+            }
+        }
+    }
+
+    /// Parse a regex literal `/pattern/`, consuming the opening and closing `/`.
+    /// Returns the inner content with `\/` escape handling.
+    /// Assumes the cursor is positioned at the opening `/`.
+    pub(super) fn eat_regex_literal(&mut self) -> Option<String> {
+        if self.peek() != Some(b'/') {
+            return None;
+        }
+        self.advance(); // consume opening /
+
+        let mut value = String::new();
+        loop {
+            match self.advance() {
+                None => return None, // unterminated regex
+                Some(b'/') => return Some(value),
+                Some(b'\\') => match self.peek() {
+                    Some(b'/') => {
+                        self.advance();
+                        value.push('/');
+                    }
+                    _ => {
+                        // Keep the backslash — it's a regex escape
+                        value.push('\\');
+                    }
+                },
+                Some(ch) => value.push(ch as char),
+            }
+        }
+    }
+
+    /// Parse an identifier: `[a-zA-Z_][a-zA-Z0-9_]*`.
+    /// Returns `None` if the next byte is not a valid identifier start.
+    pub(super) fn eat_identifier(&mut self) -> Option<String> {
+        let start = self.pos;
+        match self.peek() {
+            Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
+                self.advance();
+            }
+            _ => return None,
+        }
+        while let Some(b) = self.peek() {
+            if b.is_ascii_alphanumeric() || b == b'_' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        Some(self.slice_from(start).to_owned())
     }
 
     /// Try to consume a specific ASCII keyword. Returns true if matched.

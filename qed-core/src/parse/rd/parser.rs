@@ -9,11 +9,21 @@
 //! next newline and attempts the next statement.
 
 use crate::parse::ast::{
-    NthExpr, NthTerm, PatternRef, PatternRefValue, PatternValue, ProcessorChain, Program,
-    QedProcessor, SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,
+    NthExpr, NthTerm, Param, ParamValue, PatternRef, PatternRefValue, PatternValue,
+    ProcessorChain, Program, QedProcessor, SelectActionNode, Selector, SelectorOp,
+    SimpleSelector, Statement,
 };
 use crate::parse::error::{ParseError, ParseResult};
-use crate::span::{Span, Spanned};
+use crate::span::Spanned;
+
+/// Helper: describe the next byte for error messages.
+fn peek_found(cursor: &Cursor) -> String {
+    cursor
+        .remaining()
+        .chars()
+        .next()
+        .map_or("end of input".into(), |c| c.to_string())
+}
 
 use super::cursor::Cursor;
 
@@ -24,6 +34,9 @@ pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
     let mut cursor = Cursor::new(source);
     let mut statements: Vec<Spanned<Statement>> = Vec::new();
     let mut errors: Vec<ParseError> = Vec::new();
+
+    // Handle shebang line
+    let shebang = parse_shebang(&mut cursor);
 
     eat_whitespace_and_newlines(&mut cursor);
 
@@ -60,9 +73,35 @@ pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
     }
 
     Ok(Program {
-        shebang: None,
+        shebang,
         statements,
     })
+}
+
+/// Parse a `#!` shebang line at the very start of the source.
+fn parse_shebang(cursor: &mut Cursor) -> Option<Spanned<String>> {
+    let start = cursor.pos();
+    if cursor.peek_at(0) == Some(b'#') && cursor.peek_at(1) == Some(b'!') {
+        cursor.advance(); // #
+        cursor.advance(); // !
+        let content_start = cursor.pos();
+        while let Some(b) = cursor.peek() {
+            if b == b'\n' {
+                break;
+            }
+            cursor.advance();
+        }
+        let content = cursor.slice_from(content_start).to_owned();
+        // consume the newline if present
+        cursor.eat_char(b'\n');
+        let span = cursor.span_from(start);
+        Some(Spanned {
+            node: content,
+            span,
+        })
+    } else {
+        None
+    }
 }
 
 /// Parse a single statement (currently only select-action).
@@ -102,8 +141,35 @@ fn parse_select_action(cursor: &mut Cursor) -> Result<SelectActionNode, Vec<Pars
     })
 }
 
-/// Parse a selector: `op("pattern")` — currently supports `at("literal")`.
+/// Parse a selector: simple-selector ('>' simple-selector)*
 fn parse_selector(cursor: &mut Cursor) -> Result<Spanned<Selector>, ParseError> {
+    let start = cursor.pos();
+
+    let first_step = parse_simple_selector(cursor)?;
+    let mut steps = vec![first_step];
+
+    // Parse compound selectors with '>'
+    loop {
+        cursor.eat_whitespace();
+        if cursor.peek() != Some(b'>') {
+            break;
+        }
+        cursor.advance(); // consume '>'
+        // Implicit line continuation after '>'
+        eat_whitespace_and_newlines(cursor);
+        let step = parse_simple_selector(cursor)?;
+        steps.push(step);
+    }
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: Selector { steps },
+        span,
+    })
+}
+
+/// Parse a single simple selector: `op(pattern-ref, params...)`.
+fn parse_simple_selector(cursor: &mut Cursor) -> Result<Spanned<SimpleSelector>, ParseError> {
     let start = cursor.pos();
 
     let op = parse_selector_op(cursor)?;
@@ -111,75 +177,262 @@ fn parse_selector(cursor: &mut Cursor) -> Result<Spanned<Selector>, ParseError> 
     if !cursor.eat_char(b'(') {
         return Err(ParseError::UnexpectedToken {
             expected: "'(' after selector name".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(cursor.pos()),
         });
     }
 
     cursor.eat_whitespace();
 
-    let pattern = if cursor.peek() == Some(b'"') {
-        let pat_start = cursor.pos();
-        let lit = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
-            expected: "closing '\"' for string literal".into(),
-            span: cursor.span_from(pat_start),
-        })?;
-        let pat_span = cursor.span_from(pat_start);
-        Some(Spanned {
-            node: PatternRef {
-                value: PatternRefValue::Inline(PatternValue::String(lit)),
-                negated: false,
-                inclusive: false,
+    // Check for empty selector: at()
+    if cursor.peek() == Some(b')') {
+        cursor.advance();
+        let span = cursor.span_from(start);
+        return Ok(Spanned {
+            node: SimpleSelector {
+                op,
+                pattern: None,
+                params: Vec::new(),
             },
-            span: pat_span,
-        })
-    } else if cursor.peek() == Some(b')') {
-        // No pattern — bare selector like at()
-        None
-    } else {
-        return Err(ParseError::UnexpectedToken {
-            expected: "string literal or ')'".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
-            span: cursor.span_from(cursor.pos()),
+            span,
         });
-    };
+    }
+
+    // Parse pattern ref
+    let pattern = Some(parse_pattern_ref(cursor)?);
 
     cursor.eat_whitespace();
 
+    // Parse optional params after comma
+    let mut params = Vec::new();
+    while cursor.peek() == Some(b',') {
+        cursor.advance(); // consume ','
+        // Implicit line continuation after ','
+        eat_whitespace_and_newlines(cursor);
+        let param = parse_param(cursor)?;
+        params.push(param);
+        cursor.eat_whitespace();
+    }
+
     if !cursor.eat_char(b')') {
         return Err(ParseError::UnexpectedToken {
-            expected: "')'".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            expected: "')' or ',' in selector".into(),
+            found: peek_found(cursor),
             span: cursor.span_from(cursor.pos()),
         });
     }
 
     let span = cursor.span_from(start);
     Ok(Spanned {
-        node: Selector {
-            steps: vec![Spanned {
-                node: SimpleSelector {
-                    op,
-                    pattern,
-                    params: Vec::new(),
-                },
-                span,
-            }],
+        node: SimpleSelector {
+            op,
+            pattern,
+            params,
         },
         span,
     })
+}
+
+/// Parse a pattern reference: `!? pattern-value +?`
+fn parse_pattern_ref(cursor: &mut Cursor) -> Result<Spanned<PatternRef>, ParseError> {
+    let start = cursor.pos();
+
+    // Check for negation prefix
+    let negated = cursor.eat_char(b'!');
+
+    let value = parse_pattern_value(cursor)?;
+
+    // Check for inclusive suffix
+    let inclusive = cursor.eat_char(b'+');
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: PatternRef {
+            value,
+            negated,
+            inclusive,
+        },
+        span,
+    })
+}
+
+/// Parse a pattern value: string, single-quoted string, regex, or identifier (named ref).
+fn parse_pattern_value(cursor: &mut Cursor) -> Result<PatternRefValue, ParseError> {
+    match cursor.peek() {
+        Some(b'"') => {
+            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
+                expected: "closing '\"' for string literal".into(),
+                span: cursor.span_from(cursor.pos()),
+            })?;
+            Ok(PatternRefValue::Inline(PatternValue::String(s)))
+        }
+        Some(b'\'') => {
+            let s = cursor
+                .eat_single_quoted_string_literal()
+                .ok_or_else(|| ParseError::UnexpectedEof {
+                    expected: "closing \"'\" for string literal".into(),
+                    span: cursor.span_from(cursor.pos()),
+                })?;
+            Ok(PatternRefValue::Inline(PatternValue::String(s)))
+        }
+        Some(b'/') => {
+            let r = cursor.eat_regex_literal().ok_or_else(|| ParseError::UnexpectedEof {
+                expected: "closing '/' for regex literal".into(),
+                span: cursor.span_from(cursor.pos()),
+            })?;
+            Ok(PatternRefValue::Inline(PatternValue::Regex(r)))
+        }
+        Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
+            let name = cursor.eat_identifier().expect("identifier start already checked");
+            Ok(PatternRefValue::Named(name))
+        }
+        _ => Err(ParseError::UnexpectedToken {
+            expected: "pattern (string, regex, or identifier)".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(cursor.pos()),
+        }),
+    }
+}
+
+/// Parse a named parameter: `name:value`.
+fn parse_param(cursor: &mut Cursor) -> Result<Spanned<Param>, ParseError> {
+    let start = cursor.pos();
+
+    let name_start = cursor.pos();
+    let name = cursor.eat_identifier().ok_or_else(|| ParseError::UnexpectedToken {
+        expected: "parameter name".into(),
+        found: peek_found(cursor),
+        span: cursor.span_from(name_start),
+    })?;
+    let name_span = cursor.span_from(name_start);
+
+    if !cursor.eat_char(b':') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "':' after parameter name".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    // No whitespace between ':' and value for params
+    let value = parse_param_value(cursor)?;
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: Param {
+            name: Spanned {
+                node: name,
+                span: name_span,
+            },
+            value,
+        },
+        span,
+    })
+}
+
+/// Parse a parameter value: identifier, string, integer, nth-expr, or pattern-ref.
+fn parse_param_value(cursor: &mut Cursor) -> Result<Spanned<ParamValue>, ParseError> {
+    let start = cursor.pos();
+
+    match cursor.peek() {
+        Some(b'"') => {
+            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
+                expected: "closing '\"' for string literal".into(),
+                span: cursor.span_from(start),
+            })?;
+            let span = cursor.span_from(start);
+            Ok(Spanned {
+                node: ParamValue::String(s),
+                span,
+            })
+        }
+        Some(b) if b.is_ascii_digit() || b == b'-' || b == b'+' || b == b'n' => {
+            // Could be integer, nth-expr — try parsing as nth-expr from cursor
+            let nth_result = parse_nth_expr_from_cursor(cursor)?;
+            let span = cursor.span_from(start);
+            Ok(Spanned {
+                node: ParamValue::NthExpr(nth_result),
+                span,
+            })
+        }
+        Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
+            let ident = cursor.eat_identifier().expect("identifier start checked");
+            let span = cursor.span_from(start);
+            Ok(Spanned {
+                node: ParamValue::Identifier(ident),
+                span,
+            })
+        }
+        _ => Err(ParseError::UnexpectedToken {
+            expected: "parameter value".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(start),
+        }),
+    }
+}
+
+/// Parse an nth expression inline from a cursor (for use inside param lists).
+/// Stops at `)` or `,` followed by an identifier (next param).
+fn parse_nth_expr_from_cursor(cursor: &mut Cursor) -> Result<NthExpr, ParseError> {
+    let mut terms: Vec<Spanned<NthTerm>> = Vec::new();
+
+    let first = parse_nth_term(cursor).map_err(|e| e)?;
+    if let Some(term) = first.0 {
+        terms.push(term);
+    }
+
+    loop {
+        cursor.eat_whitespace();
+        if cursor.peek() != Some(b',') {
+            break;
+        }
+
+        // Disambiguate: comma followed by identifier + colon = next param, not next nth term
+        let saved_pos = cursor.pos();
+        cursor.advance(); // consume ','
+        cursor.eat_whitespace();
+
+        // Check if this looks like the start of a named param: `identifier:`
+        if is_param_start(cursor) {
+            // Rewind — this comma belongs to the outer param list
+            cursor.set_pos(saved_pos);
+            break;
+        }
+
+        let term_result = parse_nth_term(cursor).map_err(|e| e)?;
+        if let Some(term) = term_result.0 {
+            terms.push(term);
+        }
+    }
+
+    if terms.is_empty() {
+        return Err(ParseError::InvalidNthExpr {
+            reason: "all terms were zero and ignored".into(),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    Ok(NthExpr { terms })
+}
+
+/// Check if the cursor is at the start of a named parameter: `identifier:`.
+fn is_param_start(cursor: &Cursor) -> bool {
+    let remaining = cursor.remaining();
+    let bytes = remaining.as_bytes();
+
+    // Must start with identifier char
+    if bytes.is_empty() || !(bytes[0].is_ascii_alphabetic() || bytes[0] == b'_') {
+        return false;
+    }
+
+    // Find end of identifier
+    let mut i = 1;
+    while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_') {
+        i += 1;
+    }
+
+    // Must be followed by ':'
+    i < bytes.len() && bytes[i] == b':'
 }
 
 /// Parse a selector operation keyword.
@@ -312,10 +565,24 @@ fn parse_processor(
     })
 }
 
-/// Skip whitespace, newlines, and carriage returns.
+/// Skip whitespace, newlines, carriage returns, and `# comment` lines.
 fn eat_whitespace_and_newlines(cursor: &mut Cursor) {
-    while let Some(b' ' | b'\t' | b'\n' | b'\r') = cursor.peek() {
-        cursor.advance();
+    loop {
+        match cursor.peek() {
+            Some(b' ' | b'\t' | b'\n' | b'\r') => {
+                cursor.advance();
+            }
+            Some(b'#') => {
+                // Skip comment line (but not shebang — that's handled separately)
+                while let Some(b) = cursor.peek() {
+                    cursor.advance();
+                    if b == b'\n' {
+                        break;
+                    }
+                }
+            }
+            _ => break,
+        }
     }
 }
 
@@ -1074,5 +1341,196 @@ mod tests {
     fn error_all_zeros() {
         let errs = parse_err("0");
         assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("all terms were zero")));
+    }
+
+    // ── Program parser tests ────────────────────────────────────────
+
+    fn program_ok(input: &str) -> Program {
+        parse_program(input).unwrap_or_else(|errs| {
+            panic!("expected Ok for {input:?}, got errors: {errs:?}")
+        })
+    }
+
+    fn program_err(input: &str) -> Vec<ParseError> {
+        parse_program(input).expect_err(&format!("expected Err for {input:?}"))
+    }
+
+    // ── Pattern ref forms ───────────────────────────────────────────
+
+    #[test]
+    fn pattern_string_literal() {
+        let p = program_ok(r#"at("hello") | qed:delete()"#);
+        assert_eq!(p.statements.len(), 1);
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+            assert!(!pat.node.negated);
+            assert!(!pat.node.inclusive);
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_single_quoted_string() {
+        let p = program_ok("at('hello') | qed:delete()");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_regex() {
+        let p = program_ok("at(/^hello/) | qed:delete()");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert_eq!(
+                pat.node.value,
+                PatternRefValue::Inline(PatternValue::Regex("^hello".into()))
+            );
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_negated() {
+        let p = program_ok(r#"at(!"hello") | qed:delete()"#);
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert!(pat.node.negated);
+            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_negated_regex() {
+        let p = program_ok("at(!/^b/) | qed:delete()");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert!(pat.node.negated);
+            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::Regex("^b".into())));
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_inclusive() {
+        let p = program_ok(r#"from("hello"+) | qed:delete()"#);
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert!(pat.node.inclusive);
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_negated_inclusive() {
+        let p = program_ok(r#"from(!"hello"+) | qed:delete()"#);
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert!(pat.node.negated);
+            assert!(pat.node.inclusive);
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn pattern_named_ref() {
+        let p = program_ok("at(mypattern) | qed:delete()");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
+            assert_eq!(pat.node.value, PatternRefValue::Named("mypattern".into()));
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    // ── Error cases ─────────────────────────────────────────────────
+
+    #[test]
+    fn error_unterminated_regex() {
+        let errs = program_err("at(/unterminated) | qed:delete()");
+        assert!(!errs.is_empty());
+    }
+
+    #[test]
+    fn error_unterminated_single_quote() {
+        let errs = program_err("at('unterminated) | qed:delete()");
+        assert!(!errs.is_empty());
+    }
+
+    // ── Shebang ─────────────────────────────────────────────────────
+
+    #[test]
+    fn shebang_preserved() {
+        let p = program_ok("#!/usr/bin/env qed\nat(\"x\") | qed:delete()");
+        assert!(p.shebang.is_some());
+        assert_eq!(p.shebang.unwrap().node, "/usr/bin/env qed");
+        assert_eq!(p.statements.len(), 1);
+    }
+
+    #[test]
+    fn no_shebang() {
+        let p = program_ok(r#"at("x") | qed:delete()"#);
+        assert!(p.shebang.is_none());
+    }
+
+    // ── Comments ────────────────────────────────────────────────────
+
+    #[test]
+    fn comment_skipped() {
+        let p = program_ok("# this is a comment\nat(\"x\") | qed:delete()");
+        assert_eq!(p.statements.len(), 1);
+    }
+
+    #[test]
+    fn comment_only_program() {
+        let p = program_ok("# just a comment\n");
+        assert_eq!(p.statements.len(), 0);
+    }
+
+    // ── Compound selectors ──────────────────────────────────────────
+
+    #[test]
+    fn compound_selector() {
+        let p = program_ok(r#"from("start") > to("end") | qed:delete()"#);
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            assert_eq!(sa.selector.node.steps.len(), 2);
+            assert_eq!(sa.selector.node.steps[0].node.op, SelectorOp::From);
+            assert_eq!(sa.selector.node.steps[1].node.op, SelectorOp::To);
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    // ── Bare selector ───────────────────────────────────────────────
+
+    #[test]
+    fn bare_at_selector() {
+        let p = program_ok("at() | qed:delete()");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            assert!(sa.selector.node.steps[0].node.pattern.is_none());
+        } else {
+            panic!("expected SelectAction");
+        }
     }
 }
