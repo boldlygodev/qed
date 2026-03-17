@@ -1,3 +1,15 @@
+//! Parse phase — source text → AST.
+//!
+//! Transforms a raw qed script string into a [`ast::Program`] (the abstract
+//! syntax tree). Two parser backends exist behind feature flags:
+//!
+//! - **`parser-rd`** (default) — hand-written recursive descent in the `rd`
+//!   module. Chosen for precise error recovery and zero external dependencies.
+//! - **`parser-chumsky`** — combinator parser under evaluation.
+//!
+//! Feature-flag switching is isolated to this module; no `#[cfg(feature)]`
+//! appears anywhere else in the crate.
+
 pub(crate) mod ast;
 pub(crate) mod error;
 mod rd;
