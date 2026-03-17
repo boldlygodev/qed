@@ -1,3 +1,17 @@
+//! Compilation pass — AST → executable IR.
+//!
+//! Transforms a [`Program`] (AST) into a [`Script`] (compiled IR) in two
+//! conceptual phases:
+//!
+//! 1. **Symbol collection** — walk `PatternDef` and `AliasDef` statements
+//!    to populate the symbol table (not yet implemented).
+//! 2. **Compilation** — walk `SelectAction` statements, compiling each
+//!    selector into a [`CompiledSelector`] (or [`CompoundSelector`]) and
+//!    each processor chain into a `Box<dyn Processor>`.
+//!
+//! Errors are accumulated into a `Vec<CompileError>` so the compiler can
+//! report all problems in a single pass.
+
 use crate::error::CompileError;
 use crate::parse::ast::{
     self, NthTerm, PatternRefValue, PatternValue, Program, SelectorOp as AstSelectorOp,
@@ -55,22 +69,31 @@ pub(crate) struct CompoundSelector {
 // ── Selector operations ─────────────────────────────────────────────
 
 /// The concrete operation a compiled selector performs.
-/// `nth` uses `Option<Vec<NthTerm>>` — `None` means no filtering (all matches).
+///
+/// Each variant holds its compiled pattern. `nth` on `At` uses
+/// `Option<Vec<NthTerm>>` — `None` means no filtering (all matches).
 #[derive(Debug, Clone)]
 pub(crate) enum SelectorOp {
+    /// Select each line matching the pattern, optionally filtered by `nth`.
     At {
         pattern: CompiledPattern,
         nth: Option<Vec<NthTerm>>,
     },
+    /// Select the zero-width insertion point after each matching line.
     After {
         pattern: CompiledPattern,
     },
+    /// Select the zero-width insertion point before each matching line.
     Before {
         pattern: CompiledPattern,
     },
+    /// Select from the matching line to end of input (inclusivity
+    /// controlled by `pattern.inclusive`).
     From {
         pattern: CompiledPattern,
     },
+    /// Select from start of input to the matching line (inclusivity
+    /// controlled by `pattern.inclusive`).
     To {
         pattern: CompiledPattern,
     },
@@ -98,8 +121,11 @@ pub(crate) enum PatternMatcher {
 /// How the engine handles a selector that matches nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum OnError {
+    /// Abort execution and report an error (default).
     Fail,
+    /// Emit a diagnostic warning but continue execution.
     Warn,
+    /// Silently skip the statement as if it were not present.
     Skip,
 }
 
@@ -172,6 +198,10 @@ pub(crate) fn compile(program: &Program) -> Result<Script, Vec<CompileError>> {
     }
 }
 
+/// Compile a `SelectActionNode`'s selector into a registry entry.
+///
+/// Currently supports single-step selectors only. Compound selectors
+/// (multi-step with `>`) will be handled in a later phase.
 fn compile_selector(
     node: &ast::SelectActionNode,
     sel_id: SelectorId,
@@ -227,6 +257,8 @@ fn compile_selector(
     }))
 }
 
+/// Compile a `PatternRef` into a `CompiledPattern` with its matcher,
+/// negation flag, and inclusivity flag resolved.
 fn compile_pattern(
     pat_ref: &ast::PatternRef,
     span: crate::span::Span,
@@ -256,6 +288,10 @@ fn compile_pattern(
     })
 }
 
+/// Compile a processor chain into a single `Box<dyn Processor>`.
+///
+/// Currently supports single-processor chains only. Multi-processor
+/// pipelines will be handled in a later phase.
 fn compile_processor_chain(
     chain: &ast::ProcessorChain,
 ) -> Result<Box<dyn Processor>, CompileError> {

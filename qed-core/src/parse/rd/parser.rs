@@ -1,3 +1,13 @@
+//! Grammar implementation for the recursive descent parser.
+//!
+//! Each `parse_*` function corresponds to a production in the qed grammar.
+//! Currently covers the Phase 4 walking-skeleton subset: select-action
+//! statements with single-step selectors, string-literal patterns, and
+//! `qed:name()` processor invocations. Nth expression parsing is complete.
+//!
+//! Error recovery is line-based: on a parse failure the parser skips to the
+//! next newline and attempts the next statement.
+
 use crate::parse::ast::{
     NthExpr, NthTerm, PatternRef, PatternRefValue, PatternValue, ProcessorChain, Program,
     QedProcessor, SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,

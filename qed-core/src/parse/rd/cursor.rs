@@ -1,3 +1,10 @@
+//! Zero-copy byte-offset scanner for the recursive descent parser.
+//!
+//! [`Cursor`] tracks a position within a borrowed source string and provides
+//! primitive operations (peek, advance, eat) that the parser builds on.
+//! It never allocates or copies the source — all slices are `&'src str`
+//! references back into the original input.
+
 use crate::span::Span;
 
 /// A byte-offset cursor over a `&str` for hand-written parsing.
