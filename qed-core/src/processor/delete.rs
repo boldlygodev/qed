@@ -1,3 +1,5 @@
+//! The `qed:delete()` processor — removes selected text entirely.
+
 use super::{Processor, ProcessorError};
 
 /// Deletes the selected text by replacing it with an empty string.

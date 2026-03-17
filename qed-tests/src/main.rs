@@ -1,3 +1,16 @@
+//! Integration test harness for qed.
+//!
+//! Uses [`libtest_mimic`] to run each test scenario as a named trial.
+//! The Rust side handles manifest discovery, scenario assembly, and golden
+//! comparison; the actual qed invocation is delegated to
+//! `tests/harness/run-scenario.sh` so that tests exercise the real binary.
+//!
+//! Trial names follow the pattern `<suite>::<scenario-id>::<invocation-index>`.
+//!
+//! ```sh
+//! cargo test --package qed-tests --test integration "selectors::at-literal-single-match::0"
+//! ```
+
 mod manifest;
 mod runner;
 mod scenario;

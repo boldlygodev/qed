@@ -1,3 +1,14 @@
+//! CLI entry point for **qed**.
+//!
+//! Reads a qed script (inline via positional arg, or from a file via `-f`)
+//! and input text from stdin, runs the script, and writes the transformed
+//! output to stdout. Diagnostics go to stderr.
+//!
+//! Exit codes:
+//! - `0` — success
+//! - `1` — script execution error (parse, compile, or runtime failure)
+//! - `2` — usage error (no script, conflicting flags, I/O failure)
+
 use clap::Parser;
 use std::io::Read;
 
