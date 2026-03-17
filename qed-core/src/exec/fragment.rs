@@ -1,3 +1,22 @@
+//! Fragmentation algorithm — partitions a `Buffer` into `Passthrough` and
+//! `Selected` regions based on compiled selectors.
+//!
+//! The algorithm has four steps:
+//!
+//! 1. **Match collection** — run each selector against every line in the
+//!    buffer, producing a list of `MatchResult`s (line ranges tagged with
+//!    statement/selector IDs).
+//!
+//! 2. **Boundary decomposition** — convert each match range into a pair of
+//!    `BoundaryEvent`s (start and end) at specific line positions.
+//!
+//! 3. **Sort** — order events by line number, with start events before end
+//!    events at the same line, then by statement ID.
+//!
+//! 4. **Sweep** — walk the sorted events, maintaining an active set of
+//!    (statement, selector) tags. Each time the active set changes, emit a
+//!    new fragment for the region since the last change.
+
 use std::collections::BTreeSet;
 
 use crate::compile::{
@@ -35,6 +54,8 @@ pub(crate) fn fragment(
 
 // ── Match collection ───────────────────────────────────────────────
 
+/// A single match: a line range tagged with the statement and selector
+/// that produced it.
 struct MatchResult {
     range: LineRange,
     statement_id: StatementId,
@@ -162,6 +183,9 @@ fn intersect_ranges(a: LineRange, b: LineRange) -> Option<LineRange> {
 
 // ── Per-op match collectors ────────────────────────────────────────
 
+/// `at(pattern)` — selects each line that matches `pattern`, producing
+/// one single-line range per match. An optional `nth` filter narrows
+/// the matches to specific ordinal positions (1-based, negative = from end).
 fn collect_at(
     buffer: &Buffer,
     pattern: &CompiledPattern,
@@ -182,6 +206,9 @@ fn collect_at(
         .collect()
 }
 
+/// `after(pattern)` — selects the zero-width insertion point immediately
+/// after each matching line. The range is empty (`start == end`),
+/// representing a position between lines rather than a line itself.
 fn collect_after(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
     (0..buffer.line_count())
         .filter(|&i| pattern_matches(pattern, buffer.line(i)))
@@ -192,6 +219,8 @@ fn collect_after(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
         .collect()
 }
 
+/// `before(pattern)` — selects the zero-width insertion point immediately
+/// before each matching line. The range is empty (`start == end`).
 fn collect_before(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
     (0..buffer.line_count())
         .filter(|&i| pattern_matches(pattern, buffer.line(i)))
@@ -199,6 +228,9 @@ fn collect_before(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> 
         .collect()
 }
 
+/// `from(pattern)` — selects from the matching line to the end of the
+/// buffer. When `pattern.inclusive` is true the matched line itself is
+/// included; when false, selection begins on the line after the match.
 fn collect_from(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
     let line_count = buffer.line_count();
     (0..line_count)
@@ -219,6 +251,9 @@ fn collect_from(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
         .collect()
 }
 
+/// `to(pattern)` — selects from the beginning of the buffer up to the
+/// matching line. When `pattern.inclusive` is true the matched line is
+/// included; when false, selection ends just before it.
 fn collect_to(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
     (0..buffer.line_count())
         .filter(|&i| pattern_matches(pattern, buffer.line(i)))
@@ -248,6 +283,10 @@ fn pattern_matches(pattern: &CompiledPattern, line: &str) -> bool {
 
 // ── Nth filtering ──────────────────────────────────────────────────
 
+/// Filter a set of matching line indices to only those at specified ordinal
+/// positions. Terms are evaluated as a union: `1,3,-1` selects the first,
+/// third, and last match. Step terms (`2n+1`) generate a repeating series.
+/// All positions are 1-based; negative values count from the end.
 fn apply_nth_filter(matching_lines: &[usize], terms: &[NthTerm]) -> Vec<usize> {
     let count = matching_lines.len();
     if count == 0 {
@@ -319,12 +358,15 @@ fn resolve_1based(n: i64, count: usize) -> Option<usize> {
 
 // ── Boundary events ────────────────────────────────────────────────
 
+/// Whether a boundary event opens or closes a selected region.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum EventKind {
     Start,
     End,
 }
 
+/// A point in the line-index space where the active set of selectors changes.
+/// Each `MatchResult` decomposes into one `Start` and one `End` event.
 #[derive(Debug, Clone, Copy)]
 struct BoundaryEvent {
     line: usize,
@@ -374,6 +416,12 @@ fn decompose_events(matches: &[MatchResult]) -> Vec<BoundaryEvent> {
 
 // ── Sweep ──────────────────────────────────────────────────────────
 
+/// Walk sorted boundary events and emit fragments.
+///
+/// Maintains a `BTreeSet` of active `(StatementId, SelectorId)` tags.
+/// Each time the active set changes at a new line position, the region
+/// since the previous change is emitted as either `Passthrough` (empty
+/// active set) or `Selected` (with the current tags).
 fn sweep(events: Vec<BoundaryEvent>, line_count: usize) -> FragmentList {
     let mut fragments = Vec::new();
     let mut active: BTreeSet<(StatementId, SelectorId)> = BTreeSet::new();

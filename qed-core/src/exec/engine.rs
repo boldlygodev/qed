@@ -1,3 +1,10 @@
+//! Top-level execution loop.
+//!
+//! Takes a compiled [`Script`] and an immutable [`Buffer`], fragments the
+//! buffer according to the script's selectors, routes each `Selected`
+//! fragment through its statement's processor, and concatenates the results
+//! into the final output string.
+
 use crate::compile::Script;
 
 use super::{Buffer, Fragment, FragmentContent, fragment};
@@ -43,6 +50,10 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> String {
     output
 }
 
+/// Materialize a fragment's content into an owned `String`.
+///
+/// `Borrowed` fragments slice into the buffer (zero-copy until this point);
+/// `Owned` fragments already carry their text (produced by a prior processor).
 fn resolve_content(content: &FragmentContent, buffer: &Buffer) -> String {
     match content {
         FragmentContent::Borrowed(range) => buffer.slice(*range).to_owned(),

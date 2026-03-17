@@ -1,3 +1,34 @@
+//! Execution engine — the runtime that turns a compiled `Script` into output.
+//!
+//! The execution model is built around an immutable [`Buffer`] and a
+//! [`FragmentList`] that partitions the buffer's lines into `Passthrough`
+//! and `Selected` regions.
+//!
+//! ```text
+//!  ┌──────────────────────────────────────────┐
+//!  │  Buffer (immutable, precomputed offsets)  │
+//!  └──────────┬───────────────────────────────┘
+//!             │
+//!       fragmentation
+//!             │
+//!             ▼
+//!  ┌──────────────────────────────────────────┐
+//!  │ FragmentList = Vec<Fragment>              │
+//!  │  ┌────────────┐ ┌─────────┐ ┌────────┐  │
+//!  │  │Passthrough │ │Selected │ │  Pass  │  │
+//!  │  │ lines 0..2 │ │ line 2  │ │ 3..end │  │
+//!  │  └────────────┘ └────┬────┘ └────────┘  │
+//!  └──────────────────────┼───────────────────┘
+//!                         │ processor
+//!                         ▼
+//!                    transformed text
+//! ```
+//!
+//! **Zero-copy design:** the `Buffer` owns the input string and exposes
+//! line slices by byte offset. Fragments reference the buffer via
+//! `LineRange` rather than copying text — owned content only appears
+//! after a processor produces new output.
+
 pub(crate) mod engine;
 mod fragment;
 
