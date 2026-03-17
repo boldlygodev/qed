@@ -5,7 +5,7 @@
 - [x] Phase 0 — Workspace Scaffold
 - [x] Phase 1 — Test Harness Infrastructure
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
-- [ ] Phase 3 — Parser POC Evaluation
+- [x] Phase 3 — Parser POC Evaluation
 - [ ] Phase 4 — Walking Skeleton
 - [ ] Phase 5 — Full Parser
 - [ ] Phase 6 — Full Compiler
@@ -70,9 +70,18 @@
 
 ---
 
-## Phase 3 — Parser POC Evaluation
+## Phase 3 — Parser POC Evaluation ✓
 
-See `docs/qed-roadmap.md` for full details.
+- [x] Create `parse/error.rs` with `ParseError` enum and `ParseResult` struct
+- [x] Wire `error` module and feature-gated `rd`/`chumsky` modules in `parse/mod.rs`
+- [x] Implement RD spike: `Cursor` struct, `parse_nth_expr` recursive descent parser
+- [x] Implement chumsky 0.9 spike: `Token` lexer, combinator parser, error conversion
+- [x] Both spikes pass identical test suites (valid forms, spans, errors, warnings, whitespace)
+- [x] Evaluate: RD wins on compile time (1.5s vs 2.9s), error quality, debuggability, deps (0 vs 16)
+- [x] Cleanup: delete `chumsky/`, remove feature flags from `Cargo.toml`, simplify `parse/mod.rs`
+- [x] Update `docs/qed-project-structure.md` with evaluation result
+- [x] Remove "Switching Parsers" section from `docs/qed-dev-workflow.md`
+- [x] Checkpoint: `cargo test`, `cargo build --workspace`, `cargo clippy --workspace` clean
 
 ---
 

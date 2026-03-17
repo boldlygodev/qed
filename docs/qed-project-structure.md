@@ -110,89 +110,26 @@ These are independently complex areas that are referenced across multiple phases
 
 ## Parser
 
-The parser is being evaluated as a proof-of-concept with two competing implementations.
-Both live under `parse/` and are gated by mutually exclusive Cargo feature flags.
-One will be pruned once evaluation is complete.
+The parser uses hand-written recursive descent, implemented under `parse/rd/`.
 
-### Feature Flags
-
-Declared in `qed-core/Cargo.toml`:
-
-```toml
-[features]
-default = ["parser-rd"]
-parser-rd = []
-parser-chumsky = ["dep:chumsky"]
-```
-
-`parser-rd` and `parser-chumsky` are mutually exclusive.
-Using both simultaneously is a compile error.
+A chumsky 0.9 combinator parser was evaluated as an alternative during Phase 3.
+Recursive descent won on every criterion — compile time (1.5s vs 2.9s clean build),
+error quality (natural zero-offset detection vs source re-inspection workaround),
+debuggability (straightforward control flow vs fighting type inference), and
+dependency count (0 new deps vs 16). The chumsky spike was removed.
 
 ### Directory Layout
 
 ```
 parse/
-  mod.rs          # public parse() entry point — routes to active implementation
-  ast.rs          # AST type definitions (shared by both implementations)
+  mod.rs          # public entry point — delegates to rd/
+  ast.rs          # AST type definitions
+  error.rs        # ParseError enum, ParseResult struct
   rd/             # hand-written recursive descent
     mod.rs
-    lexer.rs
-    parser.rs
-  chumsky/        # chumsky combinator parser
-    mod.rs
-    lexer.rs
+    cursor.rs
     parser.rs
 ```
-
-`ast.rs` is shared — both implementations produce the same `Program` type.
-
-### Routing
-
-`parse/mod.rs` exposes a single public entry point and delegates to whichever implementation is active:
-
-```rust
-#[cfg(feature = "parser-rd")]
-mod rd;
-#[cfg(feature = "parser-chumsky")]
-mod chumsky;
-
-pub fn parse(source: &str) -> Result<Program, Vec<ParseError>> {
-    #[cfg(feature = "parser-rd")]
-    return rd::parse(source);
-    #[cfg(feature = "parser-chumsky")]
-    return chumsky::parse(source);
-}
-```
-
-### Switching Implementations
-
-```sh
-# Default (recursive descent)
-cargo build
-
-# Chumsky
-cargo build --no-default-features --features parser-chumsky
-```
-
-### Evaluation Criteria
-
-| Criterion | Description |
-|---|---|
-| Error quality | Clarity and accuracy of parse error messages |
-| Span accuracy | Source location fidelity for diagnostics |
-| Grammar coverage | Completeness against the formal grammar |
-| Debuggability | Ease of tracing failures during development |
-| Compile time | Impact on incremental build times |
-
-### Pruning
-
-Once evaluation is complete:
-
-1. Delete the losing implementation's subdirectory (`rd/` or `chumsky/`)
-2. Remove the corresponding feature flag from `Cargo.toml`
-3. Simplify `parse/mod.rs` to call the winning implementation directly
-
-No other files require changes.
 
 ---
 
@@ -203,6 +140,5 @@ No other files require changes.
 | `clap` | `qed` | CLI argument parsing |
 | `regex` | `qed-core` | Pattern compilation and matching |
 | `rayon` | `qed-core` | Parallel selector match collection |
-| `chumsky` | `qed-core` (optional) | Combinator parser (feature-gated) |
 | `libtest-mimic` | `qed-tests` | Test harness registration |
 | `toml` | `qed-tests` | Manifest parsing |

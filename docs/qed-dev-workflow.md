@@ -31,11 +31,8 @@ cargo --version
 All commands run from the workspace root unless otherwise noted.
 
 ```sh
-# Build everything (default parser: recursive descent)
+# Build everything
 cargo build
-
-# Build with the chumsky parser instead
-cargo build --package qed-core --no-default-features --features parser-chumsky
 
 # Build release
 cargo build --release
@@ -115,34 +112,6 @@ cargo test --workspace
 ```
 
 ---
-
-## Switching Parsers
-
-The two parser implementations are gated by mutually exclusive feature flags.
-`parser-rd` (hand-written recursive descent) is the default.
-
-```sh
-# Default — recursive descent
-cargo build
-cargo test
-
-# Chumsky parser
-cargo build --no-default-features --features parser-chumsky
-cargo test --no-default-features --features parser-chumsky
-
-# Shorthand alias (add to your shell profile once the workspace is stable)
-alias qed-rd="cargo run --"
-alias qed-chumsky="cargo run --no-default-features --features parser-chumsky --"
-```
-
-The two parsers must produce identical output for all inputs.
-A useful sanity check during development:
-
-```sh
-diff \
-  <(echo 'at("foo") | qed:delete()' | cargo run -- /dev/stdin < input.txt) \
-  <(echo 'at("foo") | qed:delete()' | cargo run --no-default-features --features parser-chumsky -- /dev/stdin < input.txt)
-```
 
 ---
 
