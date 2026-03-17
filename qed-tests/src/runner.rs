@@ -1,7 +1,33 @@
 use crate::manifest::Scenario;
 use crate::scenario;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/// Locate the `qed` binary in the target directory.
+fn find_qed_binary() -> PathBuf {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("qed-tests crate must be inside the workspace")
+        .to_path_buf();
+
+    // Check common target locations
+    let profile = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+
+    let binary = workspace_root.join("target").join(profile).join("qed");
+    if binary.exists() {
+        return binary;
+    }
+
+    // Fallback: try the CARGO_BIN_EXE approach via target directory
+    panic!(
+        "qed binary not found at {}. Build it first with `cargo build --bin qed`.",
+        binary.display()
+    );
+}
 
 pub(crate) fn run_trial(
     harness_script: &Path,
@@ -24,6 +50,16 @@ pub(crate) fn run_trial(
         .map_err(|e| format!("failed to create bin dir: {e}"))?;
     std::fs::create_dir_all(tmpdir.join("mock-state"))
         .map_err(|e| format!("failed to create mock-state dir: {e}"))?;
+
+    // Symlink the qed binary into the temp bin directory
+    let qed_binary = find_qed_binary();
+    let qed_link = tmpdir.join("bin/qed");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&qed_binary, &qed_link)
+        .map_err(|e| format!("failed to symlink qed binary: {e}"))?;
+    #[cfg(not(unix))]
+    std::fs::copy(&qed_binary, &qed_link)
+        .map_err(|e| format!("failed to copy qed binary: {e}"))?;
 
     // Generate and write scenario.sh
     let scenario_content =

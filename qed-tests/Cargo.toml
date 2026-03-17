@@ -2,12 +2,14 @@
 name = "qed-tests"
 version = "0.1.0"
 edition = "2021"
+autobins = false
 
-[[bin]]
-name = "qed-tests"
+[[test]]
+name = "integration"
 path = "src/main.rs"
+harness = false
 
-[dependencies]
+[dev-dependencies]
 libtest-mimic = "0.7"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"

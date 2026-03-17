@@ -6,7 +6,7 @@
 - [x] Phase 1 — Test Harness Infrastructure
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [x] Phase 3 — Parser POC Evaluation
-- [ ] Phase 4 — Walking Skeleton
+- [x] Phase 4 — Walking Skeleton
 - [ ] Phase 5 — Full Parser
 - [ ] Phase 6 — Full Compiler
 - [ ] Phase 7 — Processor Coverage
@@ -85,9 +85,19 @@
 
 ---
 
-## Phase 4 — Walking Skeleton
+## Phase 4 — Walking Skeleton ✓
 
-See `docs/qed-roadmap.md` for full details.
+- [x] `processor/delete.rs`: `DeleteProcessor` returning empty string
+- [x] `parse/rd/cursor.rs`: `eat_string_literal()` and `eat_keyword()` helpers
+- [x] `parse/rd/parser.rs`: `parse_program()` for `at("literal") | qed:name()` form
+- [x] `parse/rd/mod.rs`, `parse/mod.rs`: re-export `parse_program`
+- [x] `compile/mod.rs`: `compile()` function — AST `Program` → IR `Script`
+- [x] `exec/engine.rs`: `execute()` function — fragments buffer, dispatches processors, concatenates output
+- [x] `lib.rs`: public `run(script, input)` API orchestrating parse → compile → execute
+- [x] `qed/src/main.rs`: clap CLI with positional script arg and `-f` flag, stdin → run → stdout
+- [x] `qed-tests/src/runner.rs`: symlink `qed` binary into temp PATH for harness
+- [x] `qed-tests/Cargo.toml`: switched to `[[test]]` with `harness = false` for `cargo test` compatibility
+- [x] Checkpoint: `selectors::at-literal-single-match::0` green, 63 unit tests pass, clippy clean
 
 ---
 

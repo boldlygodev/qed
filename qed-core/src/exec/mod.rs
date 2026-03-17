@@ -1,3 +1,4 @@
+pub(crate) mod engine;
 mod fragment;
 
 use crate::{SelectorId, StatementId};

@@ -5,7 +5,7 @@ pub mod span;
 pub mod error;
 pub(crate) mod parse;
 pub(crate) mod compile;
-mod exec;
+pub(crate) mod exec;
 pub(crate) mod processor;
 
 /// Uniquely identifies a statement within a compiled script.
@@ -35,4 +35,30 @@ impl SelectorId {
     pub(crate) fn value(self) -> usize {
         self.0
     }
+}
+
+/// Run a qed script against input text, returning the transformed output.
+///
+/// This is the primary public API for the library.
+pub fn run(script_source: &str, input: &str) -> Result<String, String> {
+    let program = parse::parse_program(script_source).map_err(|errors| {
+        errors
+            .iter()
+            .map(|e| format!("{e:?}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    })?;
+
+    let script = compile::compile(&program).map_err(|errors| {
+        errors
+            .iter()
+            .map(|e| format!("{e:?}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    })?;
+
+    let buffer = exec::Buffer::new(input.to_owned());
+    let output = exec::engine::execute(&script, &buffer);
+
+    Ok(output)
 }

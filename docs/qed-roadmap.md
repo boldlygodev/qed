@@ -234,7 +234,7 @@ and `cargo build --workspace` is clean.
 
 ## Phase 4 — Walking Skeleton
 
-**Goal:** one test scenario passes end-to-end: `selectors::at-literal::0`.
+**Goal:** one test scenario passes end-to-end: `selectors::at-literal-single-match::0`.
 
 This is the most important milestone in the project.
 Every component touches every other at this phase.
@@ -284,7 +284,7 @@ Wire the compiler output through the fragmentation algorithm to output.
 - Write output to stdout
 - Wire: parse CLI → read input → parse script → compile → execute → print output
 
-**Checkpoint:** `cargo test --package qed-tests selectors::at-literal::0` passes.
+**Checkpoint:** `cargo test --package qed-tests selectors::at-literal-single-match::0` passes.
 The harness is now driving implementation and will remain the primary signal
 through all remaining phases.
 
@@ -457,7 +457,7 @@ Then the use case suites:
 | 1 | Test harness infrastructure | `cargo test --package qed-tests` registers all trials (failing) |
 | 2 | Core types + fragmentation algorithm | Buffer, fragment, and fragmentation unit tests pass |
 | 3 | Parser POC evaluation | One parser remains, routing removed |
-| 4 | Walking skeleton | `selectors::at-literal::0` green |
+| 4 | Walking skeleton | `selectors::at-literal-single-match::0` green |
 | 5 | Full parser | All grammar productions parsed; `selectors` suite green |
 | 6 | Full compiler | `selectors` integration suite fully green |
 | 7 | Processor coverage | `processors` + `external-processors` suites green |

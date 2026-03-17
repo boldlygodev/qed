@@ -67,4 +67,48 @@ impl<'src> Cursor<'src> {
     pub(super) fn remaining(&self) -> &'src str {
         &self.source[self.pos..]
     }
+
+    /// Parse a double-quoted string literal, consuming the opening and closing `"`.
+    /// Returns the inner content with basic escape handling (`\"`, `\\`).
+    /// Assumes the cursor is positioned at the opening `"`.
+    pub(super) fn eat_string_literal(&mut self) -> Option<String> {
+        if self.peek() != Some(b'"') {
+            return None;
+        }
+        self.advance(); // consume opening "
+
+        let mut value = String::new();
+        loop {
+            match self.advance() {
+                None => return None, // unterminated string
+                Some(b'"') => return Some(value),
+                Some(b'\\') => match self.advance() {
+                    Some(b'"') => value.push('"'),
+                    Some(b'\\') => value.push('\\'),
+                    Some(b'n') => value.push('\n'),
+                    Some(b't') => value.push('\t'),
+                    Some(ch) => {
+                        value.push('\\');
+                        value.push(ch as char);
+                    }
+                    None => return None,
+                },
+                Some(ch) => value.push(ch as char),
+            }
+        }
+    }
+
+    /// Try to consume a specific ASCII keyword. Returns true if matched.
+    pub(super) fn eat_keyword(&mut self, keyword: &str) -> bool {
+        let remaining = self.remaining();
+        if remaining.starts_with(keyword) {
+            // Ensure the keyword isn't a prefix of a longer identifier
+            let next = remaining.as_bytes().get(keyword.len());
+            if next.is_none() || !next.is_some_and(|&b| b.is_ascii_alphanumeric() || b == b'_') {
+                self.pos += keyword.len();
+                return true;
+            }
+        }
+        false
+    }
 }

@@ -32,7 +32,7 @@ run = "cargo test --package qed-core"
 
 [tasks."test:integration"]
 description = "Run integration test harness"
-run = "cargo test --package qed-tests"
+run = "cargo build --bin qed && cargo test --package qed-tests --test integration"
 
 [tasks.fmt]
 description = "Format all code"

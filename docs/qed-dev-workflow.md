@@ -53,9 +53,6 @@ cargo run -- -f path/to/script.qed path/to/file.txt
 
 # From stdin
 echo -e "foo\nbar\nbaz" | cargo run -- 'at("bar") | qed:delete()'
-
-# With the chumsky parser
-cargo run --no-default-features --features parser-chumsky -- 'at("foo") | qed:delete()'
 ```
 
 After `cargo build`, you can call `./target/debug/qed` directly to avoid the
@@ -93,17 +90,21 @@ It uses `libtest-mimic` and reads scenario manifests from `tests/`.
 cargo test --package qed-tests
 
 # Run one suite by name
-cargo test --package qed-tests selectors
+cargo test --package qed-tests --test integration selectors
 
 # Run one scenario by full name
-cargo test --package qed-tests selectors::at-literal::0
+cargo test --package qed-tests --test integration "selectors::at-literal-single-match::0"
 
 # Show output from failing scenarios (includes bash diagnostic output)
-cargo test --package qed-tests -- --nocapture
+cargo test --package qed-tests --test integration -- --show-output
 ```
 
 Trial names follow the pattern `<suite>::<scenario-id>::<invocation-index>` —
-for example `selectors::at-literal::0`.
+for example `selectors::at-literal-single-match::0`.
+
+**Note:** The `qed` binary must be built before running integration tests.
+The test runner symlinks `target/debug/qed` into each trial's PATH.
+Run `cargo build --bin qed` first, or use the workspace build.
 
 ### Run everything
 

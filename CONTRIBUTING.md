@@ -1,9 +1,9 @@
 # Contributing to qed
 
-> **Note:** qed is in early development (Phase 0 scaffold complete). The core
-> language, pipeline, and test harness are not yet implemented. Design docs in
-> `docs/` are the authoritative source for all decisions — read them before
-> writing any code.
+> **Note:** qed is in early development (Phase 4 walking skeleton complete).
+> The end-to-end pipeline works for basic cases; most features are not yet
+> implemented. Design docs in `docs/` are the authoritative source for all
+> decisions — read them before writing any code.
 
 ---
 
@@ -52,7 +52,7 @@ All common tasks are defined in `mise.toml` and run via `mise run <task>`:
 | `check`            | `cargo check --workspace`                 | Type-check without building  |
 | `test`             | `cargo test --workspace`                  | All tests                    |
 | `test:unit`        | `cargo test --package qed-core`           | Unit tests only              |
-| `test:integration` | `cargo test --package qed-tests`          | Integration harness          |
+| `test:integration` | `cargo build --bin qed && cargo test ...` | Integration harness          |
 | `fmt`              | `cargo fmt`                               | Format code                  |
 | `fmt:check`        | `cargo fmt --check`                       | Check formatting (CI mode)   |
 | `lint`             | `cargo clippy --workspace -- -D warnings` | Lint with warnings-as-errors |
@@ -87,7 +87,7 @@ design decisions.
 | `docs/qed-project-structure.md`     | Workspace layout, crate responsibilities, feature flag wiring       |
 | `docs/qed-roadmap.md`               | Phased build plan — what to build and in what order                 |
 | `docs/qed-rust-conventions.md`      | Codebase conventions: error handling, visibility, naming, ownership |
-| `docs/qed-dev-workflow.md`          | Build, test, lint commands; switching parser feature flags          |
+| `docs/qed-dev-workflow.md`          | Build, test, lint commands; development workflow                    |
 | `.claude/tests/harness.md`          | Integration test harness specification                              |
 
 ---

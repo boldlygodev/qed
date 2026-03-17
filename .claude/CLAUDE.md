@@ -68,11 +68,12 @@ qed/
 
 ## Current Phase
 
-**Phase 0 — Workspace Scaffold** (starting point).
+**Phase 4 — Walking Skeleton** (complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–2 establish the foundation (scaffold, core types, fragmentation algorithm).
-Phase 3 evaluates the parser POC.
-Phase 4 is the walking skeleton + harness first-green milestone.
+Phases 0–3 are complete (scaffold, harness, core types, parser POC).
+Phase 4 wired end-to-end: parse → compile → execute → CLI.
+`selectors::at-literal-single-match::0` is the first green integration test.
+Next: Phase 5 (full parser) and Phase 6 (full compiler).
 
 ---
 
@@ -131,11 +132,11 @@ The original `Buffer` is never mutated.
 
 ## Test Harness
 
-Integration tests run via `cargo test --package qed-tests`.
+Integration tests run via `cargo test --package qed-tests --test integration`.
 Trial names are `<suite>::<scenario-id>::<invocation-index>`.
 
 ```sh
-cargo test --package qed-tests selectors::at-literal::0
+cargo test --package qed-tests --test integration "selectors::at-literal-single-match::0"
 ```
 
 Each trial generates a `scenario.sh`, invokes `tests/harness/run-scenario.sh`,

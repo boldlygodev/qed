@@ -1,3 +1,5 @@
+pub(crate) mod delete;
+
 use crate::SelectorId;
 
 /// A processor transforms selected text, producing new output or an error.

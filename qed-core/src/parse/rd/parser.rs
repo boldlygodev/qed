@@ -1,8 +1,323 @@
-use crate::parse::ast::{NthExpr, NthTerm};
+use crate::parse::ast::{
+    NthExpr, NthTerm, PatternRef, PatternRefValue, PatternValue, ProcessorChain, Program,
+    QedProcessor, SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,
+};
 use crate::parse::error::{ParseError, ParseResult};
-use crate::span::Spanned;
+use crate::span::{Span, Spanned};
 
 use super::cursor::Cursor;
+
+// ── Program parser ──────────────────────────────────────────────────
+
+/// Parse a complete qed program from source text.
+pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
+    let mut cursor = Cursor::new(source);
+    let mut statements: Vec<Spanned<Statement>> = Vec::new();
+    let mut errors: Vec<ParseError> = Vec::new();
+
+    eat_whitespace_and_newlines(&mut cursor);
+
+    while !cursor.is_eof() {
+        let start = cursor.pos();
+        match parse_statement(&mut cursor) {
+            Ok(stmt) => statements.push(stmt),
+            Err(e) => {
+                errors.extend(e);
+                // Try to recover by skipping to next line
+                skip_to_newline(&mut cursor);
+            }
+        }
+        eat_whitespace_and_newlines(&mut cursor);
+
+        // Safety: ensure we make progress
+        if cursor.pos() == start {
+            let found = cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string());
+            errors.push(ParseError::UnexpectedToken {
+                expected: "statement".into(),
+                found,
+                span: cursor.span_from(start),
+            });
+            cursor.advance();
+        }
+    }
+
+    if !errors.is_empty() {
+        return Err(errors);
+    }
+
+    Ok(Program {
+        shebang: None,
+        statements,
+    })
+}
+
+/// Parse a single statement (currently only select-action).
+fn parse_statement(cursor: &mut Cursor) -> Result<Spanned<Statement>, Vec<ParseError>> {
+    let start = cursor.pos();
+    let select_action = parse_select_action(cursor)?;
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: Statement::SelectAction(select_action),
+        span,
+    })
+}
+
+/// Parse `selector | processor_chain`.
+fn parse_select_action(cursor: &mut Cursor) -> Result<SelectActionNode, Vec<ParseError>> {
+    let selector = parse_selector(cursor).map_err(|e| vec![e])?;
+
+    cursor.eat_whitespace();
+
+    let chain = if cursor.eat_char(b'|') {
+        cursor.eat_whitespace();
+        let chain_start = cursor.pos();
+        let chain = parse_processor_chain(cursor).map_err(|e| vec![e])?;
+        let chain_span = cursor.span_from(chain_start);
+        Some(Spanned {
+            node: chain,
+            span: chain_span,
+        })
+    } else {
+        None
+    };
+
+    Ok(SelectActionNode {
+        selector,
+        chain,
+        fallback: None,
+    })
+}
+
+/// Parse a selector: `op("pattern")` — currently supports `at("literal")`.
+fn parse_selector(cursor: &mut Cursor) -> Result<Spanned<Selector>, ParseError> {
+    let start = cursor.pos();
+
+    let op = parse_selector_op(cursor)?;
+
+    if !cursor.eat_char(b'(') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "'(' after selector name".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    cursor.eat_whitespace();
+
+    let pattern = if cursor.peek() == Some(b'"') {
+        let pat_start = cursor.pos();
+        let lit = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
+            expected: "closing '\"' for string literal".into(),
+            span: cursor.span_from(pat_start),
+        })?;
+        let pat_span = cursor.span_from(pat_start);
+        Some(Spanned {
+            node: PatternRef {
+                value: PatternRefValue::Inline(PatternValue::String(lit)),
+                negated: false,
+                inclusive: false,
+            },
+            span: pat_span,
+        })
+    } else if cursor.peek() == Some(b')') {
+        // No pattern — bare selector like at()
+        None
+    } else {
+        return Err(ParseError::UnexpectedToken {
+            expected: "string literal or ')'".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    };
+
+    cursor.eat_whitespace();
+
+    if !cursor.eat_char(b')') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "')'".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: Selector {
+            steps: vec![Spanned {
+                node: SimpleSelector {
+                    op,
+                    pattern,
+                    params: Vec::new(),
+                },
+                span,
+            }],
+        },
+        span,
+    })
+}
+
+/// Parse a selector operation keyword.
+fn parse_selector_op(cursor: &mut Cursor) -> Result<SelectorOp, ParseError> {
+    let start = cursor.pos();
+    if cursor.eat_keyword("at") {
+        return Ok(SelectorOp::At);
+    }
+    if cursor.eat_keyword("after") {
+        return Ok(SelectorOp::After);
+    }
+    if cursor.eat_keyword("before") {
+        return Ok(SelectorOp::Before);
+    }
+    if cursor.eat_keyword("from") {
+        return Ok(SelectorOp::From);
+    }
+    if cursor.eat_keyword("to") {
+        return Ok(SelectorOp::To);
+    }
+    Err(ParseError::UnexpectedToken {
+        expected: "selector (at, after, before, from, to)".into(),
+        found: cursor
+            .remaining()
+            .chars()
+            .next()
+            .map_or("end of input".into(), |c| c.to_string()),
+        span: cursor.span_from(start),
+    })
+}
+
+/// Parse a processor chain (single processor for now).
+fn parse_processor_chain(cursor: &mut Cursor) -> Result<ProcessorChain, ParseError> {
+    let processor = parse_processor(cursor)?;
+    Ok(ProcessorChain {
+        processors: vec![processor],
+    })
+}
+
+/// Parse a single qed processor: `qed:name()`.
+fn parse_processor(
+    cursor: &mut Cursor,
+) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
+    let start = cursor.pos();
+
+    if !cursor.eat_keyword("qed") {
+        return Err(ParseError::UnexpectedToken {
+            expected: "'qed:' processor prefix".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(start),
+        });
+    }
+
+    if !cursor.eat_char(b':') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "':' after 'qed'".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    // Parse processor name (identifier)
+    let name_start = cursor.pos();
+    while let Some(b) = cursor.peek() {
+        if b.is_ascii_alphanumeric() || b == b'_' {
+            cursor.advance();
+        } else {
+            break;
+        }
+    }
+    if cursor.pos() == name_start {
+        return Err(ParseError::UnexpectedToken {
+            expected: "processor name".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(name_start),
+        });
+    }
+    let name = cursor.slice_from(name_start).to_owned();
+    let name_span = cursor.span_from(name_start);
+
+    if !cursor.eat_char(b'(') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "'(' after processor name".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    cursor.eat_whitespace();
+
+    if !cursor.eat_char(b')') {
+        return Err(ParseError::UnexpectedToken {
+            expected: "')'".into(),
+            found: cursor
+                .remaining()
+                .chars()
+                .next()
+                .map_or("end of input".into(), |c| c.to_string()),
+            span: cursor.span_from(cursor.pos()),
+        });
+    }
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: crate::parse::ast::Processor::Qed(QedProcessor {
+            name: Spanned {
+                node: name,
+                span: name_span,
+            },
+            args: Vec::new(),
+            params: Vec::new(),
+        }),
+        span,
+    })
+}
+
+/// Skip whitespace, newlines, and carriage returns.
+fn eat_whitespace_and_newlines(cursor: &mut Cursor) {
+    while let Some(b' ' | b'\t' | b'\n' | b'\r') = cursor.peek() {
+        cursor.advance();
+    }
+}
+
+/// Skip to the next newline (for error recovery).
+fn skip_to_newline(cursor: &mut Cursor) {
+    while let Some(b) = cursor.peek() {
+        cursor.advance();
+        if b == b'\n' {
+            break;
+        }
+    }
+}
 
 /// Parse a complete nth expression: `nth-term (',' nth-term)*`.
 pub(super) fn parse_nth_expr(source: &str) -> Result<ParseResult, Vec<ParseError>> {
