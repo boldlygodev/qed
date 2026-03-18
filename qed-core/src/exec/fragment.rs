@@ -117,17 +117,17 @@ fn collect_compound_matches(
     registry: &[RegistryEntry],
     stmt_id: StatementId,
 ) -> Vec<MatchResult> {
-    // Run each step, intersect ranges
-    let mut result_range: Option<LineRange> = None;
+    // Run each step, then intersect results.
+    // We track a set of "covered" lines: a line is in the result only if
+    // every step covers it.
+    let line_count = buffer.line_count();
+    let mut covered: Vec<bool> = vec![true; line_count];
 
     for &step_id in &compound.steps {
         let step_entry = &registry[step_id.value()];
         let step_selector = match step_entry {
             RegistryEntry::Simple(s) => s,
-            RegistryEntry::Compound(_) => {
-                // Compound steps should always resolve to simple selectors
-                continue;
-            }
+            RegistryEntry::Compound(_) => continue,
         };
 
         let ranges = match &step_selector.op {
@@ -138,28 +138,40 @@ fn collect_compound_matches(
             SelectorOp::To { pattern } => collect_to(buffer, pattern),
         };
 
-        // Merge step ranges into a single range via union, then intersect with accumulated
-        let step_range = union_ranges(&ranges);
-        result_range = match (result_range, step_range) {
-            (None, step) => step,
-            (Some(_), None) => None,
-            (Some(acc), Some(step)) => intersect_ranges(acc, step),
-        };
+        // Build a per-line coverage mask for this step
+        let mut step_covered = vec![false; line_count];
+        for range in &ranges {
+            for i in range.start..range.end.min(line_count) {
+                step_covered[i] = true;
+            }
+        }
 
-        // Short-circuit if intersection is already empty
-        if result_range.is_none() {
-            break;
+        // Intersect with accumulated coverage
+        for i in 0..line_count {
+            covered[i] = covered[i] && step_covered[i];
         }
     }
 
-    match result_range {
-        Some(range) if range.start < range.end => vec![MatchResult {
-            range,
-            statement_id: stmt_id,
-            selector_id: compound.id,
-        }],
-        _ => Vec::new(),
+    // Convert covered lines into contiguous ranges
+    let mut results = Vec::new();
+    let mut i = 0;
+    while i < line_count {
+        if covered[i] {
+            let start = i;
+            while i < line_count && covered[i] {
+                i += 1;
+            }
+            results.push(MatchResult {
+                range: LineRange { start, end: i },
+                statement_id: stmt_id,
+                selector_id: compound.id,
+            });
+        } else {
+            i += 1;
+        }
     }
+
+    results
 }
 
 fn union_ranges(ranges: &[LineRange]) -> Option<LineRange> {
@@ -393,18 +405,20 @@ fn decompose_events(matches: &[MatchResult]) -> Vec<BoundaryEvent> {
         });
     }
 
-    // Sort: line ascending, Start before End, StatementId ascending
+    // Sort: line ascending, End before Start (so adjacent ranges from the
+    // same selector hand off cleanly — the End removes the tag, then the
+    // Start re-adds it, keeping it active), then StatementId ascending.
     events.sort_by(|a, b| {
         a.line
             .cmp(&b.line)
             .then_with(|| {
                 let a_ord = match a.kind {
-                    EventKind::Start => 0,
-                    EventKind::End => 1,
+                    EventKind::End => 0,
+                    EventKind::Start => 1,
                 };
                 let b_ord = match b.kind {
-                    EventKind::Start => 0,
-                    EventKind::End => 1,
+                    EventKind::End => 0,
+                    EventKind::Start => 1,
                 };
                 a_ord.cmp(&b_ord)
             })

@@ -11,6 +11,8 @@
 //! the next, left to right.
 
 pub(crate) mod delete;
+pub(crate) mod lower;
+pub(crate) mod upper;
 
 use crate::SelectorId;
 

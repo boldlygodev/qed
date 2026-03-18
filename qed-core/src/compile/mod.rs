@@ -14,9 +14,12 @@
 
 use crate::error::CompileError;
 use crate::parse::ast::{
-    self, NthTerm, PatternRefValue, PatternValue, Program, SelectorOp as AstSelectorOp,
+    self, NthTerm, ParamValue, PatternRefValue, PatternValue, Program,
+    SelectorOp as AstSelectorOp,
 };
 use crate::processor::delete::DeleteProcessor;
+use crate::processor::lower::LowerProcessor;
+use crate::processor::upper::UpperProcessor;
 use crate::processor::Processor;
 use crate::SelectorId;
 use crate::StatementId;
@@ -39,6 +42,10 @@ pub(crate) struct Statement {
     pub(crate) selector: SelectorId,
     pub(crate) processor: Box<dyn Processor>,
     pub(crate) fallback: Option<Box<dyn Processor>>,
+    /// Source span of the selector expression (for diagnostics).
+    pub(crate) selector_span: crate::span::Span,
+    /// Original source text of the selector expression (for diagnostics).
+    pub(crate) selector_text: String,
 }
 
 // ── Selector registry ───────────────────────────────────────────────
@@ -132,40 +139,35 @@ pub(crate) enum OnError {
 // ── Compilation ────────────────────────────────────────────────────
 
 /// Compile a parsed AST `Program` into an executable `Script`.
-pub(crate) fn compile(program: &Program) -> Result<Script, Vec<CompileError>> {
+pub(crate) fn compile(program: &Program, source: &str) -> Result<Script, Vec<CompileError>> {
     let mut statements = Vec::new();
-    let mut selectors = Vec::new();
+    let mut selectors: Vec<RegistryEntry> = Vec::new();
     let mut errors = Vec::new();
 
     for (i, spanned_stmt) in program.statements.iter().enumerate() {
         let stmt_id = StatementId::new(i);
-        let sel_id = SelectorId::new(i);
 
         match &spanned_stmt.node {
             ast::Statement::SelectAction(node) => {
-                // Compile the selector
-                match compile_selector(node, sel_id) {
-                    Ok(entry) => selectors.push(entry),
+                // Compile the selector — may push multiple entries for compound selectors
+                let sel_id = match compile_selector(node, &mut selectors) {
+                    Ok(id) => id,
                     Err(e) => {
                         errors.push(e);
                         continue;
                     }
-                }
+                };
 
                 // Compile the processor
                 let processor: Box<dyn Processor> = match &node.chain {
-                    Some(chain) => {
-                        match compile_processor_chain(&chain.node) {
-                            Ok(p) => p,
-                            Err(e) => {
-                                errors.push(e);
-                                continue;
-                            }
+                    Some(chain) => match compile_processor_chain(&chain.node) {
+                        Ok(p) => p,
+                        Err(e) => {
+                            errors.push(e);
+                            continue;
                         }
-                    }
+                    },
                     None => {
-                        // No processor chain — identity (passthrough)
-                        // For the skeleton, this is an error
                         errors.push(CompileError::InvalidParam {
                             processor: "(none)".into(),
                             param: "missing processor chain".into(),
@@ -175,15 +177,20 @@ pub(crate) fn compile(program: &Program) -> Result<Script, Vec<CompileError>> {
                     }
                 };
 
+                let sel_span = node.selector.span;
+                let sel_text = source[sel_span.start..sel_span.end].to_owned();
+
                 statements.push(Statement {
                     id: stmt_id,
                     selector: sel_id,
                     processor,
                     fallback: None,
+                    selector_span: sel_span,
+                    selector_text: sel_text,
                 });
             }
             ast::Statement::PatternDef { .. } | ast::Statement::AliasDef { .. } => {
-                // Not yet supported in the skeleton
+                // Phase 5D: symbol table
             }
         }
     }
@@ -198,50 +205,141 @@ pub(crate) fn compile(program: &Program) -> Result<Script, Vec<CompileError>> {
     }
 }
 
-/// Compile a `SelectActionNode`'s selector into a registry entry.
+/// Compile a `SelectActionNode`'s selector into registry entries.
 ///
-/// Currently supports single-step selectors only. Compound selectors
-/// (multi-step with `>`) will be handled in a later phase.
+/// For single-step selectors, pushes one `Simple` entry.
+/// For compound selectors (multi-step with `>`), pushes one `Simple`
+/// entry per step plus a `Compound` entry referencing them.
+/// Returns the `SelectorId` of the top-level entry.
 fn compile_selector(
     node: &ast::SelectActionNode,
-    sel_id: SelectorId,
-) -> Result<RegistryEntry, CompileError> {
+    registry: &mut Vec<RegistryEntry>,
+) -> Result<SelectorId, CompileError> {
     let selector_ast = &node.selector.node;
 
-    // For the skeleton, handle single-step selectors only
-    if selector_ast.steps.len() != 1 {
-        return Err(CompileError::InvalidParam {
-            processor: "selector".into(),
-            param: "compound selectors not yet supported".into(),
-            span: node.selector.span,
-        });
+    if selector_ast.steps.len() == 1 {
+        // Single-step selector
+        let step = &selector_ast.steps[0].node;
+        let sel_id = SelectorId::new(registry.len());
+        let entry = compile_simple_selector(step, sel_id, node.selector.span)?;
+        registry.push(entry);
+        Ok(sel_id)
+    } else {
+        // Compound selector: compile each step, then create a compound entry
+        let mut step_ids = Vec::new();
+        for step_spanned in &selector_ast.steps {
+            let step_id = SelectorId::new(registry.len());
+            let entry = compile_simple_selector(
+                &step_spanned.node,
+                step_id,
+                step_spanned.span,
+            )?;
+            registry.push(entry);
+            step_ids.push(step_id);
+        }
+
+        let compound_id = SelectorId::new(registry.len());
+        registry.push(RegistryEntry::Compound(CompoundSelector {
+            id: compound_id,
+            steps: step_ids,
+        }));
+        Ok(compound_id)
     }
+}
 
-    let step = &selector_ast.steps[0].node;
-
+/// Compile a single `SimpleSelector` AST node into a `RegistryEntry::Simple`.
+fn compile_simple_selector(
+    step: &ast::SimpleSelector,
+    sel_id: SelectorId,
+    span: crate::span::Span,
+) -> Result<RegistryEntry, CompileError> {
     let compiled_pattern = match &step.pattern {
         Some(pat_ref) => compile_pattern(&pat_ref.node, pat_ref.span)?,
-        None => {
-            // No pattern means select everything (at() with no args)
-            CompiledPattern {
-                matcher: PatternMatcher::Literal(String::new()),
-                negated: false,
-                inclusive: false,
+        None => CompiledPattern {
+            matcher: PatternMatcher::Literal(String::new()),
+            negated: false,
+            inclusive: false,
+        },
+    };
+
+    // Extract params
+    let mut nth: Option<Vec<NthTerm>> = None;
+    let mut on_error = OnError::Fail;
+
+    for param in &step.params {
+        match param.node.name.node.as_str() {
+            "nth" => {
+                if let ParamValue::NthExpr(expr) = &param.node.value.node {
+                    nth = Some(expr.terms.iter().map(|t| t.node).collect());
+                } else {
+                    return Err(CompileError::InvalidParam {
+                        processor: "selector".into(),
+                        param: "nth requires an nth expression".into(),
+                        span: param.span,
+                    });
+                }
+            }
+            "on_error" => {
+                if let ParamValue::Identifier(ident) = &param.node.value.node {
+                    on_error = match ident.as_str() {
+                        "fail" => OnError::Fail,
+                        "warn" => OnError::Warn,
+                        "skip" => OnError::Skip,
+                        other => {
+                            return Err(CompileError::InvalidParam {
+                                processor: "selector".into(),
+                                param: format!("unknown on_error value: {other}"),
+                                span: param.span,
+                            });
+                        }
+                    };
+                } else {
+                    return Err(CompileError::InvalidParam {
+                        processor: "selector".into(),
+                        param: "on_error requires an identifier (fail, warn, skip)".into(),
+                        span: param.span,
+                    });
+                }
+            }
+            other => {
+                return Err(CompileError::InvalidParam {
+                    processor: "selector".into(),
+                    param: format!("unknown parameter: {other}"),
+                    span: param.span,
+                });
             }
         }
-    };
+    }
 
     let op = match step.op {
         AstSelectorOp::At => SelectorOp::At {
             pattern: compiled_pattern,
-            nth: None,
+            nth,
         },
-        AstSelectorOp::After => SelectorOp::After {
-            pattern: compiled_pattern,
-        },
-        AstSelectorOp::Before => SelectorOp::Before {
-            pattern: compiled_pattern,
-        },
+        AstSelectorOp::After => {
+            if nth.is_some() {
+                return Err(CompileError::InvalidParam {
+                    processor: "selector".into(),
+                    param: "nth is not supported on after()".into(),
+                    span,
+                });
+            }
+            SelectorOp::After {
+                pattern: compiled_pattern,
+            }
+        }
+        AstSelectorOp::Before => {
+            if nth.is_some() {
+                return Err(CompileError::InvalidParam {
+                    processor: "selector".into(),
+                    param: "nth is not supported on before()".into(),
+                    span,
+                });
+            }
+            SelectorOp::Before {
+                pattern: compiled_pattern,
+            }
+        }
         AstSelectorOp::From => SelectorOp::From {
             pattern: compiled_pattern,
         },
@@ -253,7 +351,7 @@ fn compile_selector(
     Ok(RegistryEntry::Simple(CompiledSelector {
         id: sel_id,
         op,
-        on_error: OnError::Fail,
+        on_error,
     }))
 }
 
@@ -308,6 +406,8 @@ fn compile_processor_chain(
     match proc_ast {
         ast::Processor::Qed(qed_proc) => match qed_proc.name.node.as_str() {
             "delete" => Ok(Box::new(DeleteProcessor)),
+            "upper" => Ok(Box::new(UpperProcessor)),
+            "lower" => Ok(Box::new(LowerProcessor)),
             other => Err(CompileError::UndefinedName {
                 name: format!("qed:{other}"),
                 span: qed_proc.name.span,

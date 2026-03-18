@@ -27,9 +27,10 @@ touch "$STDOUT" "$STDERR" "$OUTPUT"
 export MOCK_STATE_DIR="$TMPDIR/mock-state"
 export PATH="$TMPDIR/bin:$PATH"
 
-# Execute the invocation
+# Execute the invocation in a subshell so `exit` in the invocation
+# does not kill this script (some invocations use `exit $CODE`).
 set +e
-eval "$INVOCATION"
+(eval "$INVOCATION")
 ACTUAL_EXIT=$?
 set -e
 

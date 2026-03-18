@@ -18,3 +18,31 @@ pub struct Spanned<T> {
     pub node: T,
     pub span: Span,
 }
+
+/// Convert a byte offset to a `(line, column)` pair (both 1-based).
+pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
+    let mut line = 1;
+    let mut col = 1;
+    for (i, ch) in source.bytes().enumerate() {
+        if i >= offset {
+            break;
+        }
+        if ch == b'\n' {
+            line += 1;
+            col = 1;
+        } else {
+            col += 1;
+        }
+    }
+    (line, col)
+}
+
+/// Format a span as `line:col_start-col_end` for diagnostics.
+/// The end column is inclusive (last character of the span).
+pub fn format_span(source: &str, span: Span) -> String {
+    let (line, col_start) = offset_to_line_col(source, span.start);
+    // End is exclusive in Span, so subtract 1 for inclusive display
+    let end_offset = if span.end > span.start { span.end - 1 } else { span.start };
+    let (_, col_end) = offset_to_line_col(source, end_offset);
+    format!("{line}:{col_start}-{col_end}")
+}

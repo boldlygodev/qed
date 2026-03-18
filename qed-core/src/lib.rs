@@ -90,10 +90,30 @@ impl SelectorId {
     }
 }
 
-/// Run a qed script against input text, returning the transformed output.
-///
-/// This is the primary public API for the library.
-pub fn run(script_source: &str, input: &str) -> Result<String, String> {
+/// Result of running a qed script.
+pub struct RunResult {
+    /// The transformed output text.
+    pub output: String,
+    /// Diagnostic messages (warnings and errors).
+    pub diagnostics: Vec<RunDiagnostic>,
+    /// Whether any diagnostic is an error (execution should be considered failed).
+    pub has_errors: bool,
+}
+
+/// A diagnostic message from script execution.
+pub struct RunDiagnostic {
+    /// "error" or "warning"
+    pub level: &'static str,
+    /// Formatted source location (e.g., "1:1-10")
+    pub location: String,
+    /// The selector text that caused this diagnostic.
+    pub selector_text: String,
+    /// The diagnostic message (e.g., "no lines matched").
+    pub message: String,
+}
+
+/// Run a qed script against input text, returning the result with diagnostics.
+pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
     let program = parse::parse_program(script_source).map_err(|errors| {
         errors
             .iter()
@@ -102,7 +122,7 @@ pub fn run(script_source: &str, input: &str) -> Result<String, String> {
             .join("\n")
     })?;
 
-    let script = compile::compile(&program).map_err(|errors| {
+    let script = compile::compile(&program, script_source).map_err(|errors| {
         errors
             .iter()
             .map(|e| format!("{e:?}"))
@@ -111,7 +131,32 @@ pub fn run(script_source: &str, input: &str) -> Result<String, String> {
     })?;
 
     let buffer = exec::Buffer::new(input.to_owned());
-    let output = exec::engine::execute(&script, &buffer);
+    let result = exec::engine::execute(&script, &buffer);
 
-    Ok(output)
+    let mut has_errors = false;
+    let diagnostics: Vec<RunDiagnostic> = result
+        .diagnostics
+        .iter()
+        .map(|d| {
+            let level = match d.level {
+                exec::engine::DiagnosticLevel::Error => {
+                    has_errors = true;
+                    "error"
+                }
+                exec::engine::DiagnosticLevel::Warning => "warning",
+            };
+            RunDiagnostic {
+                level,
+                location: span::format_span(script_source, d.span),
+                selector_text: d.selector_text.clone(),
+                message: d.message.clone(),
+            }
+        })
+        .collect();
+
+    Ok(RunResult {
+        output: result.output,
+        diagnostics,
+        has_errors,
+    })
 }

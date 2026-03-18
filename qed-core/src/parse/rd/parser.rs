@@ -150,8 +150,11 @@ fn parse_selector(cursor: &mut Cursor) -> Result<Spanned<Selector>, ParseError> 
 
     // Parse compound selectors with '>'
     loop {
+        let saved = cursor.pos();
         cursor.eat_whitespace();
         if cursor.peek() != Some(b'>') {
+            // Rewind — don't include trailing whitespace in the span
+            cursor.set_pos(saved);
             break;
         }
         cursor.advance(); // consume '>'
