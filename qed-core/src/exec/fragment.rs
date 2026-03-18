@@ -329,16 +329,39 @@ fn apply_nth_filter(matching_lines: &[usize], terms: &[NthTerm]) -> Vec<usize> {
             NthTerm::Step { coefficient, offset } => {
                 // Generates 1-based indices: coefficient * k + offset for k = 0, 1, 2, ...
                 // Then converts to 0-based
-                for k in 0.. {
-                    let one_based = coefficient * k + offset;
-                    if one_based < 1 {
-                        continue;
+                if coefficient > 0 {
+                    for k in 0.. {
+                        let one_based = coefficient * k + offset;
+                        if one_based < 1 {
+                            continue;
+                        }
+                        let zero_based = (one_based - 1) as usize;
+                        if zero_based >= count {
+                            break;
+                        }
+                        selected_indices.insert(zero_based);
                     }
-                    let zero_based = (one_based - 1) as usize;
-                    if zero_based >= count {
-                        break;
+                } else if coefficient < 0 {
+                    // Negative coefficient: sequence decreases, iterate
+                    // downward from the first k that produces one_based >= 1
+                    for k in 0.. {
+                        let one_based = coefficient * k + offset;
+                        if one_based < 1 {
+                            break;
+                        }
+                        let zero_based = (one_based - 1) as usize;
+                        if zero_based < count {
+                            selected_indices.insert(zero_based);
+                        }
                     }
-                    selected_indices.insert(zero_based);
+                } else {
+                    // coefficient == 0: constant value `offset`
+                    if offset >= 1 {
+                        let zero_based = (offset - 1) as usize;
+                        if zero_based < count {
+                            selected_indices.insert(zero_based);
+                        }
+                    }
                 }
             }
         }
