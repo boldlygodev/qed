@@ -43,14 +43,14 @@ qed/
       lib.rs
       span.rs
       error.rs
-      diagnostic.rs
       parse/
         mod.rs
         ast.rs
-        rd/               # hand-written recursive descent (feature: parser-rd, default)
-        chumsky/          # combinator parser (feature: parser-chumsky)
+        error.rs
+        rd/               # hand-written recursive descent parser
+          cursor.rs
+          parser.rs
       compile/
-      selector/
       processor/
       exec/
   qed/                    # binary crate — CLI entry point only
@@ -68,12 +68,13 @@ qed/
 
 ## Current Phase
 
-**Phase 4 — Walking Skeleton** (complete).
+**Phase 5 — Full Parser** (in progress, sub-phases 5A–5B complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–3 are complete (scaffold, harness, core types, parser POC).
-Phase 4 wired end-to-end: parse → compile → execute → CLI.
-`selectors::at-literal-single-match::0` is the first green integration test.
-Next: Phase 5 (full parser) and Phase 6 (full compiler).
+Phases 0–4 are complete (scaffold, harness, core types, parser POC, walking skeleton).
+Phase 5 extends the parser to cover the complete qed grammar, interleaving
+minimal compiler work so integration tests go green progressively.
+91/396 integration tests pass. 42/46 selector tests pass (4 need external processors).
+Next: Sub-phases 5C–5E (processor args, definitions, error recovery).
 
 ---
 
@@ -97,9 +98,8 @@ impossible cases, propagate everything else.
 variant.
 If a new variant is added, the compiler should force all match sites to be updated.
 
-**Parser feature flags:** `parser-rd` is the default.
-`parser-chumsky` is the alternative under evaluation.
-Do not use `#[cfg(feature = "...")]` anywhere outside `parse/mod.rs`.
+**Parser:** recursive descent (`parse/rd/`) is the sole parser implementation.
+The chumsky alternative was evaluated and removed in Phase 3.
 
 **Newtypes:** `StatementId(usize)` and `SelectorId(usize)` are newtypes.
 Never pass a raw `usize` where one of these is expected.
