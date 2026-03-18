@@ -7,7 +7,7 @@
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [x] Phase 3 — Parser POC Evaluation
 - [x] Phase 4 — Walking Skeleton
-- [ ] Phase 5 — Full Parser
+- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C–5E remaining)
 - [ ] Phase 6 — Full Compiler
 - [ ] Phase 7 — Processor Coverage
 - [ ] Phase 8 — Generation Processors
@@ -103,36 +103,41 @@
 
 ## Phase 5 — Full Parser
 
-### 5a — Patterns (regex, negation, inclusive, single-quoted strings)
+### 5a — Patterns (regex, negation, inclusive, single-quoted strings) ✓
 
-- [ ] Cursor: `eat_single_quoted_string_literal()` for `'...'` with `\'`, `\\` escapes
-- [ ] Cursor: `eat_regex_literal()` for `/regex/` with `\/` escapes
-- [ ] Cursor: `eat_identifier()` — extract reusable `[a-zA-Z_][a-zA-Z0-9_]*` method
-- [ ] Parser: `parse_pattern_ref()` — `!` prefix, string/regex/identifier dispatch, `+` suffix
-- [ ] Parser: `parse_pattern_value()` — string vs regex discrimination
-- [ ] Parser: rewrite `parse_selector` to call `parse_pattern_ref`
-- [ ] Parser: skip `# comment` lines in `eat_whitespace_and_newlines`
-- [ ] Parser: handle shebang (`#!`) in `parse_program`
-- [ ] Unit tests for all pattern-ref forms (~12 tests)
-- [ ] Checkpoint: `at-regex-match`, `at-negated`, `from-inclusive`, `to-inclusive`, `patterns::inline-*` green
+- [x] Cursor: `eat_single_quoted_string_literal()` for `'...'` with `\'`, `\\` escapes
+- [x] Cursor: `eat_regex_literal()` for `/regex/` with `\/` escapes
+- [x] Cursor: `eat_identifier()` — extract reusable `[a-zA-Z_][a-zA-Z0-9_]*` method
+- [x] Parser: `parse_pattern_ref()` — `!` prefix, string/regex/identifier dispatch, `+` suffix
+- [x] Parser: `parse_pattern_value()` — string vs regex discrimination
+- [x] Parser: rewrite `parse_selector` to call `parse_pattern_ref`
+- [x] Parser: skip `# comment` lines in `eat_whitespace_and_newlines`
+- [x] Parser: handle shebang (`#!`) in `parse_program`
+- [x] Unit tests for all pattern-ref forms (~12 tests)
+- [x] Checkpoint: `at-regex-match`, `at-negated`, `from-inclusive`, `to-inclusive`, `patterns::inline-*` green
 
-### 5b — Selector parameters + compound selectors
+### 5b — Selector parameters + compound selectors ✓
 
-- [ ] Cursor: `peek_at(offset)` for lookahead (disambiguate `|` vs `||`)
-- [ ] Parser: `parse_param_list()` — comma-separated `name:value` pairs
-- [ ] Parser: `parse_param_value()` — identifier, string, integer, nth-expr, pattern-ref
-- [ ] Parser: factor `parse_nth_expr` internals into `parse_nth_expr_from_cursor()` for mid-stream use
-- [ ] Parser: nth `,` vs param `,` disambiguation (lookahead: `[a-zA-Z_]` + `:` = next param)
-- [ ] Parser: selector params `(pattern, nth:..., on_error:...)`
-- [ ] Parser: compound selectors `from(p) > to(p)` with `>` operator
-- [ ] Parser: implicit line continuation after `>` and `,`
-- [ ] Compiler: compound selector compilation (multi-step → `RegistryEntry::Compound`)
-- [ ] Compiler: wire `nth` param → `NthExpr` on compiled selector
-- [ ] Compiler: wire `on_error` param → `OnError` enum
-- [ ] Compiler: support `at()` entire-stream (empty pattern)
-- [ ] Compiler: support `after`/`before`/`from`/`to` selector ops
-- [ ] Unit tests for param parsing, compound selectors (~15 tests)
-- [ ] Checkpoint: `from-to-*`, `at-narrowing`, `nth-*`, `on-error-*`, `after-literal`, `before-literal`, `from-literal`, `to-literal` green
+- [x] Cursor: `peek_at(offset)` for lookahead (disambiguate `|` vs `||`)
+- [x] Parser: `parse_param_list()` — comma-separated `name:value` pairs
+- [x] Parser: `parse_param_value()` — identifier, string, integer, nth-expr, pattern-ref
+- [x] Parser: factor `parse_nth_expr` internals into `parse_nth_expr_from_cursor()` for mid-stream use
+- [x] Parser: nth `,` vs param `,` disambiguation (lookahead: `[a-zA-Z_]` + `:` = next param)
+- [x] Parser: selector params `(pattern, nth:..., on_error:...)`
+- [x] Parser: compound selectors `from(p) > to(p)` with `>` operator
+- [x] Parser: implicit line continuation after `>` and `,`
+- [x] Compiler: compound selector compilation (multi-step → `RegistryEntry::Compound`)
+- [x] Compiler: wire `nth` param → `NthExpr` on compiled selector
+- [x] Compiler: wire `on_error` param → `OnError` enum
+- [x] Compiler: support `at()` entire-stream (empty pattern)
+- [x] Compiler: support `after`/`before`/`from`/`to` selector ops
+- [x] Compiler: `UpperProcessor` and `LowerProcessor`
+- [x] Exec: no-match detection with on_error routing, structured diagnostics
+- [x] CLI: diagnostic output formatting
+- [x] Harness: subshell eval fix for `exit` in invocations
+- [x] Unit tests for param parsing, compound selectors (~15 tests)
+- [x] Checkpoint: 42/46 selector tests green (4 need external processors from 5C)
+- [x] Fix: infinite loop in `apply_nth_filter` with negative coefficient
 
 ### 5c — Processor arguments + chains + external processors
 
