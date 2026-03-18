@@ -136,7 +136,7 @@
 - [x] CLI: diagnostic output formatting
 - [x] Harness: subshell eval fix for `exit` in invocations
 - [x] Unit tests for param parsing, compound selectors (~15 tests)
-- [x] Checkpoint: 42/46 selector tests green (4 need external processors from 5C)
+- [x] Checkpoint: 42/46 selector tests green
 - [x] Fix: infinite loop in `apply_nth_filter` with negative coefficient
 
 ### 5c — Processor arguments + chains + external processors
@@ -150,10 +150,9 @@
 - [ ] Parser: rewrite `parse_processor_chain` for multi-processor piping
 - [ ] Parser: `|` vs `||` resolution (1-byte lookahead)
 - [ ] Parser: implicit line continuation after `|`
-- [ ] Compiler: register `UpperProcessor` and `LowerProcessor`
 - [ ] Compiler: processor chain composition
 - [ ] Unit tests for all processor forms (~18 tests)
-- [ ] Checkpoint: `at-entire-stream` green, chain parsing doesn't regress
+- [ ] Checkpoint: `at-entire-stream`, `after-literal`, `before-literal` green; chain parsing doesn't regress
 
 ### 5d — Definitions + fallback + line continuation
 
