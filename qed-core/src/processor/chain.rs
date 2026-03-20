@@ -13,6 +13,11 @@ impl Processor for ChainProcessor {
         let mut current = input.to_owned();
         for step in &self.steps {
             current = step.execute(&current)?;
+            // Short-circuit: empty output means deletion — nothing left
+            // to transform.
+            if current.is_empty() {
+                return Ok(current);
+            }
         }
         Ok(current)
     }

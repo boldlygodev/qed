@@ -1,15 +1,14 @@
 //! Grammar implementation for the recursive descent parser.
 //!
 //! Each `parse_*` function corresponds to a production in the qed grammar.
-//! Currently covers the Phase 4 walking-skeleton subset: select-action
-//! statements with single-step selectors, string-literal patterns, and
-//! `qed:name()` processor invocations. Nth expression parsing is complete.
+//! Covers selectors, processors, definitions (pattern/alias), fallback (`||`),
+//! semicolons, and alias references in processor position.
 //!
 //! Error recovery is line-based: on a parse failure the parser skips to the
 //! next newline and attempts the next statement.
 
 use crate::parse::ast::{
-    ExternalArg, ExternalProcessor, NthExpr, NthTerm, Param, ParamValue, PatternRef,
+    ExternalArg, ExternalProcessor, Fallback, NthExpr, NthTerm, Param, ParamValue, PatternRef,
     PatternRefValue, PatternValue, ProcessorChain, Program, QedArg, QedProcessor,
     SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,
 };
@@ -51,6 +50,10 @@ pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
             }
         }
         eat_whitespace_and_newlines(&mut cursor);
+        // Eat semicolons as statement separators
+        while cursor.eat_char(b';') {
+            eat_whitespace_and_newlines(&mut cursor);
+        }
 
         // Safety: ensure we make progress
         if cursor.pos() == start {
@@ -104,9 +107,39 @@ fn parse_shebang(cursor: &mut Cursor) -> Option<Spanned<String>> {
     }
 }
 
-/// Parse a single statement (currently only select-action).
+/// Parse a single statement: definition or select-action.
+///
+/// Disambiguation: eat an identifier; if followed by `=` (not `==`),
+/// parse as a definition (pattern or alias). Otherwise restore and
+/// parse as a select-action.
 fn parse_statement(cursor: &mut Cursor) -> Result<Spanned<Statement>, Vec<ParseError>> {
     let start = cursor.pos();
+
+    // Try definition: identifier = ...
+    let saved = cursor.pos();
+    if let Some(name) = cursor.eat_identifier() {
+        let name_span = cursor.span_from(saved);
+        cursor.eat_whitespace();
+        if cursor.peek() == Some(b'=') && cursor.peek_at(1) != Some(b'=') {
+            cursor.advance(); // consume '='
+            cursor.eat_whitespace();
+            match cursor.peek() {
+                Some(b'"') | Some(b'\'') | Some(b'/') => {
+                    let stmt = parse_pattern_def_value(cursor, name, name_span)?;
+                    let span = cursor.span_from(start);
+                    return Ok(Spanned { node: stmt, span });
+                }
+                _ => {
+                    let stmt = parse_alias_def_value(cursor, name, name_span)?;
+                    let span = cursor.span_from(start);
+                    return Ok(Spanned { node: stmt, span });
+                }
+            }
+        }
+        // Not a definition — restore position
+        cursor.set_pos(saved);
+    }
+
     let select_action = parse_select_action(cursor)?;
     let span = cursor.span_from(start);
     Ok(Spanned {
@@ -115,13 +148,86 @@ fn parse_statement(cursor: &mut Cursor) -> Result<Spanned<Statement>, Vec<ParseE
     })
 }
 
-/// Parse `selector | processor_chain`.
+/// Parse the value side of a pattern definition after `name =`.
+fn parse_pattern_def_value(
+    cursor: &mut Cursor,
+    name: String,
+    name_span: crate::span::Span,
+) -> Result<Statement, Vec<ParseError>> {
+    let value_start = cursor.pos();
+    let value = match cursor.peek() {
+        Some(b'"') => {
+            let s = cursor.eat_string_literal().ok_or_else(|| {
+                vec![ParseError::UnexpectedEof {
+                    expected: "closing '\"' for pattern string".into(),
+                    span: cursor.span_from(value_start),
+                }]
+            })?;
+            PatternValue::String(s)
+        }
+        Some(b'\'') => {
+            let s = cursor.eat_single_quoted_string_literal().ok_or_else(|| {
+                vec![ParseError::UnexpectedEof {
+                    expected: "closing \"'\" for pattern string".into(),
+                    span: cursor.span_from(value_start),
+                }]
+            })?;
+            PatternValue::String(s)
+        }
+        Some(b'/') => {
+            let r = cursor.eat_regex_literal().ok_or_else(|| {
+                vec![ParseError::UnexpectedEof {
+                    expected: "closing '/' for pattern regex".into(),
+                    span: cursor.span_from(value_start),
+                }]
+            })?;
+            PatternValue::Regex(r)
+        }
+        _ => unreachable!("called only when peek is \", ', or /"),
+    };
+    let value_span = cursor.span_from(value_start);
+
+    Ok(Statement::PatternDef {
+        name: Spanned {
+            node: name,
+            span: name_span,
+        },
+        value: Spanned {
+            node: value,
+            span: value_span,
+        },
+    })
+}
+
+/// Parse the value side of an alias definition after `name =`.
+fn parse_alias_def_value(
+    cursor: &mut Cursor,
+    name: String,
+    name_span: crate::span::Span,
+) -> Result<Statement, Vec<ParseError>> {
+    let chain_start = cursor.pos();
+    let chain = parse_processor_chain(cursor).map_err(|e| vec![e])?;
+    let chain_span = cursor.span_from(chain_start);
+
+    Ok(Statement::AliasDef {
+        name: Spanned {
+            node: name,
+            span: name_span,
+        },
+        chain: Spanned {
+            node: chain,
+            span: chain_span,
+        },
+    })
+}
+
+/// Parse `selector | processor_chain (|| fallback)?`.
 fn parse_select_action(cursor: &mut Cursor) -> Result<SelectActionNode, Vec<ParseError>> {
     let selector = parse_selector(cursor).map_err(|e| vec![e])?;
 
     cursor.eat_whitespace();
 
-    // Eat `|` but not `||` (which is fallback, handled in 5D)
+    // Eat `|` but not `||` (which is fallback)
     let chain = if cursor.peek() == Some(b'|') && cursor.peek_at(1) != Some(b'|') {
         cursor.advance(); // consume the `|`
         eat_whitespace_and_newlines(cursor);
@@ -136,10 +242,38 @@ fn parse_select_action(cursor: &mut Cursor) -> Result<SelectActionNode, Vec<Pars
         None
     };
 
+    // Parse optional fallback: `|| ...`
+    let saved = cursor.pos();
+    cursor.eat_whitespace();
+    let fallback = if cursor.peek() == Some(b'|') && cursor.peek_at(1) == Some(b'|') {
+        cursor.advance(); // consume first |
+        cursor.advance(); // consume second |
+        eat_whitespace_and_newlines(cursor);
+        let fb_start = cursor.pos();
+        if is_selector_start(cursor) {
+            let fb_action = parse_select_action(cursor)?;
+            let fb_span = cursor.span_from(fb_start);
+            Some(Spanned {
+                node: Fallback::SelectAction(Box::new(fb_action)),
+                span: fb_span,
+            })
+        } else {
+            let fb_chain = parse_processor_chain(cursor).map_err(|e| vec![e])?;
+            let fb_span = cursor.span_from(fb_start);
+            Some(Spanned {
+                node: Fallback::Chain(fb_chain),
+                span: fb_span,
+            })
+        }
+    } else {
+        cursor.set_pos(saved);
+        None
+    };
+
     Ok(SelectActionNode {
         selector,
         chain,
-        fallback: None,
+        fallback,
     })
 }
 
@@ -492,15 +626,49 @@ fn parse_processor_chain(cursor: &mut Cursor) -> Result<ProcessorChain, ParseErr
     Ok(ProcessorChain { processors })
 }
 
-/// Parse a single processor: `qed:*` or external command.
+/// Parse a single processor: `qed:*`, external command, or alias reference.
+///
+/// Bare identifiers without arguments are parsed as alias references.
+/// Bare identifiers followed by arguments are parsed as external commands.
 fn parse_processor(
     cursor: &mut Cursor,
 ) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
     if cursor.remaining().starts_with("qed:") {
-        parse_qed_processor(cursor)
-    } else {
-        parse_external_processor(cursor)
+        return parse_qed_processor(cursor);
     }
+    // Explicit external-command prefixes: `\`, `/path`, `./path`
+    if matches!(cursor.peek(), Some(b'\\') | Some(b'/'))
+        || cursor.remaining().starts_with("./")
+    {
+        return parse_external_processor(cursor);
+    }
+    // Bare identifier: disambiguate alias ref vs external command
+    let saved = cursor.pos();
+    if let Some(name) = cursor.eat_identifier() {
+        let ident_end = cursor.pos();
+        cursor.eat_whitespace();
+        match cursor.peek() {
+            // At a statement/chain delimiter → alias ref (no arguments)
+            None | Some(b'|') | Some(b'\n') | Some(b'\r') | Some(b';') | Some(b')') => {
+                cursor.set_pos(ident_end);
+                let span = cursor.span_from(saved);
+                return Ok(Spanned {
+                    node: crate::parse::ast::Processor::AliasRef(name),
+                    span,
+                });
+            }
+            // Has arguments → external command
+            _ => {
+                cursor.set_pos(saved);
+                return parse_external_processor(cursor);
+            }
+        }
+    }
+    Err(ParseError::UnexpectedToken {
+        expected: "processor (qed:name(), \\command, or alias name)".into(),
+        found: peek_found(cursor),
+        span: cursor.span_from(cursor.pos()),
+    })
 }
 
 /// Parse a qed processor: `qed:name(args, params)`.
@@ -811,6 +979,16 @@ fn parse_external_processor(
         }),
         span,
     })
+}
+
+/// Check whether the cursor is at the start of a selector keyword.
+fn is_selector_start(cursor: &Cursor) -> bool {
+    let r = cursor.remaining();
+    r.starts_with("at(")
+        || r.starts_with("after(")
+        || r.starts_with("before(")
+        || r.starts_with("from(")
+        || r.starts_with("to(")
 }
 
 /// Skip whitespace, newlines, carriage returns, and `# comment` lines.

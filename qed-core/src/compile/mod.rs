@@ -1,28 +1,33 @@
 //! Compilation pass — AST → executable IR.
 //!
 //! Transforms a [`Program`] (AST) into a [`Script`] (compiled IR) in two
-//! conceptual phases:
+//! passes:
 //!
 //! 1. **Symbol collection** — walk `PatternDef` and `AliasDef` statements
-//!    to populate the symbol table (not yet implemented).
+//!    to populate symbol tables for named patterns and aliases.
 //! 2. **Compilation** — walk `SelectAction` statements, compiling each
 //!    selector into a [`CompiledSelector`] (or [`CompoundSelector`]) and
-//!    each processor chain into a `Box<dyn Processor>`.
+//!    each processor chain into a `Box<dyn Processor>`, resolving named
+//!    references through the symbol tables.
 //!
 //! Errors are accumulated into a `Vec<CompileError>` so the compiler can
 //! report all problems in a single pass.
 
+use std::collections::HashMap;
+
 use crate::error::CompileError;
 use crate::parse::ast::{
-    self, NthTerm, ParamValue, PatternRefValue, PatternValue, Program,
+    self, NthTerm, Param, ParamValue, PatternRefValue, PatternValue, Program,
     SelectorOp as AstSelectorOp,
 };
 use crate::processor::chain::ChainProcessor;
 use crate::processor::delete::DeleteProcessor;
 use crate::processor::external::ExternalCommandProcessor;
 use crate::processor::lower::LowerProcessor;
+use crate::processor::prefix::PrefixProcessor;
 use crate::processor::upper::UpperProcessor;
 use crate::processor::Processor;
+use crate::span::Spanned;
 use crate::SelectorId;
 use crate::StatementId;
 
@@ -142,59 +147,91 @@ pub(crate) enum OnError {
 
 /// Compile a parsed AST `Program` into an executable `Script`.
 pub(crate) fn compile(program: &Program, source: &str) -> Result<Script, Vec<CompileError>> {
-    let mut statements = Vec::new();
-    let mut selectors: Vec<RegistryEntry> = Vec::new();
     let mut errors = Vec::new();
 
-    for (i, spanned_stmt) in program.statements.iter().enumerate() {
-        let stmt_id = StatementId::new(i);
+    // ── Pass 1: collect definitions ──────────────────────────────────
+    let mut pattern_defs: HashMap<&str, &PatternValue> = HashMap::new();
+    let mut alias_defs: HashMap<&str, &ast::ProcessorChain> = HashMap::new();
 
+    for spanned_stmt in &program.statements {
         match &spanned_stmt.node {
-            ast::Statement::SelectAction(node) => {
-                // Compile the selector — may push multiple entries for compound selectors
-                let sel_id = match compile_selector(node, &mut selectors) {
-                    Ok(id) => id,
+            ast::Statement::PatternDef { name, value } => {
+                pattern_defs.insert(&name.node, &value.node);
+            }
+            ast::Statement::AliasDef { name, chain } => {
+                alias_defs.insert(&name.node, &chain.node);
+            }
+            ast::Statement::SelectAction(_) => {}
+        }
+    }
+
+    // ── Pass 2: compile select-actions ───────────────────────────────
+    let mut statements = Vec::new();
+    let mut selectors: Vec<RegistryEntry> = Vec::new();
+    let mut stmt_index = 0;
+
+    for spanned_stmt in &program.statements {
+        let ast::Statement::SelectAction(node) = &spanned_stmt.node else {
+            continue;
+        };
+
+        let stmt_id = StatementId::new(stmt_index);
+        stmt_index += 1;
+
+        // Compile the selector
+        let sel_id = match compile_selector(node, &mut selectors, &pattern_defs) {
+            Ok(id) => id,
+            Err(e) => {
+                errors.push(e);
+                continue;
+            }
+        };
+
+        // Compile the processor
+        let processor: Box<dyn Processor> = match &node.chain {
+            Some(chain) => match compile_processor_chain(&chain.node, &alias_defs) {
+                Ok(p) => p,
+                Err(e) => {
+                    errors.push(e);
+                    continue;
+                }
+            },
+            None => {
+                errors.push(CompileError::InvalidParam {
+                    processor: "(none)".into(),
+                    param: "missing processor chain".into(),
+                    span: spanned_stmt.span,
+                });
+                continue;
+            }
+        };
+
+        // Compile optional fallback
+        let fallback = match &node.fallback {
+            Some(fb) => match &fb.node {
+                ast::Fallback::Chain(chain) => match compile_processor_chain(chain, &alias_defs) {
+                    Ok(p) => Some(p),
                     Err(e) => {
                         errors.push(e);
-                        continue;
+                        None
                     }
-                };
+                },
+                ast::Fallback::SelectAction(_) => None, // deferred
+            },
+            None => None,
+        };
 
-                // Compile the processor
-                let processor: Box<dyn Processor> = match &node.chain {
-                    Some(chain) => match compile_processor_chain(&chain.node) {
-                        Ok(p) => p,
-                        Err(e) => {
-                            errors.push(e);
-                            continue;
-                        }
-                    },
-                    None => {
-                        errors.push(CompileError::InvalidParam {
-                            processor: "(none)".into(),
-                            param: "missing processor chain".into(),
-                            span: spanned_stmt.span,
-                        });
-                        continue;
-                    }
-                };
+        let sel_span = node.selector.span;
+        let sel_text = source[sel_span.start..sel_span.end].to_owned();
 
-                let sel_span = node.selector.span;
-                let sel_text = source[sel_span.start..sel_span.end].to_owned();
-
-                statements.push(Statement {
-                    id: stmt_id,
-                    selector: sel_id,
-                    processor,
-                    fallback: None,
-                    selector_span: sel_span,
-                    selector_text: sel_text,
-                });
-            }
-            ast::Statement::PatternDef { .. } | ast::Statement::AliasDef { .. } => {
-                // Phase 5D: symbol table
-            }
-        }
+        statements.push(Statement {
+            id: stmt_id,
+            selector: sel_id,
+            processor,
+            fallback,
+            selector_span: sel_span,
+            selector_text: sel_text,
+        });
     }
 
     if errors.is_empty() {
@@ -216,6 +253,7 @@ pub(crate) fn compile(program: &Program, source: &str) -> Result<Script, Vec<Com
 fn compile_selector(
     node: &ast::SelectActionNode,
     registry: &mut Vec<RegistryEntry>,
+    pattern_defs: &HashMap<&str, &PatternValue>,
 ) -> Result<SelectorId, CompileError> {
     let selector_ast = &node.selector.node;
 
@@ -223,7 +261,7 @@ fn compile_selector(
         // Single-step selector
         let step = &selector_ast.steps[0].node;
         let sel_id = SelectorId::new(registry.len());
-        let entry = compile_simple_selector(step, sel_id, node.selector.span)?;
+        let entry = compile_simple_selector(step, sel_id, node.selector.span, pattern_defs)?;
         registry.push(entry);
         Ok(sel_id)
     } else {
@@ -235,6 +273,7 @@ fn compile_selector(
                 &step_spanned.node,
                 step_id,
                 step_spanned.span,
+                pattern_defs,
             )?;
             registry.push(entry);
             step_ids.push(step_id);
@@ -254,9 +293,10 @@ fn compile_simple_selector(
     step: &ast::SimpleSelector,
     sel_id: SelectorId,
     span: crate::span::Span,
+    pattern_defs: &HashMap<&str, &PatternValue>,
 ) -> Result<RegistryEntry, CompileError> {
     let compiled_pattern = match &step.pattern {
-        Some(pat_ref) => compile_pattern(&pat_ref.node, pat_ref.span)?,
+        Some(pat_ref) => compile_pattern(&pat_ref.node, pat_ref.span, pattern_defs)?,
         None => CompiledPattern {
             matcher: PatternMatcher::Literal(String::new()),
             negated: false,
@@ -362,23 +402,25 @@ fn compile_simple_selector(
 fn compile_pattern(
     pat_ref: &ast::PatternRef,
     span: crate::span::Span,
+    pattern_defs: &HashMap<&str, &PatternValue>,
 ) -> Result<CompiledPattern, CompileError> {
     let matcher = match &pat_ref.value {
         PatternRefValue::Inline(PatternValue::String(s)) => PatternMatcher::Literal(s.clone()),
         PatternRefValue::Inline(PatternValue::Regex(r)) => {
-            let re = regex::Regex::new(r).map_err(|e| CompileError::InvalidRegex {
-                pattern: r.clone(),
-                reason: e.to_string(),
-                span,
-            })?;
-            PatternMatcher::Regex(re)
+            compile_regex_matcher(r, span)?
         }
-        PatternRefValue::Named(_) => {
-            return Err(CompileError::UndefinedName {
-                name: "named patterns not yet supported".into(),
-                span,
-            });
-        }
+        PatternRefValue::Named(name) => match pattern_defs.get(name.as_str()) {
+            Some(PatternValue::String(s)) => PatternMatcher::Literal(s.clone()),
+            Some(PatternValue::Regex(r)) => {
+                compile_regex_matcher(r, span)?
+            }
+            None => {
+                return Err(CompileError::UndefinedName {
+                    name: name.clone(),
+                    span,
+                });
+            }
+        },
     };
 
     Ok(CompiledPattern {
@@ -388,38 +430,53 @@ fn compile_pattern(
     })
 }
 
+/// Compile a regex string into a `PatternMatcher::Regex`.
+fn compile_regex_matcher(
+    pattern: &str,
+    span: crate::span::Span,
+) -> Result<PatternMatcher, CompileError> {
+    let re = regex::Regex::new(pattern).map_err(|e| CompileError::InvalidRegex {
+        pattern: pattern.to_owned(),
+        reason: e.to_string(),
+        span,
+    })?;
+    Ok(PatternMatcher::Regex(re))
+}
+
 /// Compile a processor chain into a single `Box<dyn Processor>`.
 ///
 /// Single-processor chains return the processor directly.
 /// Multi-processor chains wrap in a `ChainProcessor`.
 fn compile_processor_chain(
     chain: &ast::ProcessorChain,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
 ) -> Result<Box<dyn Processor>, CompileError> {
-    if chain.processors.len() == 1 {
-        compile_single_processor(&chain.processors[0])
+    // Alias refs may expand to multi-step chains; flatten into a single list.
+    let mut steps: Vec<Box<dyn Processor>> = Vec::new();
+    for proc_spanned in &chain.processors {
+        compile_single_processor_into(proc_spanned, alias_defs, &mut steps)?;
+    }
+    if steps.len() == 1 {
+        Ok(steps.into_iter().next().expect("checked len"))
     } else {
-        let mut steps: Vec<Box<dyn Processor>> = Vec::new();
-        for proc_spanned in &chain.processors {
-            steps.push(compile_single_processor(proc_spanned)?);
-        }
         Ok(Box::new(ChainProcessor { steps }))
     }
 }
 
-/// Compile a single processor AST node.
-fn compile_single_processor(
-    proc_spanned: &crate::span::Spanned<ast::Processor>,
-) -> Result<Box<dyn Processor>, CompileError> {
+/// Compile a single processor AST node, appending results to `out`.
+///
+/// Alias references are resolved and their chain steps appended directly,
+/// so `alias | other` flattens correctly into a single chain.
+fn compile_single_processor_into(
+    proc_spanned: &Spanned<ast::Processor>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
+    out: &mut Vec<Box<dyn Processor>>,
+) -> Result<(), CompileError> {
     match &proc_spanned.node {
-        ast::Processor::Qed(qed_proc) => match qed_proc.name.node.as_str() {
-            "delete" => Ok(Box::new(DeleteProcessor)),
-            "upper" => Ok(Box::new(UpperProcessor)),
-            "lower" => Ok(Box::new(LowerProcessor)),
-            other => Err(CompileError::UndefinedName {
-                name: format!("qed:{other}"),
-                span: qed_proc.name.span,
-            }),
-        },
+        ast::Processor::Qed(qed_proc) => {
+            out.push(compile_qed_processor(qed_proc)?);
+            Ok(())
+        }
         ast::Processor::External(ext) => {
             let args: Vec<String> = ext
                 .args
@@ -429,10 +486,63 @@ fn compile_single_processor(
                     ast::ExternalArg::Unquoted(s) => s.clone(),
                 })
                 .collect();
-            Ok(Box::new(ExternalCommandProcessor {
+            out.push(Box::new(ExternalCommandProcessor {
                 command: ext.command.node.clone(),
                 args,
-            }))
+            }));
+            Ok(())
         }
+        ast::Processor::AliasRef(name) => match alias_defs.get(name.as_str()) {
+            Some(chain) => {
+                for p in &chain.processors {
+                    compile_single_processor_into(p, alias_defs, out)?;
+                }
+                Ok(())
+            }
+            None => Err(CompileError::UndefinedName {
+                name: name.clone(),
+                span: proc_spanned.span,
+            }),
+        },
     }
+}
+
+/// Compile a `qed:*` processor invocation.
+fn compile_qed_processor(
+    qed_proc: &ast::QedProcessor,
+) -> Result<Box<dyn Processor>, CompileError> {
+    match qed_proc.name.node.as_str() {
+        "delete" => Ok(Box::new(DeleteProcessor)),
+        "upper" => Ok(Box::new(UpperProcessor)),
+        "lower" => Ok(Box::new(LowerProcessor)),
+        "prefix" => {
+            let text = extract_string_param(&qed_proc.params, "text").ok_or_else(|| {
+                CompileError::InvalidParam {
+                    processor: "qed:prefix".into(),
+                    param: "missing required parameter 'text'".into(),
+                    span: qed_proc.name.span,
+                }
+            })?;
+            Ok(Box::new(PrefixProcessor { text }))
+        }
+        other => Err(CompileError::UndefinedName {
+            name: format!("qed:{other}"),
+            span: qed_proc.name.span,
+        }),
+    }
+}
+
+/// Extract a string-valued named parameter from a parameter list.
+fn extract_string_param(params: &[Spanned<Param>], name: &str) -> Option<String> {
+    params.iter().find_map(|p| {
+        if p.node.name.node == name {
+            if let ParamValue::String(s) = &p.node.value.node {
+                Some(s.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    })
 }

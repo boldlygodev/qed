@@ -158,14 +158,16 @@ pub(crate) struct ProcessorChain {
     pub(crate) processors: Vec<Spanned<Processor>>,
 }
 
-/// A single processor — either a built-in qed processor or an external
-/// shell command.
+/// A single processor — either a built-in qed processor, an external
+/// shell command, or a reference to a named alias.
 #[derive(Debug, Clone)]
 pub(crate) enum Processor {
     /// Built-in processor: `qed:name(args; params)`.
     Qed(QedProcessor),
     /// External command: `!command args` or `!!command args` (escaped).
     External(ExternalProcessor),
+    /// A bare identifier referencing a named alias defined via `AliasDef`.
+    AliasRef(String),
 }
 
 /// A built-in qed processor invocation.
