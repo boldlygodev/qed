@@ -7,7 +7,7 @@
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [x] Phase 3 — Parser POC Evaluation
 - [x] Phase 4 — Walking Skeleton
-- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D–5E remaining)
+- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E remaining)
 - [ ] Phase 6 — Full Compiler
 - [ ] Phase 7 — Processor Coverage
 - [ ] Phase 8 — Generation Processors
@@ -156,19 +156,29 @@
 - [x] Exec: fix `ExternalCommandProcessor` newline handling (input-aware normalization)
 - [x] Checkpoint: `at-entire-stream`, `after-literal`, `before-literal` green; chain parsing doesn't regress (46/46 selectors, 106/396 total)
 
-### 5d — Definitions + fallback + line continuation
+### 5d — Definitions + fallback + aliases ✓
 
-- [ ] Parser: `parse_pattern_def()` — `identifier = pattern-value`
-- [ ] Parser: `parse_alias_def()` — `identifier = processor-chain`
-- [ ] Parser: update `parse_statement` — disambiguate PatternDef vs AliasDef vs SelectAction
-- [ ] Parser: fallback `||` in `parse_select_action` — select-action or processor-chain
-- [ ] Parser: implicit line continuation after `||`
-- [ ] Parser: semicolons as statement separators
-- [ ] Compiler: symbol table — collect `PatternDef` and `AliasDef` entries
-- [ ] Compiler: resolve `PatternRefValue::Named` through symbol table
-- [ ] Compiler: fallback compilation on `Statement`
-- [ ] Unit tests for definitions, fallback, semicolons, line continuation (~15 tests)
-- [ ] Checkpoint: `patterns::named-*`, script-file scenarios green
+- [x] AST: add `Processor::AliasRef(String)` variant
+- [x] Parser: `parse_pattern_def_value()` — `identifier = "string" | /regex/`
+- [x] Parser: `parse_alias_def_value()` — `identifier = processor-chain`
+- [x] Parser: `parse_statement` disambiguation — lookahead for `=` (not `==`)
+- [x] Parser: alias refs in processor position — bare identifiers without args
+- [x] Parser: bare identifiers with args remain external commands (backward compat)
+- [x] Parser: fallback `||` in `parse_select_action` — select-action or processor-chain
+- [x] Parser: `is_selector_start()` for fallback disambiguation
+- [x] Parser: implicit line continuation after `||`
+- [x] Parser: semicolons as statement separators
+- [x] Compiler: two-pass architecture — pass 1 collects definitions, pass 2 compiles
+- [x] Compiler: `HashMap` symbol tables for pattern defs and alias defs
+- [x] Compiler: resolve `PatternRefValue::Named` through pattern symbol table
+- [x] Compiler: resolve `Processor::AliasRef` through alias symbol table (recursive)
+- [x] Compiler: `compile_single_processor_into()` flattens alias chains
+- [x] Compiler: fallback compilation on `Statement`
+- [x] Compiler: `qed:prefix(text:"...")` processor registration
+- [x] Compiler: `extract_string_param()` helper
+- [x] Processor: `PrefixProcessor` in `processor/prefix.rs`
+- [x] Processor: `ChainProcessor` short-circuits on empty output (delete semantics)
+- [x] Checkpoint: `patterns::named-*` 4/4, `script-files::*` 8/8, 125/396 total, no regressions
 
 ### 5e — Error recovery + polish
 
