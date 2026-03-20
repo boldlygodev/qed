@@ -10,7 +10,9 @@
 //! Processor chains (piped with `|`) feed each processor's output into
 //! the next, left to right.
 
+pub(crate) mod chain;
 pub(crate) mod delete;
+pub(crate) mod external;
 pub(crate) mod lower;
 pub(crate) mod upper;
 

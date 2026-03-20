@@ -9,9 +9,9 @@
 //! next newline and attempts the next statement.
 
 use crate::parse::ast::{
-    NthExpr, NthTerm, Param, ParamValue, PatternRef, PatternRefValue, PatternValue,
-    ProcessorChain, Program, QedProcessor, SelectActionNode, Selector, SelectorOp,
-    SimpleSelector, Statement,
+    ExternalArg, ExternalProcessor, NthExpr, NthTerm, Param, ParamValue, PatternRef,
+    PatternRefValue, PatternValue, ProcessorChain, Program, QedArg, QedProcessor,
+    SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,
 };
 use crate::parse::error::{ParseError, ParseResult};
 use crate::span::Spanned;
@@ -121,8 +121,10 @@ fn parse_select_action(cursor: &mut Cursor) -> Result<SelectActionNode, Vec<Pars
 
     cursor.eat_whitespace();
 
-    let chain = if cursor.eat_char(b'|') {
-        cursor.eat_whitespace();
+    // Eat `|` but not `||` (which is fallback, handled in 5D)
+    let chain = if cursor.peek() == Some(b'|') && cursor.peek_at(1) != Some(b'|') {
+        cursor.advance(); // consume the `|`
+        eat_whitespace_and_newlines(cursor);
         let chain_start = cursor.pos();
         let chain = parse_processor_chain(cursor).map_err(|e| vec![e])?;
         let chain_span = cursor.span_from(chain_start);
@@ -467,61 +469,95 @@ fn parse_selector_op(cursor: &mut Cursor) -> Result<SelectorOp, ParseError> {
     })
 }
 
-/// Parse a processor chain (single processor for now).
+/// Parse a processor chain: `processor ('|' processor)*`.
+/// Stops before `||` (fallback) or end-of-statement.
 fn parse_processor_chain(cursor: &mut Cursor) -> Result<ProcessorChain, ParseError> {
-    let processor = parse_processor(cursor)?;
-    Ok(ProcessorChain {
-        processors: vec![processor],
-    })
+    let mut processors = vec![parse_processor(cursor)?];
+
+    loop {
+        let saved = cursor.pos();
+        cursor.eat_whitespace();
+        // `|` but not `||`
+        if cursor.peek() == Some(b'|') && cursor.peek_at(1) != Some(b'|') {
+            cursor.advance(); // consume `|`
+            // Implicit line continuation after `|`
+            eat_whitespace_and_newlines(cursor);
+            processors.push(parse_processor(cursor)?);
+        } else {
+            cursor.set_pos(saved); // don't consume trailing whitespace
+            break;
+        }
+    }
+
+    Ok(ProcessorChain { processors })
 }
 
-/// Parse a single qed processor: `qed:name()`.
+/// Parse a single processor: `qed:*` or external command.
 fn parse_processor(
+    cursor: &mut Cursor,
+) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
+    if cursor.remaining().starts_with("qed:") {
+        parse_qed_processor(cursor)
+    } else {
+        parse_external_processor(cursor)
+    }
+}
+
+/// Parse a qed processor: `qed:name(args, params)`.
+/// Name can be colon-separated: `qed:debug:count()`.
+fn parse_qed_processor(
     cursor: &mut Cursor,
 ) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
     let start = cursor.pos();
 
+    // Consume `qed:`
     if !cursor.eat_keyword("qed") {
         return Err(ParseError::UnexpectedToken {
             expected: "'qed:' processor prefix".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(start),
         });
     }
-
     if !cursor.eat_char(b':') {
         return Err(ParseError::UnexpectedToken {
             expected: "':' after 'qed'".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(cursor.pos()),
         });
     }
 
-    // Parse processor name (identifier)
+    // Parse processor name: identifier (':' identifier)*
     let name_start = cursor.pos();
-    while let Some(b) = cursor.peek() {
-        if b.is_ascii_alphanumeric() || b == b'_' {
-            cursor.advance();
-        } else {
-            break;
+    loop {
+        match cursor.peek() {
+            Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
+                cursor.advance();
+            }
+            _ => break,
         }
+        while let Some(b) = cursor.peek() {
+            if b.is_ascii_alphanumeric() || b == b'_' {
+                cursor.advance();
+            } else {
+                break;
+            }
+        }
+        // Continue on `:` followed by alpha/underscore (colon-separated name)
+        if cursor.peek() == Some(b':') {
+            if let Some(next) = cursor.peek_at(1) {
+                if next.is_ascii_alphabetic() || next == b'_' {
+                    cursor.advance(); // consume `:`
+                    continue;
+                }
+            }
+        }
+        break;
     }
+
     if cursor.pos() == name_start {
         return Err(ParseError::UnexpectedToken {
             expected: "processor name".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(name_start),
         });
     }
@@ -531,25 +567,47 @@ fn parse_processor(
     if !cursor.eat_char(b'(') {
         return Err(ParseError::UnexpectedToken {
             expected: "'(' after processor name".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(cursor.pos()),
         });
     }
 
     cursor.eat_whitespace();
 
+    // Parse args and params inside parens
+    let mut args: Vec<Spanned<QedArg>> = Vec::new();
+    let mut params: Vec<Spanned<Param>> = Vec::new();
+    let mut in_params = false;
+
+    if cursor.peek() != Some(b')') {
+        loop {
+            cursor.eat_whitespace();
+            if cursor.peek() == Some(b')') {
+                break;
+            }
+
+            // Switch to params once we see `identifier:`
+            if !in_params && is_param_start(cursor) {
+                in_params = true;
+            }
+
+            if in_params {
+                params.push(parse_param(cursor)?);
+            } else {
+                args.push(parse_qed_arg(cursor)?);
+            }
+
+            cursor.eat_whitespace();
+            if !cursor.eat_char(b',') {
+                break;
+            }
+        }
+    }
+
     if !cursor.eat_char(b')') {
         return Err(ParseError::UnexpectedToken {
             expected: "')'".into(),
-            found: cursor
-                .remaining()
-                .chars()
-                .next()
-                .map_or("end of input".into(), |c| c.to_string()),
+            found: peek_found(cursor),
             span: cursor.span_from(cursor.pos()),
         });
     }
@@ -561,8 +619,195 @@ fn parse_processor(
                 node: name,
                 span: name_span,
             },
-            args: Vec::new(),
-            params: Vec::new(),
+            args,
+            params,
+        }),
+        span,
+    })
+}
+
+/// Parse a single positional argument to a qed processor.
+fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
+    let start = cursor.pos();
+    cursor.eat_whitespace();
+
+    match cursor.peek() {
+        Some(b'"') => {
+            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
+                expected: "closing '\"'".into(),
+                span: cursor.span_from(start),
+            })?;
+            Ok(Spanned {
+                node: QedArg::String(s),
+                span: cursor.span_from(start),
+            })
+        }
+        Some(b'/') => {
+            let r = cursor.eat_regex_literal().ok_or_else(|| ParseError::UnexpectedEof {
+                expected: "closing '/'".into(),
+                span: cursor.span_from(start),
+            })?;
+            Ok(Spanned {
+                node: QedArg::Regex(r),
+                span: cursor.span_from(start),
+            })
+        }
+        // Nested processor chain: `qed:name(...)`
+        _ if cursor.remaining().starts_with("qed:") => {
+            let chain = parse_processor_chain(cursor)?;
+            Ok(Spanned {
+                node: QedArg::ProcessorChain(Box::new(chain)),
+                span: cursor.span_from(start),
+            })
+        }
+        // Integer (possibly negative)
+        Some(b) if b.is_ascii_digit() || (b == b'-' && cursor.peek_at(1).is_some_and(|n| n.is_ascii_digit())) => {
+            let neg = cursor.eat_char(b'-');
+            let num_start = cursor.pos();
+            while cursor.peek().is_some_and(|b| b.is_ascii_digit()) {
+                cursor.advance();
+            }
+            let digits = cursor.slice_from(num_start);
+            let val: i64 = digits.parse().map_err(|_| ParseError::UnexpectedToken {
+                expected: "integer".into(),
+                found: digits.to_owned(),
+                span: cursor.span_from(start),
+            })?;
+            Ok(Spanned {
+                node: QedArg::Integer(if neg { -val } else { val }),
+                span: cursor.span_from(start),
+            })
+        }
+        // Pattern ref (negated `!` or single-quoted `'`)
+        Some(b'!') | Some(b'\'') => {
+            let pat = parse_pattern_ref(cursor)?;
+            Ok(Spanned {
+                node: QedArg::PatternRef(pat.node),
+                span: pat.span,
+            })
+        }
+        _ => Err(ParseError::UnexpectedToken {
+            expected: "processor argument (string, regex, integer, or pattern)".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(start),
+        }),
+    }
+}
+
+/// Parse an external processor: `command arg1 arg2 ...`.
+/// Stops at `|`, `||`, `)`, newline, `;`, or EOF.
+fn parse_external_processor(
+    cursor: &mut Cursor,
+) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
+    let start = cursor.pos();
+
+    // Check for `\` escape prefix
+    let escaped = cursor.eat_char(b'\\');
+
+    // Parse command name or path
+    let cmd_start = cursor.pos();
+    match cursor.peek() {
+        // Path starting with `/` or `.`
+        Some(b'/') | Some(b'.') => {
+            while let Some(b) = cursor.peek() {
+                match b {
+                    b' ' | b'\t' | b'\n' | b'|' | b';' | b')' => break,
+                    _ => { cursor.advance(); }
+                }
+            }
+        }
+        // Command name: [a-zA-Z_][a-zA-Z0-9_-]*
+        Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
+            cursor.advance();
+            while let Some(b) = cursor.peek() {
+                if b.is_ascii_alphanumeric() || b == b'_' || b == b'-' {
+                    cursor.advance();
+                } else {
+                    break;
+                }
+            }
+        }
+        _ => {
+            return Err(ParseError::UnexpectedToken {
+                expected: "processor (qed:name() or external command)".into(),
+                found: peek_found(cursor),
+                span: cursor.span_from(start),
+            });
+        }
+    }
+
+    if cursor.pos() == cmd_start {
+        return Err(ParseError::UnexpectedToken {
+            expected: "command name".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(cmd_start),
+        });
+    }
+
+    let command = cursor.slice_from(cmd_start).to_owned();
+    let command_span = cursor.span_from(cmd_start);
+
+    // Parse arguments: space-separated, quoted or unquoted
+    let mut args: Vec<Spanned<ExternalArg>> = Vec::new();
+    loop {
+        let saved = cursor.pos();
+        cursor.eat_whitespace();
+
+        match cursor.peek() {
+            None | Some(b'|') | Some(b')') | Some(b'\n') | Some(b';') => {
+                cursor.set_pos(saved);
+                break;
+            }
+            Some(b'"') => {
+                let arg_start = cursor.pos();
+                let s = cursor
+                    .eat_string_literal()
+                    .ok_or_else(|| ParseError::UnexpectedEof {
+                        expected: "closing '\"'".into(),
+                        span: cursor.span_from(arg_start),
+                    })?;
+                args.push(Spanned {
+                    node: ExternalArg::Quoted(s),
+                    span: cursor.span_from(arg_start),
+                });
+            }
+            Some(b'\'') => {
+                let arg_start = cursor.pos();
+                let s = cursor
+                    .eat_single_quoted_string_literal()
+                    .ok_or_else(|| ParseError::UnexpectedEof {
+                        expected: "closing '''".into(),
+                        span: cursor.span_from(arg_start),
+                    })?;
+                args.push(Spanned {
+                    node: ExternalArg::Quoted(s),
+                    span: cursor.span_from(arg_start),
+                });
+            }
+            _ => {
+                let arg_start = cursor.pos();
+                let s = cursor.eat_unquoted_arg().ok_or_else(|| ParseError::UnexpectedToken {
+                    expected: "argument".into(),
+                    found: peek_found(cursor),
+                    span: cursor.span_from(arg_start),
+                })?;
+                args.push(Spanned {
+                    node: ExternalArg::Unquoted(s),
+                    span: cursor.span_from(arg_start),
+                });
+            }
+        }
+    }
+
+    let span = cursor.span_from(start);
+    Ok(Spanned {
+        node: crate::parse::ast::Processor::External(ExternalProcessor {
+            command: Spanned {
+                node: command,
+                span: command_span,
+            },
+            escaped,
+            args,
         }),
         span,
     })

@@ -192,6 +192,28 @@ impl<'src> Cursor<'src> {
         Some(self.slice_from(start).to_owned())
     }
 
+    /// Parse an unquoted external processor argument.
+    /// Consumes `[^ \t\n|\\;'"()]+` — stops at whitespace, pipe, backslash,
+    /// semicolon, quotes, or parens.
+    pub(super) fn eat_unquoted_arg(&mut self) -> Option<String> {
+        let start = self.pos;
+        while let Some(b) = self.peek() {
+            match b {
+                b' ' | b'\t' | b'\n' | b'|' | b'\\' | b';' | b'\'' | b'"' | b'(' | b')' => {
+                    break
+                }
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+        if self.pos == start {
+            None
+        } else {
+            Some(self.slice_from(start).to_owned())
+        }
+    }
+
     /// Try to consume a specific ASCII keyword. Returns true if matched.
     pub(super) fn eat_keyword(&mut self, keyword: &str) -> bool {
         let remaining = self.remaining();

@@ -7,7 +7,7 @@
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [x] Phase 3 — Parser POC Evaluation
 - [x] Phase 4 — Walking Skeleton
-- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C–5E remaining)
+- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D–5E remaining)
 - [ ] Phase 6 — Full Compiler
 - [ ] Phase 7 — Processor Coverage
 - [ ] Phase 8 — Generation Processors
@@ -139,20 +139,22 @@
 - [x] Checkpoint: 42/46 selector tests green
 - [x] Fix: infinite loop in `apply_nth_filter` with negative coefficient
 
-### 5c — Processor arguments + chains + external processors
+### 5c — Processor arguments + chains + external processors ✓
 
-- [ ] Cursor: `eat_unquoted_arg()` for external processor args
-- [ ] Parser: rewrite `parse_processor` — dispatch `qed:*` vs external
-- [ ] Parser: rewrite `parse_qed_processor` — `qed:name(args, params)` with positional + named args
-- [ ] Parser: colon-separated processor names (`qed:debug:count()`)
-- [ ] Parser: nested processor chain as arg (`qed:replace("x", qed:upper())`)
-- [ ] Parser: `parse_external_processor()` — command/path, escaped `\`, quoted/unquoted args
-- [ ] Parser: rewrite `parse_processor_chain` for multi-processor piping
-- [ ] Parser: `|` vs `||` resolution (1-byte lookahead)
-- [ ] Parser: implicit line continuation after `|`
-- [ ] Compiler: processor chain composition
-- [ ] Unit tests for all processor forms (~18 tests)
-- [ ] Checkpoint: `at-entire-stream`, `after-literal`, `before-literal` green; chain parsing doesn't regress
+- [x] Cursor: `eat_unquoted_arg()` for external processor args
+- [x] Parser: rewrite `parse_processor` — dispatch `qed:*` vs external
+- [x] Parser: rewrite `parse_qed_processor` — `qed:name(args, params)` with positional + named args
+- [x] Parser: colon-separated processor names (`qed:debug:count()`)
+- [x] Parser: nested processor chain as arg (`qed:replace("x", qed:upper())`)
+- [x] Parser: `parse_external_processor()` — command/path, escaped `\`, quoted/unquoted args
+- [x] Parser: rewrite `parse_processor_chain` for multi-processor piping
+- [x] Parser: `|` vs `||` resolution (1-byte lookahead)
+- [x] Parser: implicit line continuation after `|`
+- [x] Compiler: processor chain composition
+- [x] Unit tests for all processor forms (~18 tests)
+- [x] Exec: fix zero-width fragment detection in `sweep()` (after/before selectors)
+- [x] Exec: fix `ExternalCommandProcessor` newline handling (input-aware normalization)
+- [x] Checkpoint: `at-entire-stream`, `after-literal`, `before-literal` green; chain parsing doesn't regress (46/46 selectors, 106/396 total)
 
 ### 5d — Definitions + fallback + line continuation
 

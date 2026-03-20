@@ -17,7 +17,9 @@ use crate::parse::ast::{
     self, NthTerm, ParamValue, PatternRefValue, PatternValue, Program,
     SelectorOp as AstSelectorOp,
 };
+use crate::processor::chain::ChainProcessor;
 use crate::processor::delete::DeleteProcessor;
+use crate::processor::external::ExternalCommandProcessor;
 use crate::processor::lower::LowerProcessor;
 use crate::processor::upper::UpperProcessor;
 use crate::processor::Processor;
@@ -388,22 +390,27 @@ fn compile_pattern(
 
 /// Compile a processor chain into a single `Box<dyn Processor>`.
 ///
-/// Currently supports single-processor chains only. Multi-processor
-/// pipelines will be handled in a later phase.
+/// Single-processor chains return the processor directly.
+/// Multi-processor chains wrap in a `ChainProcessor`.
 fn compile_processor_chain(
     chain: &ast::ProcessorChain,
 ) -> Result<Box<dyn Processor>, CompileError> {
-    // For the skeleton, only single-processor chains
-    if chain.processors.len() != 1 {
-        return Err(CompileError::InvalidParam {
-            processor: "chain".into(),
-            param: "multi-processor chains not yet supported".into(),
-            span: chain.processors[0].span,
-        });
+    if chain.processors.len() == 1 {
+        compile_single_processor(&chain.processors[0])
+    } else {
+        let mut steps: Vec<Box<dyn Processor>> = Vec::new();
+        for proc_spanned in &chain.processors {
+            steps.push(compile_single_processor(proc_spanned)?);
+        }
+        Ok(Box::new(ChainProcessor { steps }))
     }
+}
 
-    let proc_ast = &chain.processors[0].node;
-    match proc_ast {
+/// Compile a single processor AST node.
+fn compile_single_processor(
+    proc_spanned: &crate::span::Spanned<ast::Processor>,
+) -> Result<Box<dyn Processor>, CompileError> {
+    match &proc_spanned.node {
         ast::Processor::Qed(qed_proc) => match qed_proc.name.node.as_str() {
             "delete" => Ok(Box::new(DeleteProcessor)),
             "upper" => Ok(Box::new(UpperProcessor)),
@@ -413,10 +420,19 @@ fn compile_processor_chain(
                 span: qed_proc.name.span,
             }),
         },
-        ast::Processor::External(_) => Err(CompileError::InvalidParam {
-            processor: "external".into(),
-            param: "external processors not yet supported".into(),
-            span: chain.processors[0].span,
-        }),
+        ast::Processor::External(ext) => {
+            let args: Vec<String> = ext
+                .args
+                .iter()
+                .map(|a| match &a.node {
+                    ast::ExternalArg::Quoted(s) => s.clone(),
+                    ast::ExternalArg::Unquoted(s) => s.clone(),
+                })
+                .collect();
+            Ok(Box::new(ExternalCommandProcessor {
+                command: ext.command.node.clone(),
+                args,
+            }))
+        }
     }
 }

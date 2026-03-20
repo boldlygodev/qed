@@ -68,13 +68,13 @@ qed/
 
 ## Current Phase
 
-**Phase 5 — Full Parser** (in progress, sub-phases 5A–5B complete).
+**Phase 5 — Full Parser** (in progress, sub-phases 5A–5C complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–4 are complete (scaffold, harness, core types, parser POC, walking skeleton).
 Phase 5 extends the parser to cover the complete qed grammar, interleaving
 minimal compiler work so integration tests go green progressively.
-91/396 integration tests pass. 42/46 selector tests pass (4 need external processors).
-Next: Sub-phases 5C–5E (processor args, definitions, error recovery).
+106/396 integration tests pass. 46/46 selector tests pass.
+Next: Sub-phases 5D–5E (definitions/fallback, error recovery).
 
 ---
 

@@ -459,13 +459,21 @@ fn decompose_events(matches: &[MatchResult]) -> Vec<BoundaryEvent> {
 /// Each time the active set changes at a new line position, the region
 /// since the previous change is emitted as either `Passthrough` (empty
 /// active set) or `Selected` (with the current tags).
+///
+/// Zero-width ranges (from `after()`/`before()`) produce Start+End at the
+/// same line. With End-before-Start sort order, the End fires first (no-op
+/// since tag isn't active), then Start adds the tag. To detect this, we
+/// process all events at each line position in batch, tracking whether any
+/// tag was both added and removed — if so, we emit a zero-width Selected
+/// fragment (with `Owned("")` content representing an insertion point).
 fn sweep(events: Vec<BoundaryEvent>, line_count: usize) -> FragmentList {
     let mut fragments = Vec::new();
     let mut active: BTreeSet<(StatementId, SelectorId)> = BTreeSet::new();
     let mut prev_line: usize = 0;
 
-    for event in &events {
-        let current_line = event.line;
+    let mut i = 0;
+    while i < events.len() {
+        let current_line = events[i].line;
 
         // Emit fragment for [prev_line..current_line) if non-empty
         if current_line > prev_line {
@@ -484,14 +492,58 @@ fn sweep(events: Vec<BoundaryEvent>, line_count: usize) -> FragmentList {
             prev_line = current_line;
         }
 
-        // Update active set
-        match event.kind {
-            EventKind::Start => {
-                active.insert((event.statement_id, event.selector_id));
+        // Collect all events at this line position
+        let batch_start = i;
+        while i < events.len() && events[i].line == current_line {
+            i += 1;
+        }
+
+        // Track zero-width insertion points.
+        //
+        // Zero-width selectors (after/before) produce End+Start at the same
+        // line. With End-before-Start sort, the End fires first when the tag
+        // is NOT in `active` (it was never activated). Adjacent-range handoffs
+        // (e.g. at() matching consecutive lines) also produce End+Start at the
+        // same line, but the End fires when the tag IS in `active` (from a
+        // prior Start). We use `active.remove()` return value to distinguish.
+        let mut started: BTreeSet<(StatementId, SelectorId)> = BTreeSet::new();
+        let mut zero_width_ends: BTreeSet<(StatementId, SelectorId)> = BTreeSet::new();
+
+        // Process all events in the batch
+        for event in &events[batch_start..i] {
+            let tag = (event.statement_id, event.selector_id);
+            match event.kind {
+                EventKind::Start => {
+                    active.insert(tag);
+                    started.insert(tag);
+                }
+                EventKind::End => {
+                    let was_active = active.remove(&tag);
+                    if !was_active {
+                        // Tag wasn't active before this End — zero-width End
+                        zero_width_ends.insert(tag);
+                    }
+                }
             }
-            EventKind::End => {
-                active.remove(&(event.statement_id, event.selector_id));
-            }
+        }
+
+        // Zero-width insertion points: tags with a zero-width End that also
+        // Started at this line.
+        let zero_width_tags: Vec<_> = started
+            .intersection(&zero_width_ends)
+            .copied()
+            .collect();
+
+        // Remove zero-width tags from active — they completed at this line
+        for tag in &zero_width_tags {
+            active.remove(tag);
+        }
+
+        if !zero_width_tags.is_empty() {
+            fragments.push(Fragment::Selected {
+                content: FragmentContent::Owned(String::new()),
+                tags: zero_width_tags,
+            });
         }
     }
 
