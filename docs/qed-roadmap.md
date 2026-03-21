@@ -320,38 +320,72 @@ The harness `selectors` suite begins going green as selector forms are added.
 
 **Goal:** the compilation pass handles all AST forms.
 
-- Phase 1 (symbol collection) — `PatternDef`, `AliasDef`, duplicate name warnings
-- Phase 2 (compilation) — all selector ops, all processor types, param validation,
-  regex compilation, env var expansion, `nth` expression compilation
-- `CompileError` emission for all error variants
-- Warning emission to stderr during compilation
+Most Phase 6 work was completed during sub-phases 5B–5D: two-pass symbol collection,
+selector ops, nth expression compilation, regex compilation, processor chain composition.
+The original checkpoint (`selectors` suite fully green, 46/46) is already achieved.
+Remaining work is broken into four sub-phases, with `qed:replace()` and external
+processor execution pulled forward from Phase 7 to reach the Alpha 1 milestone.
 
-**Checkpoint:** the compilation pass unit tests pass.
-`selectors` integration suite is fully green.
+### 6A — Env var expansion
+
+- `expand_env_vars()` function: `$IDENT`, `${IDENT}`, `$$` escape
+- Wire into pattern compilation and processor string args
+- Thread `no_env: bool` through `compile()` (hardcode `false`; CLI wiring in Phase 9)
+
+### 6B — Compiler warnings & validation
+
+- Duplicate name detection in pass 1 → warning (last definition wins)
+- Param validation: unknown param names, wrong param types
+- `compile()` returns `(Script, Vec<CompileWarning>)`
+- Warning emission infrastructure: `run()` formats and writes to stderr
+- `CompileError` variant coverage audit
+
+### 6C — Replace processor
+
+- `qed:replace("old", "new")` — literal replacement
+- `qed:replace(/pattern/, "template")` — regex with capture groups
+- `qed:replace("match", qed:upper())` — pipeline (run processor on matched text)
+
+### 6D — External processor execution
+
+- Complete `ExternalCommandProcessor`: stdin piping, stdout capture, arg passing
+- Non-zero exit → `ProcessorError::ExternalFailed`
+- Mock script support in test harness
+
+**Checkpoint:** `patterns::env-*` green; `processors::replace-*` green;
+basic `external-processors::*` scenarios green. ~160/396 integration tests pass.
+
+### ✦ Alpha 1 — Basic Stream Editing
+
+Alpha 1 is reached after Phase 6D. qed is usable for common stream editing tasks:
+all selectors, core processors (delete, upper, lower, prefix, replace), external
+commands, named patterns and aliases, script files, fallback, env var expansion.
 
 ---
 
 ## Phase 7 — Processor Coverage
 
-**Goal:** all `qed:*` processors are implemented.
+**Goal:** all remaining `qed:*` processors are implemented.
 
 Work through processors roughly in order of increasing complexity:
 
 | Processor | Notes |
 |---|---|
-| `qed:delete()` | Done in Phase 4 |
-| `qed:upper()`, `qed:lower()` | Trivial transforms |
-| `qed:prepend()`, `qed:append()` | String concatenation |
+| `qed:suffix()`, `qed:prepend()`, `qed:append()` | String concatenation |
 | `qed:number()` | Line numbering with `width` and `start` params |
 | `qed:substring()` | Pattern matching, narrowing semantics |
-| `qed:replace()` | Literal, regex template, and pipeline forms |
-| External processors | Spawn, stdin/stdout, non-zero exit handling |
-| `ProcessorChain` | `try_fold` composition |
-| Fallback (`\|\|`) | Invoke fallback on processor error |
-
-Add mock support to the harness bash layer when external processors are reached.
+| `qed:trim()`, `qed:indent()`, `qed:dedent()` | Whitespace manipulation |
+| `qed:wrap()` | Line wrapping |
+| `qed:duplicate()`, `qed:copy()`, `qed:move()` | Region duplication and relocation |
+| External processor edge cases | Error handling, empty input, multi-line |
+| Fallback execution | Invoke fallback on processor error |
 
 **Checkpoint:** `processors` and `external-processors` integration suites are green.
+
+### ✦ Alpha 2 — Full Processor Suite
+
+Alpha 2 is reached after Phase 7. All text transformation processors work.
+~250/396 integration tests pass.
 
 ---
 
@@ -387,6 +421,11 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 
 **Checkpoint:** `invocation`, `stream-control`, and `script-files` integration
 suites are green.
+
+### ✦ Alpha 3 — Generation + Full CLI
+
+Alpha 3 is reached after Phase 9. Content generation and all invocation modes work.
+~330/396 integration tests pass.
 
 ---
 
@@ -434,6 +473,11 @@ Then the use case suites:
 
 **Checkpoint:** `cargo test --workspace` is fully green.
 
+### ✦ Alpha 4 — Feature Complete
+
+Alpha 4 is reached after Phase 11. Full test suite green. All edge cases and
+use cases pass. 396/396 integration tests pass.
+
 ---
 
 ## Phase 12 — Release Polish
@@ -451,18 +495,18 @@ Then the use case suites:
 
 ## Summary
 
-| Phase | Deliverable | Key checkpoint |
-|---|---|---|
-| 0 | Workspace scaffold | `cargo build --workspace` clean |
-| 1 | Test harness infrastructure | `cargo test --package qed-tests` registers all trials (failing) |
-| 2 | Core types + fragmentation algorithm | Buffer, fragment, and fragmentation unit tests pass |
-| 3 | Parser POC evaluation | One parser remains, routing removed |
-| 4 | Walking skeleton | `selectors::at-literal-single-match::0` green |
-| 5 | Full parser | All grammar productions parsed; `selectors` suite green |
-| 6 | Full compiler | `selectors` integration suite fully green |
-| 7 | Processor coverage | `processors` + `external-processors` suites green |
-| 8 | Generation processors | `generation` suite green |
-| 9 | Invocation features | `invocation` + `stream-control` suites green |
-| 10 | Diagnostics | `error-handling` suites green |
-| 11 | Edge cases + use cases | `cargo test --workspace` fully green |
-| 12 | Release polish | Completions, README, clippy clean |
+| Phase | Deliverable | Key checkpoint | Alpha |
+|---|---|---|---|
+| 0 | Workspace scaffold | `cargo build --workspace` clean | |
+| 1 | Test harness infrastructure | `cargo test --package qed-tests` registers all trials (failing) | |
+| 2 | Core types + fragmentation algorithm | Buffer, fragment, and fragmentation unit tests pass | |
+| 3 | Parser POC evaluation | One parser remains, routing removed | |
+| 4 | Walking skeleton | `selectors::at-literal-single-match::0` green | |
+| 5 | Full parser | All grammar productions parsed; `selectors` suite green | |
+| 6 | Full compiler (6A–6D) | Env vars, warnings, replace, external processors | **Alpha 1** |
+| 7 | Processor coverage | `processors` + `external-processors` suites green | **Alpha 2** |
+| 8 | Generation processors | `generation` suite green | |
+| 9 | Invocation features | `invocation` + `stream-control` suites green | **Alpha 3** |
+| 10 | Diagnostics | `error-handling` suites green | |
+| 11 | Edge cases + use cases | `cargo test --workspace` fully green | **Alpha 4** |
+| 12 | Release polish | Completions, README, clippy clean | **v1.0** |

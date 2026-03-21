@@ -7,14 +7,14 @@
 - [x] Phase 2 — Core Types and Fragmentation Algorithm
 - [x] Phase 3 — Parser POC Evaluation
 - [x] Phase 4 — Walking Skeleton
-- [ ] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E remaining)
-- [ ] Phase 6 — Full Compiler
-- [ ] Phase 7 — Processor Coverage
+- [x] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E deferred to Phase 11)
+- [ ] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
+- [ ] Phase 7 — Processor Coverage → **Alpha 2**
 - [ ] Phase 8 — Generation Processors
-- [ ] Phase 9 — Invocation Features
+- [ ] Phase 9 — Invocation Features → **Alpha 3**
 - [ ] Phase 10 — Diagnostics
-- [ ] Phase 11 — Edge Cases and Use Cases
-- [ ] Phase 12 — Release Polish
+- [ ] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
+- [ ] Phase 12 — Release Polish → **v1.0**
 
 ---
 
@@ -180,19 +180,52 @@
 - [x] Processor: `ChainProcessor` short-circuits on empty output (delete semantics)
 - [x] Checkpoint: `patterns::named-*` 4/4, `script-files::*` 8/8, 125/396 total, no regressions
 
-### 5e — Error recovery + polish
+---
 
-- [ ] Parser: improved error recovery — skip to next statement boundary
-- [ ] Parser: span accuracy audit across all productions
-- [ ] Parser: edge cases — empty program, comment-only, EOF without newline
-- [ ] Parser: `\` line continuation in external processor expressions
-- [ ] Parser: trailing whitespace after `\` → hard error
-- [ ] Unit tests for error recovery, spans, edge cases (~10 tests)
-- [ ] Checkpoint: all parser unit tests pass, grammar is complete
+## Phase 6 — Full Compiler
+
+### 6A — Env var expansion
+
+- [ ] `expand_env_vars()`: `$IDENT`, `${IDENT}`, `$$` escape
+- [ ] Wire into pattern compilation (literal strings)
+- [ ] Wire into processor string arg compilation
+- [ ] Thread `no_env: bool` through `compile()` (hardcode `false`)
+- [ ] Checkpoint: `patterns::env-expansion-in-pattern` green (2 tests)
+
+### 6B — Compiler warnings & validation
+
+- [ ] Duplicate name detection in pass 1 → warning, last definition wins
+- [ ] Param validation: unknown param names, wrong param types
+- [ ] `compile()` returns `(Script, Vec<CompileWarning>)`
+- [ ] Warning emission: `run()` formats and writes to stderr
+- [ ] `CompileError` variant coverage audit
+- [ ] Checkpoint: duplicate name and param validation tests green
+
+### 6C — Replace processor
+
+- [ ] `ReplaceLiteralProcessor`: `qed:replace("old", "new")`
+- [ ] `ReplaceRegexProcessor`: `qed:replace(/pattern/, "template")` with capture groups
+- [ ] Pipeline replace: `qed:replace("match", qed:upper())`
+- [ ] Register in `compile_qed_processor()` with arg-type dispatch
+- [ ] Checkpoint: `processors::replace-*` green (~6 tests)
+
+### 6D — External processor execution
+
+- [ ] Complete `ExternalCommandProcessor`: stdin piping, stdout capture
+- [ ] Arg passing: quoted and unquoted
+- [ ] Non-zero exit → `ProcessorError::ExternalFailed`
+- [ ] Mock script support in test harness
+- [ ] Checkpoint: basic `external-processors::*` green (~6-8 tests)
+
+### ✦ Alpha 1 checkpoint
+
+- [ ] ~160/396 integration tests passing
+- [ ] All selectors, core processors, external commands, named patterns, aliases, env vars
+- [ ] Update `.claude/CLAUDE.md` with current status
 
 ---
 
-## Phases 6–12
+## Phases 7–12
 
 See `docs/qed-roadmap.md` for full details.
 
@@ -200,4 +233,9 @@ See `docs/qed-roadmap.md` for full details.
 
 ## Deferred
 
+- [ ] 5E: Parser error recovery — skip to next statement boundary
+- [ ] 5E: Span accuracy audit across all productions
+- [ ] 5E: Edge cases — empty program, comment-only, EOF without newline
+- [ ] 5E: `\` line continuation in external processor expressions
+- [ ] 5E: Trailing whitespace after `\` → hard error
 - [ ] Switch `collect_all_matches` in `exec/fragment.rs` to `rayon` parallel iteration (dependency already present)
