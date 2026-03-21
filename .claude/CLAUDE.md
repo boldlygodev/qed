@@ -73,7 +73,7 @@ qed/
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–5 are complete (scaffold, harness, core types, parser POC, walking skeleton, full parser).
 Phase 6 extends the compiler to handle all AST forms.
-129/396 integration tests pass. 46/46 selector tests pass.
+148/396 integration tests pass. 46/46 selector tests pass.
 Next: Sub-phase 6B (compiler warnings and validation).
 
 ---

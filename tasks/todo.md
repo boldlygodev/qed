@@ -184,22 +184,22 @@
 
 ## Phase 6 — Full Compiler
 
-### 6A — Env var expansion
+### 6A — Env var expansion ✓
 
-- [ ] `expand_env_vars()`: `$IDENT`, `${IDENT}`, `$$` escape
-- [ ] Wire into pattern compilation (literal strings)
-- [ ] Wire into processor string arg compilation
-- [ ] Thread `no_env: bool` through `compile()` (hardcode `false`)
-- [ ] Checkpoint: `patterns::env-expansion-in-pattern` green (2 tests)
+- [x] `expand_env_vars()` in `compile/env.rs`: `${IDENT}` expansion, `\${IDENT}` escape
+- [x] Wire into pattern compilation (literal strings and regex)
+- [x] Wire into processor string arg compilation (qed + external)
+- [x] Thread `no_env: bool` through `compile()` (hardcode `false`)
+- [x] `compile()` returns `(Script, Vec<CompileError>)` — warnings in Ok path
+- [x] Warning emission: `run()` converts compile warnings to `RunDiagnostic`, CLI formats to stderr
+- [x] Checkpoint: `patterns::env-expand-pattern`, `invocation::env-expansion` green (129/396)
 
 ### 6B — Compiler warnings & validation
 
 - [ ] Duplicate name detection in pass 1 → warning, last definition wins
 - [ ] Param validation: unknown param names, wrong param types
-- [ ] `compile()` returns `(Script, Vec<CompileWarning>)`
-- [ ] Warning emission: `run()` formats and writes to stderr
 - [ ] `CompileError` variant coverage audit
-- [ ] Checkpoint: duplicate name and param validation tests green
+- [ ] Checkpoint: `patterns-edge-cases::duplicate-pattern-name` green
 
 ### 6C — Replace processor
 
