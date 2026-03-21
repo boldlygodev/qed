@@ -52,10 +52,8 @@ fn main() {
         Ok(result) => {
             print!("{}", result.output);
             for d in &result.diagnostics {
-                // Format: "qed: error:   1:1-10:  at("quux"): no lines matched"
-                // "qed: " (5) + level+colon padded to 9 = 14 chars before location
                 eprintln!(
-                    "qed: {level:<9}{loc}:  {sel}: {msg}",
+                    "qed: {level:<9}{loc}: {sel}: {msg}",
                     level = format!("{}:", d.level),
                     loc = d.location,
                     sel = d.selector_text,

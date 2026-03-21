@@ -27,6 +27,14 @@ touch "$STDOUT" "$STDERR" "$OUTPUT"
 export MOCK_STATE_DIR="$TMPDIR/mock-state"
 export PATH="$TMPDIR/bin:$PATH"
 
+# Generate mock scripts
+for ((i = 0; i < MOCK_COUNT; i++)); do
+    eval "cmd=\$MOCK_${i}_COMMAND"
+    if [[ ! -f "$TMPDIR/bin/$cmd" ]]; then
+        "$HARNESS_DIR/generate-mock.sh" "$TMPDIR" "$cmd"
+    fi
+done
+
 # Execute the invocation in a subshell so `exit` in the invocation
 # does not kill this script (some invocations use `exit $CODE`).
 set +e

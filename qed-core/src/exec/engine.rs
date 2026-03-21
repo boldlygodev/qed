@@ -8,6 +8,7 @@
 use std::collections::HashSet;
 
 use crate::compile::{OnError, Script};
+use crate::processor::ProcessorError;
 use crate::span::Span;
 
 use super::{Buffer, Fragment, FragmentContent, fragment};
@@ -19,6 +20,9 @@ pub(crate) struct Diagnostic {
     pub(crate) message: String,
     pub(crate) span: Span,
     pub(crate) selector_text: String,
+    /// Whether this error was recovered by a fallback processor.
+    /// Recovered errors are still reported but do not cause a non-zero exit.
+    pub(crate) recovered: bool,
 }
 
 /// Severity level for diagnostics.
@@ -56,6 +60,8 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
     }
 
     let mut output = String::new();
+    let mut diagnostics = Vec::new();
+    let mut has_unrecovered_error = false;
 
     for frag in &fragments {
         match frag {
@@ -65,25 +71,74 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
             Fragment::Selected { content, tags } => {
                 let text = resolve_content(content, buffer);
 
-                // Find the first matching statement's processor
-                let processed = tags.iter().find_map(|(stmt_id, _sel_id)| {
-                    script
-                        .statements
-                        .iter()
-                        .find(|s| s.id == *stmt_id)
-                        .and_then(|stmt| stmt.processor.execute(&text).ok())
-                });
+                let mut handled = false;
+                for (stmt_id, _sel_id) in tags {
+                    let Some(stmt) = script.statements.iter().find(|s| s.id == *stmt_id) else {
+                        continue;
+                    };
 
-                match processed {
-                    Some(result) => output.push_str(&result),
-                    None => output.push_str(&text),
+                    match stmt.processor.execute(&text) {
+                        Ok(result) => {
+                            output.push_str(&result);
+                            handled = true;
+                            break;
+                        }
+                        Err(e) => {
+                            let mut recovered = false;
+                            let mut diag_span = stmt.processor_span;
+                            let mut diag_text = stmt.processor_text.clone();
+                            let mut diag_msg = format_processor_error(&e);
+
+                            if let Some(ref fb) = stmt.fallback {
+                                match fb.execute(&text) {
+                                    Ok(result) => {
+                                        output.push_str(&result);
+                                        recovered = true;
+                                    }
+                                    Err(fb_err) => {
+                                        // Fallback failed — report fallback error
+                                        diag_span = stmt
+                                            .fallback_span
+                                            .unwrap_or(stmt.processor_span);
+                                        diag_text = stmt
+                                            .fallback_text
+                                            .clone()
+                                            .unwrap_or(stmt.processor_text.clone());
+                                        diag_msg = format_processor_error(&fb_err);
+                                    }
+                                }
+                            }
+
+                            diagnostics.push(Diagnostic {
+                                level: DiagnosticLevel::Error,
+                                message: diag_msg,
+                                span: diag_span,
+                                selector_text: diag_text,
+                                recovered,
+                            });
+                            if recovered {
+                                handled = true;
+                                break;
+                            }
+                            has_unrecovered_error = true;
+                        }
+                    }
+                }
+
+                if !handled {
+                    output.push_str(&text);
                 }
             }
         }
     }
 
+    // Discard output on unrecovered processor error — the script failed,
+    // so partial output should not be emitted.
+    if has_unrecovered_error {
+        output.clear();
+    }
+
     // Check for no-match diagnostics
-    let mut diagnostics = Vec::new();
     for stmt in &script.statements {
         if !matched_statements.contains(&stmt.id) {
             let on_error = script
@@ -102,6 +157,7 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
                         message: "no lines matched".into(),
                         span: stmt.selector_span,
                         selector_text: stmt.selector_text.clone(),
+                        recovered: false,
                     });
                 }
                 OnError::Warn => {
@@ -110,6 +166,7 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
                         message: "no lines matched".into(),
                         span: stmt.selector_span,
                         selector_text: stmt.selector_text.clone(),
+                        recovered: false,
                     });
                 }
                 OnError::Skip => {
@@ -133,5 +190,20 @@ fn resolve_content(content: &FragmentContent, buffer: &Buffer) -> String {
     match content {
         FragmentContent::Borrowed(range) => buffer.slice(*range).to_owned(),
         FragmentContent::Owned(s) => s.clone(),
+    }
+}
+
+/// Format a processor error into a human-readable diagnostic message.
+fn format_processor_error(e: &ProcessorError) -> String {
+    match e {
+        ProcessorError::ExternalFailed {
+            exit_code: Some(code),
+            ..
+        } => format!("exit code {code}"),
+        ProcessorError::ExternalFailed {
+            exit_code: None, ..
+        } => "command failed".into(),
+        ProcessorError::ProcessorFailed { reason, .. } => reason.clone(),
+        ProcessorError::NoMatch { .. } => "no lines matched".into(),
     }
 }

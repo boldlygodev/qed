@@ -51,6 +51,13 @@ impl Processor for ExternalCommandProcessor {
             });
         }
 
+        // Pass through child stderr on success (design: "passed through to
+        // qed's stderr without wrapping"). On failure, stderr is captured in
+        // ProcessorError::ExternalFailed instead.
+        if !output.stderr.is_empty() {
+            eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        }
+
         let mut result = String::from_utf8_lossy(&output.stdout).into_owned();
 
         // Preserve line structure: if the input ended with a newline (replacement

@@ -52,10 +52,18 @@ pub(crate) struct Statement {
     pub(crate) selector: SelectorId,
     pub(crate) processor: Box<dyn Processor>,
     pub(crate) fallback: Option<Box<dyn Processor>>,
+    /// Source span of the fallback processor chain (for diagnostics).
+    pub(crate) fallback_span: Option<crate::span::Span>,
+    /// Original source text of the fallback processor chain (for diagnostics).
+    pub(crate) fallback_text: Option<String>,
     /// Source span of the selector expression (for diagnostics).
     pub(crate) selector_span: crate::span::Span,
     /// Original source text of the selector expression (for diagnostics).
     pub(crate) selector_text: String,
+    /// Source span of the processor chain (for processor error diagnostics).
+    pub(crate) processor_span: crate::span::Span,
+    /// Original source text of the processor chain (for processor error diagnostics).
+    pub(crate) processor_text: String,
 }
 
 // ── Selector registry ───────────────────────────────────────────────
@@ -233,33 +241,65 @@ pub(crate) fn compile(
             }
         };
 
-        // Compile optional fallback
-        let fallback = match &node.fallback {
-            Some(fb) => match &fb.node {
-                ast::Fallback::Chain(chain) => {
-                    match compile_processor_chain(chain, &pattern_defs, &alias_defs, no_env, &mut warnings) {
-                        Ok(p) => Some(p),
-                        Err(e) => {
-                            errors.push(e);
-                            None
+        // Compile optional fallback, tracking its processor span for diagnostics.
+        let (fallback, fallback_chain_span): (Option<Box<dyn Processor>>, Option<crate::span::Span>) =
+            match &node.fallback {
+                Some(fb) => match &fb.node {
+                    ast::Fallback::Chain(chain) => {
+                        match compile_processor_chain(chain, &pattern_defs, &alias_defs, no_env, &mut warnings) {
+                            Ok(p) => (Some(p), Some(fb.span)),
+                            Err(e) => {
+                                errors.push(e);
+                                (None, None)
+                            }
                         }
                     }
-                }
-                ast::Fallback::SelectAction(_) => None, // deferred
-            },
-            None => None,
-        };
+                    ast::Fallback::SelectAction(sa) => match &sa.chain {
+                        Some(chain) => {
+                            match compile_processor_chain(
+                                &chain.node,
+                                &pattern_defs,
+                                &alias_defs,
+                                no_env,
+                                &mut warnings,
+                            ) {
+                                Ok(p) => (Some(p), Some(chain.span)),
+                                Err(e) => {
+                                    errors.push(e);
+                                    (None, None)
+                                }
+                            }
+                        }
+                        None => (None, None),
+                    }
+                },
+                None => (None, None),
+            };
 
         let sel_span = node.selector.span;
         let sel_text = source[sel_span.start..sel_span.end].to_owned();
+
+        let proc_span = node
+            .chain
+            .as_ref()
+            .map(|c| c.span)
+            .unwrap_or(spanned_stmt.span);
+        let proc_text = source[proc_span.start..proc_span.end].to_owned();
+
+        let fb_span = fallback_chain_span;
+        let fb_text = fb_span.map(|s| source[s.start..s.end].to_owned());
 
         statements.push(Statement {
             id: stmt_id,
             selector: sel_id,
             processor,
             fallback,
+            fallback_span: fb_span,
+            fallback_text: fb_text,
             selector_span: sel_span,
             selector_text: sel_text,
+            processor_span: proc_span,
+            processor_text: proc_text,
         });
     }
 
@@ -602,10 +642,16 @@ fn compile_single_processor_into(
                         span: proc_spanned.span,
                     })
                 } else {
-                    Err(CompileError::UndefinedName {
-                        name: name.clone(),
-                        span: proc_spanned.span,
-                    })
+                    // No alias or pattern with this name — treat as an
+                    // external command. Bare words in processor position
+                    // that don't resolve to a defined alias fall through
+                    // to PATH lookup at runtime.
+                    let command = expand_and_warn(name, no_env, proc_spanned.span, warnings);
+                    out.push(Box::new(ExternalCommandProcessor {
+                        command,
+                        args: Vec::new(),
+                    }));
+                    Ok(())
                 }
             }
         },

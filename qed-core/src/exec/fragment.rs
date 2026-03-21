@@ -39,7 +39,36 @@ pub(crate) fn fragment(
     registry: &[RegistryEntry],
 ) -> FragmentList {
     if buffer.line_count() == 0 {
-        return Vec::new();
+        // For empty buffers, `at()` with a universally-matching pattern
+        // (empty literal) still selects "everything" — the empty region.
+        // Produce a zero-width Selected fragment so the processor runs on
+        // empty input.
+        let mut tags: Vec<(StatementId, SelectorId)> = Vec::new();
+        for &(stmt_id, sel_id) in requests {
+            let entry = &registry[sel_id.value()];
+            if let RegistryEntry::Simple(selector) = entry {
+                if matches!(
+                    &selector.op,
+                    SelectorOp::At {
+                        pattern: CompiledPattern {
+                            matcher: PatternMatcher::Literal(s),
+                            negated: false,
+                            ..
+                        },
+                        nth: None,
+                    } if s.is_empty()
+                ) {
+                    tags.push((stmt_id, sel_id));
+                }
+            }
+        }
+        if tags.is_empty() {
+            return Vec::new();
+        }
+        return vec![Fragment::Selected {
+            content: FragmentContent::Owned(String::new()),
+            tags,
+        }];
     }
 
     // Step 1 — collect matches from all selectors
@@ -212,10 +241,34 @@ fn collect_at(
         None => matching_lines,
     };
 
-    selected
-        .into_iter()
-        .map(|i| LineRange { start: i, end: i + 1 })
-        .collect()
+    merge_adjacent_lines(&selected)
+}
+
+/// Merge adjacent line indices into contiguous `LineRange`s.
+///
+/// Given `[0, 1, 2, 5, 6]`, produces `[0..3, 5..7]`. This ensures
+/// that contiguous selections (e.g., `at()` matching every line) produce
+/// a single fragment whose text is passed to the processor in one call.
+fn merge_adjacent_lines(lines: &[usize]) -> Vec<LineRange> {
+    if lines.is_empty() {
+        return Vec::new();
+    }
+
+    let mut ranges = Vec::new();
+    let mut start = lines[0];
+    let mut end = lines[0] + 1;
+
+    for &line in &lines[1..] {
+        if line == end {
+            end = line + 1;
+        } else {
+            ranges.push(LineRange { start, end });
+            start = line;
+            end = line + 1;
+        }
+    }
+    ranges.push(LineRange { start, end });
+    ranges
 }
 
 /// `after(pattern)` — selects the zero-width insertion point immediately

@@ -106,7 +106,7 @@ pub struct RunDiagnostic {
     pub level: &'static str,
     /// Formatted source location (e.g., "1:1-10")
     pub location: String,
-    /// The selector text that caused this diagnostic.
+    /// The source text label (selector text or processor text).
     pub selector_text: String,
     /// The diagnostic message (e.g., "no lines matched").
     pub message: String,
@@ -182,7 +182,9 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
     for d in &result.diagnostics {
         let level = match d.level {
             exec::engine::DiagnosticLevel::Error => {
-                has_errors = true;
+                if !d.recovered {
+                    has_errors = true;
+                }
                 "error"
             }
             exec::engine::DiagnosticLevel::Warning => "warning",
