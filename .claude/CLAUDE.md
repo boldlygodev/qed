@@ -51,6 +51,7 @@ qed/
           cursor.rs
           parser.rs
       compile/
+        env.rs
       processor/
       exec/
   qed/                    # binary crate — CLI entry point only
@@ -68,13 +69,12 @@ qed/
 
 ## Current Phase
 
-**Phase 5 — Full Parser** (in progress, sub-phases 5A–5D complete).
+**Phase 6 — Full Compiler** (in progress, sub-phase 6A complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–4 are complete (scaffold, harness, core types, parser POC, walking skeleton).
-Phase 5 extends the parser to cover the complete qed grammar, interleaving
-minimal compiler work so integration tests go green progressively.
-125/396 integration tests pass. 46/46 selector tests pass.
-Next: Sub-phase 5E (error recovery).
+Phases 0–5 are complete (scaffold, harness, core types, parser POC, walking skeleton, full parser).
+Phase 6 extends the compiler to handle all AST forms.
+129/396 integration tests pass. 46/46 selector tests pass.
+Next: Sub-phase 6B (compiler warnings and validation).
 
 ---
 

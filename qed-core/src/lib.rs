@@ -122,37 +122,49 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
             .join("\n")
     })?;
 
-    let script = compile::compile(&program, script_source).map_err(|errors| {
-        errors
-            .iter()
-            .map(|e| format!("{e:?}"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    })?;
+    let (script, compile_warnings) =
+        compile::compile(&program, script_source, false).map_err(|errors| {
+            errors
+                .iter()
+                .map(|e| format!("{e:?}"))
+                .collect::<Vec<_>>()
+                .join("\n")
+        })?;
 
     let buffer = exec::Buffer::new(input.to_owned());
     let result = exec::engine::execute(&script, &buffer);
 
     let mut has_errors = false;
-    let diagnostics: Vec<RunDiagnostic> = result
-        .diagnostics
-        .iter()
-        .map(|d| {
-            let level = match d.level {
-                exec::engine::DiagnosticLevel::Error => {
-                    has_errors = true;
-                    "error"
-                }
-                exec::engine::DiagnosticLevel::Warning => "warning",
-            };
-            RunDiagnostic {
-                level,
-                location: span::format_span(script_source, d.span),
-                selector_text: d.selector_text.clone(),
-                message: d.message.clone(),
+    let mut diagnostics: Vec<RunDiagnostic> = Vec::new();
+
+    // Convert compile warnings (e.g., unset env vars) into diagnostics.
+    for w in &compile_warnings {
+        if let crate::error::CompileError::UnsetEnvVar { name, span } = w {
+            diagnostics.push(RunDiagnostic {
+                level: "warning",
+                location: span::format_span(script_source, *span),
+                selector_text: String::new(),
+                message: format!("unset environment variable: {name}"),
+            });
+        }
+    }
+
+    // Convert execution diagnostics.
+    for d in &result.diagnostics {
+        let level = match d.level {
+            exec::engine::DiagnosticLevel::Error => {
+                has_errors = true;
+                "error"
             }
-        })
-        .collect();
+            exec::engine::DiagnosticLevel::Warning => "warning",
+        };
+        diagnostics.push(RunDiagnostic {
+            level,
+            location: span::format_span(script_source, d.span),
+            selector_text: d.selector_text.clone(),
+            message: d.message.clone(),
+        });
+    }
 
     Ok(RunResult {
         output: result.output,
