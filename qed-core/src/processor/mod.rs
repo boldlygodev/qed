@@ -15,6 +15,7 @@ pub(crate) mod delete;
 pub(crate) mod external;
 pub(crate) mod lower;
 pub(crate) mod prefix;
+pub(crate) mod replace;
 pub(crate) mod upper;
 
 use crate::SelectorId;

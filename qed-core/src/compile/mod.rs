@@ -27,6 +27,7 @@ use crate::processor::delete::DeleteProcessor;
 use crate::processor::external::ExternalCommandProcessor;
 use crate::processor::lower::LowerProcessor;
 use crate::processor::prefix::PrefixProcessor;
+use crate::processor::replace;
 use crate::processor::upper::UpperProcessor;
 use crate::processor::Processor;
 use crate::span::Spanned;
@@ -566,7 +567,7 @@ fn compile_single_processor_into(
 ) -> Result<(), CompileError> {
     match &proc_spanned.node {
         ast::Processor::Qed(qed_proc) => {
-            out.push(compile_qed_processor(qed_proc, no_env, warnings)?);
+            out.push(compile_qed_processor(qed_proc, pattern_defs, alias_defs, no_env, warnings)?);
             Ok(())
         }
         ast::Processor::External(ext) => {
@@ -614,6 +615,8 @@ fn compile_single_processor_into(
 /// Compile a `qed:*` processor invocation.
 fn compile_qed_processor(
     qed_proc: &ast::QedProcessor,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<Box<dyn Processor>, CompileError> {
@@ -639,11 +642,98 @@ fn compile_qed_processor(
             let text = expand_and_warn(&raw, no_env, qed_proc.name.span, warnings);
             Ok(Box::new(PrefixProcessor { text }))
         }
+        "replace" => {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            compile_replace_processor(qed_proc, pattern_defs, alias_defs, no_env, warnings)
+        }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),
             span: qed_proc.name.span,
         }),
     }
+}
+
+/// Compile `qed:replace(search, replacement)`.
+fn compile_replace_processor(
+    qed_proc: &ast::QedProcessor,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
+    no_env: bool,
+    warnings: &mut Vec<CompileWarning>,
+) -> Result<Box<dyn Processor>, CompileError> {
+    if qed_proc.args.len() != 2 {
+        return Err(CompileError::InvalidParam {
+            processor: "qed:replace".into(),
+            param: format!(
+                "expected 2 arguments (search, replacement), got {}",
+                qed_proc.args.len()
+            ),
+            span: qed_proc.name.span,
+        });
+    }
+
+    // First arg: search pattern (string or regex).
+    let search = match &qed_proc.args[0].node {
+        ast::QedArg::String(s) => {
+            let expanded = expand_and_warn(s, no_env, qed_proc.args[0].span, warnings);
+            replace::ReplaceSearch::Literal(expanded)
+        }
+        ast::QedArg::Regex(r) => {
+            let expanded = expand_and_warn(r, no_env, qed_proc.args[0].span, warnings);
+            let re = regex::Regex::new(&expanded).map_err(|e| CompileError::InvalidRegex {
+                pattern: expanded,
+                reason: e.to_string(),
+                span: qed_proc.args[0].span,
+            })?;
+            replace::ReplaceSearch::Regex(re)
+        }
+        _ => {
+            return Err(CompileError::InvalidParam {
+                processor: "qed:replace".into(),
+                param: "first argument must be a string or regex pattern".into(),
+                span: qed_proc.args[0].span,
+            });
+        }
+    };
+
+    // Second arg: replacement (string, regex template, or processor chain).
+    let is_literal_search = matches!(search, replace::ReplaceSearch::Literal(_));
+
+    let replacement = match &qed_proc.args[1].node {
+        ast::QedArg::String(s) => {
+            let expanded = expand_and_warn(s, no_env, qed_proc.args[1].span, warnings);
+            replace::ReplaceWith::Literal(expanded)
+        }
+        ast::QedArg::Regex(r) => {
+            if is_literal_search {
+                return Err(CompileError::InvalidParam {
+                    processor: "qed:replace".into(),
+                    param: "regex template replacement requires a regex search pattern".into(),
+                    span: qed_proc.args[1].span,
+                });
+            }
+            let expanded = expand_and_warn(r, no_env, qed_proc.args[1].span, warnings);
+            replace::ReplaceWith::Template(expanded)
+        }
+        ast::QedArg::ProcessorChain(chain) => {
+            let proc =
+                compile_processor_chain(chain, pattern_defs, alias_defs, no_env, warnings)?;
+            replace::ReplaceWith::Pipeline(proc)
+        }
+        _ => {
+            return Err(CompileError::InvalidParam {
+                processor: "qed:replace".into(),
+                param: "second argument must be a string, regex template, or processor chain"
+                    .into(),
+                span: qed_proc.args[1].span,
+            });
+        }
+    };
+
+    Ok(Box::new(replace::ReplaceProcessor {
+        search,
+        replacement,
+    }))
 }
 
 /// Reject any parameter whose name is not in `known`.

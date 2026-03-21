@@ -571,7 +571,13 @@ fn is_param_start(cursor: &Cursor) -> bool {
     }
 
     // Must be followed by ':'
-    i < bytes.len() && bytes[i] == b':'
+    if !(i < bytes.len() && bytes[i] == b':') {
+        return false;
+    }
+
+    // Exclude `qed:` — that's a processor prefix, not a parameter name.
+    let ident = &remaining[..i];
+    ident != "qed"
 }
 
 /// Parse a selector operation keyword.
@@ -819,14 +825,6 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
                 span: cursor.span_from(start),
             })
         }
-        // Nested processor chain: `qed:name(...)`
-        _ if cursor.remaining().starts_with("qed:") => {
-            let chain = parse_processor_chain(cursor)?;
-            Ok(Spanned {
-                node: QedArg::ProcessorChain(Box::new(chain)),
-                span: cursor.span_from(start),
-            })
-        }
         // Integer (possibly negative)
         Some(b) if b.is_ascii_digit() || (b == b'-' && cursor.peek_at(1).is_some_and(|n| n.is_ascii_digit())) => {
             let neg = cursor.eat_char(b'-');
@@ -853,8 +851,18 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
                 span: pat.span,
             })
         }
+        // Processor chain: `qed:name(...)`, bare command, `\command`, `/path`, `./path`
+        _ if cursor.peek().is_some_and(|b| {
+            b.is_ascii_alphabetic() || b == b'_' || b == b'\\' || b == b'.' || b == b'/'
+        }) => {
+            let chain = parse_processor_chain(cursor)?;
+            Ok(Spanned {
+                node: QedArg::ProcessorChain(Box::new(chain)),
+                span: cursor.span_from(start),
+            })
+        }
         _ => Err(ParseError::UnexpectedToken {
-            expected: "processor argument (string, regex, integer, or pattern)".into(),
+            expected: "processor argument (string, regex, integer, pattern, or processor chain)".into(),
             found: peek_found(cursor),
             span: cursor.span_from(start),
         }),

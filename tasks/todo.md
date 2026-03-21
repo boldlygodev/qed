@@ -206,13 +206,17 @@
 - [x] `CompileError` variant coverage audit; reserved variants documented
 - [x] Checkpoint: `duplicate-pattern-name`, `plus-ignored-on-{at,after,before}` green (155/396)
 
-### 6C — Replace processor
+### 6C — Replace processor ✓
 
-- [ ] `ReplaceLiteralProcessor`: `qed:replace("old", "new")`
-- [ ] `ReplaceRegexProcessor`: `qed:replace(/pattern/, "template")` with capture groups
-- [ ] Pipeline replace: `qed:replace("match", qed:upper())`
-- [ ] Register in `compile_qed_processor()` with arg-type dispatch
-- [ ] Checkpoint: `processors::replace-*` green (~6 tests)
+- [x] `ReplaceProcessor` with `ReplaceSearch`/`ReplaceWith` enums in `processor/replace.rs`
+- [x] Literal→Literal: `qed:replace("old", "new")` via `str::replace`
+- [x] Regex→Template: `qed:replace(/pattern/, /template/)` via `regex::replace_all`
+- [x] Regex→Literal: `qed:replace(/pattern/, "literal")` via `regex::NoExpand`
+- [x] Pipeline: `qed:replace("match", echo world)` — run processor per match, strip trailing newline
+- [x] Compiler: `compile_replace_processor()` with arg-type dispatch, `(Literal, Template)` rejection
+- [x] Parser: extend `parse_qed_arg` for bare-identifier processor chains as args
+- [x] Parser: fix `is_param_start` to exclude `qed:` prefix
+- [x] Checkpoint: `processors::replace-*` 6/6, `processors-edge-cases::replace-*` 8/8 (169/396)
 
 ### 6D — External processor execution
 

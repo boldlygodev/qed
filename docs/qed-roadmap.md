@@ -326,7 +326,7 @@ The original checkpoint (`selectors` suite fully green, 46/46) is already achiev
 Remaining work is broken into four sub-phases, with `qed:replace()` and external
 processor execution pulled forward from Phase 7 to reach the Alpha 1 milestone.
 
-Sub-phases 6A and 6B are complete. 155/396 integration tests pass.
+Sub-phases 6A, 6B, and 6C are complete. 169/396 integration tests pass.
 
 ### 6A — Env var expansion
 
