@@ -1,0 +1,1 @@
+at(/(?m)^bar$/) | qed:delete()

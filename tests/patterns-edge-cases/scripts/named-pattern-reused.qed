@@ -1,0 +1,3 @@
+target="target"
+at(target) | qed:upper()
+at(target) | qed:prefix(text:">> ")

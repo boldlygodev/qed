@@ -1,0 +1,2 @@
+target="quux"
+at(target, on_error:skip) | qed:delete()

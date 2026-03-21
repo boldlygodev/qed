@@ -1,0 +1,1 @@
+qed: warning: 2:1-13:  target="baz": pattern target already defined, using last definition

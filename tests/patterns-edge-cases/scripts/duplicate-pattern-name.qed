@@ -1,0 +1,3 @@
+target="bar"
+target="baz"
+at(target) | qed:delete()

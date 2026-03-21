@@ -1,0 +1,7 @@
+alpha
+start
+bravo
+charlie
+delta
+end
+echo
