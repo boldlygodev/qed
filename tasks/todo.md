@@ -8,7 +8,7 @@
 - [x] Phase 3 — Parser POC Evaluation
 - [x] Phase 4 — Walking Skeleton
 - [x] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E deferred to Phase 11)
-- [ ] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
+- [x] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
 - [ ] Phase 7 — Processor Coverage → **Alpha 2**
 - [ ] Phase 8 — Generation Processors
 - [ ] Phase 9 — Invocation Features → **Alpha 3**
@@ -218,19 +218,24 @@
 - [x] Parser: fix `is_param_start` to exclude `qed:` prefix
 - [x] Checkpoint: `processors::replace-*` 6/6, `processors-edge-cases::replace-*` 8/8 (169/396)
 
-### 6D — External processor execution
+### 6D — External processor execution ✓
 
-- [ ] Complete `ExternalCommandProcessor`: stdin piping, stdout capture
-- [ ] Arg passing: quoted and unquoted
-- [ ] Non-zero exit → `ProcessorError::ExternalFailed`
-- [ ] Mock script support in test harness
-- [ ] Checkpoint: basic `external-processors::*` green (~6-8 tests)
+- [x] Mock script generation in bash harness (`tests/harness/generate-mock.sh`)
+- [x] Mock generation loop in `run-scenario.sh`
+- [x] Stderr passthrough on success, captured in `ProcessorError::ExternalFailed` on failure
+- [x] Fallback dispatch in execution engine (`recovered` flag, `has_unrecovered_error` tracking)
+- [x] `Fallback::SelectAction` compilation (extract processor chain, ignore selector)
+- [x] Bare-word alias refs fall back to `ExternalCommandProcessor`
+- [x] Adjacent line merging in `collect_at` for contiguous selections
+- [x] Empty buffer handling for `at()` universal pattern
+- [x] Unified diagnostic format (single space before source expression)
+- [x] Checkpoint: 21/27 external-processors tests green (6 deferred to Phase 8 for `qed:file()`)
 
-### ✦ Alpha 1 checkpoint
+### ✦ Alpha 1 checkpoint ✓
 
-- [ ] ~160/396 integration tests passing
-- [ ] All selectors, core processors, external commands, named patterns, aliases, env vars
-- [ ] Update `.claude/CLAUDE.md` with current status
+- [x] 198/396 integration tests passing
+- [x] All selectors, core processors, external commands, named patterns, aliases, env vars
+- [x] Update `.claude/CLAUDE.md` with current status
 
 ---
 

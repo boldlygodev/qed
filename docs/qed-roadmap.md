@@ -355,7 +355,9 @@ Sub-phases 6A, 6B, and 6C are complete. 169/396 integration tests pass.
 - Mock script support in test harness
 
 **Checkpoint:** `patterns::env-*` green; `processors::replace-*` green;
-basic `external-processors::*` scenarios green. ~160/396 integration tests pass.
+basic `external-processors::*` scenarios green. 198/396 integration tests pass.
+46/46 selector tests pass. 21/27 external processor tests pass
+(6 deferred to Phase 8 for `qed:file()`).
 
 ### ✦ Alpha 1 — Basic Stream Editing
 
