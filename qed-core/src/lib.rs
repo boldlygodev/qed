@@ -122,14 +122,28 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
             .join("\n")
     })?;
 
-    let (script, compile_warnings) =
-        compile::compile(&program, script_source, false).map_err(|errors| {
-            errors
+    let (script, compile_warnings) = match compile::compile(&program, script_source, false) {
+        Ok(pair) => pair,
+        Err(errors) => {
+            let diagnostics = errors
                 .iter()
-                .map(|e| format!("{e:?}"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        })?;
+                .map(|e| {
+                    let (span, message) = compile_error_to_diagnostic(e);
+                    RunDiagnostic {
+                        level: "error",
+                        location: span::format_span(script_source, span),
+                        selector_text: script_source[span.start..span.end].to_owned(),
+                        message,
+                    }
+                })
+                .collect();
+            return Ok(RunResult {
+                output: String::new(),
+                diagnostics,
+                has_errors: true,
+            });
+        }
+    };
 
     let buffer = exec::Buffer::new(input.to_owned());
     let result = exec::engine::execute(&script, &buffer);
@@ -137,16 +151,31 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
     let mut has_errors = false;
     let mut diagnostics: Vec<RunDiagnostic> = Vec::new();
 
-    // Convert compile warnings (e.g., unset env vars) into diagnostics.
+    // Convert compile warnings into diagnostics.
     for w in &compile_warnings {
-        if let crate::error::CompileError::UnsetEnvVar { name, span } = w {
-            diagnostics.push(RunDiagnostic {
-                level: "warning",
-                location: span::format_span(script_source, *span),
-                selector_text: String::new(),
-                message: format!("unset environment variable: {name}"),
-            });
-        }
+        let (span, source_text, message) = match w {
+            error::CompileWarning::UnsetEnvVar { name, span } => (
+                *span,
+                String::new(),
+                format!("unset environment variable: {name}"),
+            ),
+            error::CompileWarning::DuplicateName { name, kind, span } => (
+                *span,
+                script_source[span.start..span.end].to_owned(),
+                format!("{kind} {name} already defined, using last definition"),
+            ),
+            error::CompileWarning::InclusiveIgnored { selector_op, span } => (
+                *span,
+                script_source[span.start..span.end].to_owned(),
+                format!("+ ignored on {selector_op}"),
+            ),
+        };
+        diagnostics.push(RunDiagnostic {
+            level: "warning",
+            location: span::format_span(script_source, span),
+            selector_text: source_text,
+            message,
+        });
     }
 
     // Convert execution diagnostics.
@@ -171,4 +200,41 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
         diagnostics,
         has_errors,
     })
+}
+
+/// Extract the span and human-readable message from a compile error.
+fn compile_error_to_diagnostic(e: &error::CompileError) -> (span::Span, String) {
+    match e {
+        error::CompileError::UndefinedName { name, span } => {
+            (*span, format!("undefined name: {name}"))
+        }
+        error::CompileError::WrongSymbolKind {
+            name,
+            expected,
+            found,
+            span,
+        } => (*span, format!("{name} is a {found}, not a {expected}")),
+        error::CompileError::InvalidRegex {
+            pattern,
+            reason,
+            span,
+        } => (*span, format!("invalid regex /{pattern}/: {reason}")),
+        error::CompileError::InvalidParam {
+            processor,
+            param,
+            span,
+        } => (*span, format!("{processor}: {param}")),
+        error::CompileError::ConflictingParams {
+            processor,
+            params,
+            span,
+        } => (
+            *span,
+            format!(
+                "{processor}: conflicting parameters: {}",
+                params.join(", ")
+            ),
+        ),
+        error::CompileError::InvalidNthExpr { reason, span } => (*span, reason.clone()),
+    }
 }

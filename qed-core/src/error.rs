@@ -5,6 +5,8 @@
 //! the compiler report every problem in a single run. All variants carry a
 //! [`Span`] so diagnostics can point to the offending source location.
 
+use std::fmt;
+
 use crate::span::Span;
 
 /// Discriminates named symbols in the symbol table.
@@ -14,6 +16,15 @@ pub enum SymbolKind {
     Pattern,
     /// A named processor alias defined via `alias name = qed:...(...)`.
     Alias,
+}
+
+impl fmt::Display for SymbolKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SymbolKind::Pattern => write!(f, "pattern"),
+            SymbolKind::Alias => write!(f, "alias"),
+        }
+    }
 }
 
 /// Errors produced by the compilation pass.
@@ -36,11 +47,41 @@ pub enum CompileError {
     /// A processor or selector received a parameter it does not recognize.
     InvalidParam { processor: String, param: String, span: Span },
     /// Two or more mutually exclusive parameters were specified together.
+    ///
+    /// Reserved — not yet emitted. Will be used by `qed:replace()` in Phase 6C.
     ConflictingParams { processor: String, params: Vec<String>, span: Span },
     /// An nth expression is syntactically valid but semantically invalid
     /// (e.g., cross-sign range bounds).
+    ///
+    /// Reserved — nth semantic validation is handled at parse time. This
+    /// variant exists for potential future compile-time validation.
     InvalidNthExpr { reason: String, span: Span },
-    /// Warning only — compilation continues with an empty string substitution.
-    /// Emitted when a `$ENV_VAR` reference names a variable that is not set.
+}
+
+/// Warnings produced by the compilation pass.
+///
+/// Warnings are non-fatal: compilation succeeds and execution proceeds
+/// normally. They are accumulated alongside the compiled [`Script`] and
+/// emitted to stderr.
+///
+/// [`Script`]: crate::compile::Script
+#[derive(Debug, Clone)]
+pub enum CompileWarning {
+    /// An environment variable reference names a variable that is not set.
+    /// Compilation continues with an empty string substitution.
     UnsetEnvVar { name: String, span: Span },
+    /// A pattern or alias name was defined more than once.
+    /// The last definition wins.
+    DuplicateName {
+        name: String,
+        kind: SymbolKind,
+        /// Span of the new (overwriting) definition.
+        span: Span,
+    },
+    /// The `+` (inclusive) modifier was used on a selector where it has no
+    /// effect (`at`, `after`, or `before`). The flag is silently cleared.
+    InclusiveIgnored {
+        selector_op: &'static str,
+        span: Span,
+    },
 }

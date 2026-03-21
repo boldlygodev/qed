@@ -69,12 +69,12 @@ qed/
 
 ## Current Phase
 
-**Phase 6 — Full Compiler** (in progress, sub-phase 6A complete).
+**Phase 6 — Full Compiler** (in progress, sub-phases 6A–6B complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–5 are complete (scaffold, harness, core types, parser POC, walking skeleton, full parser).
 Phase 6 extends the compiler to handle all AST forms.
-148/396 integration tests pass. 46/46 selector tests pass.
-Next: Sub-phase 6B (compiler warnings and validation).
+155/396 integration tests pass. 46/46 selector tests pass.
+Next: Sub-phase 6C (replace processor).
 
 ---
 

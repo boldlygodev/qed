@@ -17,7 +17,7 @@ mod env;
 
 use std::collections::HashMap;
 
-use crate::error::CompileError;
+use crate::error::{CompileError, CompileWarning};
 use crate::parse::ast::{
     self, NthTerm, Param, ParamValue, PatternRefValue, PatternValue, Program,
     SelectorOp as AstSelectorOp,
@@ -156,9 +156,9 @@ pub(crate) fn compile(
     program: &Program,
     source: &str,
     no_env: bool,
-) -> Result<(Script, Vec<CompileError>), Vec<CompileError>> {
+) -> Result<(Script, Vec<CompileWarning>), Vec<CompileError>> {
     let mut errors = Vec::new();
-    let mut warnings = Vec::new();
+    let mut warnings: Vec<CompileWarning> = Vec::new();
 
     // ── Pass 1: collect definitions ──────────────────────────────────
     let mut pattern_defs: HashMap<&str, &PatternValue> = HashMap::new();
@@ -167,10 +167,22 @@ pub(crate) fn compile(
     for spanned_stmt in &program.statements {
         match &spanned_stmt.node {
             ast::Statement::PatternDef { name, value } => {
-                pattern_defs.insert(&name.node, &value.node);
+                if pattern_defs.insert(&name.node, &value.node).is_some() {
+                    warnings.push(CompileWarning::DuplicateName {
+                        name: name.node.clone(),
+                        kind: crate::error::SymbolKind::Pattern,
+                        span: spanned_stmt.span,
+                    });
+                }
             }
             ast::Statement::AliasDef { name, chain } => {
-                alias_defs.insert(&name.node, &chain.node);
+                if alias_defs.insert(&name.node, &chain.node).is_some() {
+                    warnings.push(CompileWarning::DuplicateName {
+                        name: name.node.clone(),
+                        kind: crate::error::SymbolKind::Alias,
+                        span: spanned_stmt.span,
+                    });
+                }
             }
             ast::Statement::SelectAction(_) => {}
         }
@@ -191,7 +203,7 @@ pub(crate) fn compile(
 
         // Compile the selector
         let sel_id =
-            match compile_selector(node, &mut selectors, &pattern_defs, no_env, &mut warnings) {
+            match compile_selector(node, &mut selectors, &pattern_defs, &alias_defs, no_env, &mut warnings) {
                 Ok(id) => id,
                 Err(e) => {
                     errors.push(e);
@@ -202,7 +214,7 @@ pub(crate) fn compile(
         // Compile the processor
         let processor: Box<dyn Processor> = match &node.chain {
             Some(chain) => {
-                match compile_processor_chain(&chain.node, &alias_defs, no_env, &mut warnings) {
+                match compile_processor_chain(&chain.node, &pattern_defs, &alias_defs, no_env, &mut warnings) {
                     Ok(p) => p,
                     Err(e) => {
                         errors.push(e);
@@ -224,7 +236,7 @@ pub(crate) fn compile(
         let fallback = match &node.fallback {
             Some(fb) => match &fb.node {
                 ast::Fallback::Chain(chain) => {
-                    match compile_processor_chain(chain, &alias_defs, no_env, &mut warnings) {
+                    match compile_processor_chain(chain, &pattern_defs, &alias_defs, no_env, &mut warnings) {
                         Ok(p) => Some(p),
                         Err(e) => {
                             errors.push(e);
@@ -273,8 +285,9 @@ fn compile_selector(
     node: &ast::SelectActionNode,
     registry: &mut Vec<RegistryEntry>,
     pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<SelectorId, CompileError> {
     let selector_ast = &node.selector.node;
 
@@ -287,6 +300,7 @@ fn compile_selector(
             sel_id,
             node.selector.span,
             pattern_defs,
+            alias_defs,
             no_env,
             warnings,
         )?;
@@ -302,6 +316,7 @@ fn compile_selector(
                 step_id,
                 step_spanned.span,
                 pattern_defs,
+                alias_defs,
                 no_env,
                 warnings,
             )?;
@@ -324,12 +339,13 @@ fn compile_simple_selector(
     sel_id: SelectorId,
     span: crate::span::Span,
     pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<RegistryEntry, CompileError> {
-    let compiled_pattern = match &step.pattern {
+    let mut compiled_pattern = match &step.pattern {
         Some(pat_ref) => {
-            compile_pattern(&pat_ref.node, pat_ref.span, pattern_defs, no_env, warnings)?
+            compile_pattern(&pat_ref.node, pat_ref.span, pattern_defs, alias_defs, no_env, warnings)?
         }
         None => CompiledPattern {
             matcher: PatternMatcher::Literal(String::new()),
@@ -387,6 +403,23 @@ fn compile_simple_selector(
         }
     }
 
+    // Warn if `+` (inclusive) is used on a non-boundary selector.
+    let non_boundary_op = match step.op {
+        AstSelectorOp::At => Some("at"),
+        AstSelectorOp::After => Some("after"),
+        AstSelectorOp::Before => Some("before"),
+        AstSelectorOp::From | AstSelectorOp::To => None,
+    };
+    if compiled_pattern.inclusive {
+        if let Some(op_name) = non_boundary_op {
+            warnings.push(CompileWarning::InclusiveIgnored {
+                selector_op: op_name,
+                span,
+            });
+            compiled_pattern.inclusive = false;
+        }
+    }
+
     let op = match step.op {
         AstSelectorOp::At => SelectorOp::At {
             pattern: compiled_pattern,
@@ -437,8 +470,9 @@ fn compile_pattern(
     pat_ref: &ast::PatternRef,
     span: crate::span::Span,
     pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<CompiledPattern, CompileError> {
     let matcher = match &pat_ref.value {
         PatternRefValue::Inline(PatternValue::String(s)) => {
@@ -459,6 +493,14 @@ fn compile_pattern(
                 compile_regex_matcher(&expanded, span)?
             }
             None => {
+                if alias_defs.contains_key(name.as_str()) {
+                    return Err(CompileError::WrongSymbolKind {
+                        name: name.clone(),
+                        expected: crate::error::SymbolKind::Pattern,
+                        found: crate::error::SymbolKind::Alias,
+                        span,
+                    });
+                }
                 return Err(CompileError::UndefinedName {
                     name: name.clone(),
                     span,
@@ -493,14 +535,15 @@ fn compile_regex_matcher(
 /// Multi-processor chains wrap in a `ChainProcessor`.
 fn compile_processor_chain(
     chain: &ast::ProcessorChain,
+    pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<Box<dyn Processor>, CompileError> {
     // Alias refs may expand to multi-step chains; flatten into a single list.
     let mut steps: Vec<Box<dyn Processor>> = Vec::new();
     for proc_spanned in &chain.processors {
-        compile_single_processor_into(proc_spanned, alias_defs, &mut steps, no_env, warnings)?;
+        compile_single_processor_into(proc_spanned, pattern_defs, alias_defs, &mut steps, no_env, warnings)?;
     }
     if steps.len() == 1 {
         Ok(steps.into_iter().next().expect("checked len"))
@@ -515,10 +558,11 @@ fn compile_processor_chain(
 /// so `alias | other` flattens correctly into a single chain.
 fn compile_single_processor_into(
     proc_spanned: &Spanned<ast::Processor>,
+    pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     out: &mut Vec<Box<dyn Processor>>,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<(), CompileError> {
     match &proc_spanned.node {
         ast::Processor::Qed(qed_proc) => {
@@ -544,14 +588,25 @@ fn compile_single_processor_into(
         ast::Processor::AliasRef(name) => match alias_defs.get(name.as_str()) {
             Some(chain) => {
                 for p in &chain.processors {
-                    compile_single_processor_into(p, alias_defs, out, no_env, warnings)?;
+                    compile_single_processor_into(p, pattern_defs, alias_defs, out, no_env, warnings)?;
                 }
                 Ok(())
             }
-            None => Err(CompileError::UndefinedName {
-                name: name.clone(),
-                span: proc_spanned.span,
-            }),
+            None => {
+                if pattern_defs.contains_key(name.as_str()) {
+                    Err(CompileError::WrongSymbolKind {
+                        name: name.clone(),
+                        expected: crate::error::SymbolKind::Alias,
+                        found: crate::error::SymbolKind::Pattern,
+                        span: proc_spanned.span,
+                    })
+                } else {
+                    Err(CompileError::UndefinedName {
+                        name: name.clone(),
+                        span: proc_spanned.span,
+                    })
+                }
+            }
         },
     }
 }
@@ -560,13 +615,20 @@ fn compile_single_processor_into(
 fn compile_qed_processor(
     qed_proc: &ast::QedProcessor,
     no_env: bool,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> Result<Box<dyn Processor>, CompileError> {
     match qed_proc.name.node.as_str() {
-        "delete" => Ok(Box::new(DeleteProcessor)),
-        "upper" => Ok(Box::new(UpperProcessor)),
-        "lower" => Ok(Box::new(LowerProcessor)),
+        "delete" | "upper" | "lower" => {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            match qed_proc.name.node.as_str() {
+                "delete" => Ok(Box::new(DeleteProcessor)),
+                "upper" => Ok(Box::new(UpperProcessor)),
+                "lower" => Ok(Box::new(LowerProcessor)),
+                _ => unreachable!(),
+            }
+        }
         "prefix" => {
+            reject_unknown_params(&qed_proc.params, &["text"], &qed_proc.name.node)?;
             let raw = extract_string_param(&qed_proc.params, "text").ok_or_else(|| {
                 CompileError::InvalidParam {
                     processor: "qed:prefix".into(),
@@ -582,6 +644,24 @@ fn compile_qed_processor(
             span: qed_proc.name.span,
         }),
     }
+}
+
+/// Reject any parameter whose name is not in `known`.
+fn reject_unknown_params(
+    params: &[Spanned<Param>],
+    known: &[&str],
+    proc_name: &str,
+) -> Result<(), CompileError> {
+    for param in params {
+        if !known.contains(&param.node.name.node.as_str()) {
+            return Err(CompileError::InvalidParam {
+                processor: format!("qed:{proc_name}"),
+                param: format!("unknown parameter: {}", param.node.name.node),
+                span: param.span,
+            });
+        }
+    }
+    Ok(())
 }
 
 /// Extract a string-valued named parameter from a parameter list.
@@ -605,11 +685,11 @@ fn expand_and_warn(
     input: &str,
     no_env: bool,
     span: crate::span::Span,
-    warnings: &mut Vec<CompileError>,
+    warnings: &mut Vec<CompileWarning>,
 ) -> String {
     let (expanded, unset) = env::expand_env_vars(input, no_env);
     for var in unset {
-        warnings.push(CompileError::UnsetEnvVar {
+        warnings.push(CompileWarning::UnsetEnvVar {
             name: var.name,
             span,
         });

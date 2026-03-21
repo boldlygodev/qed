@@ -194,12 +194,17 @@
 - [x] Warning emission: `run()` converts compile warnings to `RunDiagnostic`, CLI formats to stderr
 - [x] Checkpoint: `patterns::env-expand-pattern`, `invocation::env-expansion` green (129/396)
 
-### 6B — Compiler warnings & validation
+### 6B — Compiler warnings & validation ✓
 
-- [ ] Duplicate name detection in pass 1 → warning, last definition wins
-- [ ] Param validation: unknown param names, wrong param types
-- [ ] `CompileError` variant coverage audit
-- [ ] Checkpoint: `patterns-edge-cases::duplicate-pattern-name` green
+- [x] `CompileWarning` enum: `UnsetEnvVar`, `DuplicateName`, `InclusiveIgnored`
+- [x] Move `UnsetEnvVar` from `CompileError` to `CompileWarning`
+- [x] Duplicate name detection in pass 1 → warning, last definition wins
+- [x] `+` on non-boundary selectors (`at`/`after`/`before`) → warning, flag cleared
+- [x] Processor unknown param validation (`delete`, `upper`, `lower`, `prefix`)
+- [x] Cross-map `WrongSymbolKind` detection (pattern name in alias position and vice versa)
+- [x] Compile errors routed through structured `RunDiagnostic` (not Debug format)
+- [x] `CompileError` variant coverage audit; reserved variants documented
+- [x] Checkpoint: `duplicate-pattern-name`, `plus-ignored-on-{at,after,before}` green (155/396)
 
 ### 6C — Replace processor
 

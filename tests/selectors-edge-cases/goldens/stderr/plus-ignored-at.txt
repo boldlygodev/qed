@@ -1,1 +1,1 @@
-qed: warning: 1:1-11:  at("bar"+): + ignored on at
+qed: warning: 1:1-10:  at("bar"+): + ignored on at

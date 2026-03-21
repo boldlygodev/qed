@@ -1,1 +1,1 @@
-qed: warning: 1:1-14:  after("bar"+): + ignored on after
+qed: warning: 1:1-13:  after("bar"+): + ignored on after
