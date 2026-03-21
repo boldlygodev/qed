@@ -7,7 +7,7 @@
 
 A modern stream editor for source files and config files.
 
-> **⚠️ In development.** `qed` is not yet released. This documentation describes the intended design. APIs and behavior may change before the first release.
+> **Alpha release.** `qed` is functional but incomplete — not all processors are implemented yet. APIs and behavior may change before 1.0.
 
 ---
 
@@ -118,34 +118,30 @@ from(func_start+) > to(func_end+) | qed:delete()
 **mise** (recommended):
 
 ```sh
-mise use --global github:boldlygo.dev/qed
+mise use --global github:boldlygodev/qed
 ```
 
-Or via the cargo backend if you manage your own Rust toolchain:
+**Download a prebuilt binary** from the
+[latest release](https://github.com/boldlygodev/qed/releases/latest)
+(macOS and Linux, x86_64 and arm64):
 
 ```sh
-mise use --global cargo:qed
-```
-
-**Homebrew:**
-
-```sh
-brew install qed
-```
-
-**cargo:**
-
-```sh
-cargo install qed
+# Example: macOS arm64
+curl -fsSL https://github.com/boldlygodev/qed/releases/latest/download/qed-aarch64-apple-darwin.tar.gz \
+  | tar xz
+sudo mv qed /usr/local/bin/
 ```
 
 **Build from source:**
 
 ```sh
-git clone https://github.com/your-org/qed
+git clone https://github.com/boldlygodev/qed
 cd qed
 cargo build --release
+# binary is at target/release/qed
 ```
+
+**Coming soon:** `cargo install qed` and Homebrew.
 
 ---
 
