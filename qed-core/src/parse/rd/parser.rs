@@ -711,13 +711,12 @@ fn parse_qed_processor(
             }
         }
         // Continue on `:` followed by alpha/underscore (colon-separated name)
-        if cursor.peek() == Some(b':') {
-            if let Some(next) = cursor.peek_at(1) {
-                if next.is_ascii_alphabetic() || next == b'_' {
-                    cursor.advance(); // consume `:`
-                    continue;
-                }
-            }
+        if cursor.peek() == Some(b':')
+            && let Some(next) = cursor.peek_at(1)
+            && (next.is_ascii_alphabetic() || next == b'_')
+        {
+            cursor.advance(); // consume `:`
+            continue;
         }
         break;
     }

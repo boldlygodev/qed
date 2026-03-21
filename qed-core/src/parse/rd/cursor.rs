@@ -217,13 +217,14 @@ impl<'src> Cursor<'src> {
     /// Try to consume a specific ASCII keyword. Returns true if matched.
     pub(super) fn eat_keyword(&mut self, keyword: &str) -> bool {
         let remaining = self.remaining();
-        if remaining.starts_with(keyword) {
-            // Ensure the keyword isn't a prefix of a longer identifier
-            let next = remaining.as_bytes().get(keyword.len());
-            if next.is_none() || !next.is_some_and(|&b| b.is_ascii_alphanumeric() || b == b'_') {
-                self.pos += keyword.len();
-                return true;
-            }
+        if remaining.starts_with(keyword)
+            && remaining
+                .as_bytes()
+                .get(keyword.len())
+                .is_none_or(|b| !(b.is_ascii_alphanumeric() || *b == b'_'))
+        {
+            self.pos += keyword.len();
+            return true;
         }
         false
     }

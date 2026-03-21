@@ -535,12 +535,10 @@ fn compile_qed_processor(
 /// Extract a string-valued named parameter from a parameter list.
 fn extract_string_param(params: &[Spanned<Param>], name: &str) -> Option<String> {
     params.iter().find_map(|p| {
-        if p.node.name.node == name {
-            if let ParamValue::String(s) = &p.node.value.node {
-                Some(s.clone())
-            } else {
-                None
-            }
+        if p.node.name.node == name
+            && let ParamValue::String(s) = &p.node.value.node
+        {
+            Some(s.clone())
         } else {
             None
         }
