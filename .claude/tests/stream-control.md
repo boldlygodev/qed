@@ -260,7 +260,7 @@ Script: `at("bar") | qed:debug:count()` — selector at 1:1-9, `qed:debug:count(
 `at("bar")` matches 1 line in `three-lines.txt`.
 
 ```
-qed: debug:   1:1-9:   at("bar"): 1 match
+qed: debug:   1:1-9: at("bar"): 1 match
 ```
 
 #### `debug-print.txt`

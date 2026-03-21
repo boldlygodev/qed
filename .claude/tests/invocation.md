@@ -379,7 +379,7 @@ Used by: `global-on-error-warn`
 Script: `at("quux") | qed:delete()` — selector at 1:1-10, `qed:delete()` at 1:14-25 (widest: 7 chars).
 
 ```
-qed: warning: 1:1-10:  at("quux"): no lines matched
+qed: warning: 1:1-10: at("quux"): no lines matched
 ```
 
 ---

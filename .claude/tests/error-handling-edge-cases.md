@@ -263,7 +263,7 @@ Used by: `multiple-statements-first-fails`
 Widest span in the script is `qed:delete()` at `1:14-25` (7 chars) → location padded to 7.
 
 ```
-qed: error:   1:1-10:  at("quux"): no lines matched
+qed: error:   1:1-10: at("quux"): no lines matched
 ```
 
 #### `error-no-match-second-statement.txt`
@@ -274,7 +274,7 @@ Used by: `multiple-statements-second-fails`
 Widest span in the script is `qed:delete()` at `2:14-25` (7 chars) → location padded to 7.
 
 ```
-qed: error:   2:1-10:  at("quux"): no lines matched
+qed: error:   2:1-10: at("quux"): no lines matched
 ```
 
 #### `warn-no-match.txt`
@@ -285,5 +285,5 @@ Used by: `on-error-warn-fallback-not-triggered`
 Widest span is the second `qed:delete()` at `1:57-68` (7 chars) → location padded to 7.
 
 ```
-qed: warning: 1:1-25:  at("quux", on_error:warn): no lines matched
+qed: warning: 1:1-25: at("quux", on_error:warn): no lines matched
 ```

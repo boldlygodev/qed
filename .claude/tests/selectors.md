@@ -921,7 +921,7 @@ Used by: `on-error-fail`
 Script: `at("quux") | qed:delete()` — selector at 1:1-10, `qed:delete()` at 1:14-25 (widest: 7 chars).
 
 ```
-qed: error:   1:1-10:  at("quux"): no lines matched
+qed: error:   1:1-10: at("quux"): no lines matched
 ```
 
 #### `warn-no-match.txt`
@@ -931,5 +931,5 @@ Used by: `on-error-warn`
 Script: `at("quux", on_error:warn) | qed:delete()` — selector at 1:1-25, `qed:delete()` at 1:29-40 (widest: 7 chars).
 
 ```
-qed: warning: 1:1-25:  at("quux", on_error:warn): no lines matched
+qed: warning: 1:1-25: at("quux", on_error:warn): no lines matched
 ```

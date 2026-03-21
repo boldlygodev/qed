@@ -1,1 +1,1 @@
-qed: warning: 1:5-20:  ${QED_UNSET_VAR}: environment variable not set, expanding to empty string
+qed: warning: 1:5-20: ${QED_UNSET_VAR}: environment variable not set, expanding to empty string

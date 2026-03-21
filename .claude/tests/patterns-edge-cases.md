@@ -577,5 +577,5 @@ at(target) | qed:delete()
 `target="baz"` at `2:1-13` (12 chars); widest span `qed:delete()` at `3:14-26` (12 chars) → location width 7.
 
 ```
-qed: warning: 2:1-13:  target="baz": pattern target already defined, using last definition
+qed: warning: 2:1-13: target="baz": pattern target already defined, using last definition
 ```

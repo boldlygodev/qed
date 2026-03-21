@@ -1,1 +1,1 @@
-qed: warning: 1:1-25:  at("quux", on_error:warn): no lines matched
+qed: warning: 1:1-25: at("quux", on_error:warn): no lines matched

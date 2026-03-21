@@ -341,8 +341,8 @@ including template rendering, log processing, and document manipulation.
 Warnings and errors are written to stderr in a consistent format:
 
 ```
-qed: warning: 1:1-10:  at("quux"): no lines matched
-qed:   error: 2:5-18:  qed:delete(): processor failed
+qed: warning: 1:1-10: at("quux"): no lines matched
+qed: error:   2:5-18: qed:delete(): processor failed
 ```
 
 Location is `line:start-end` using 1-based byte offsets.

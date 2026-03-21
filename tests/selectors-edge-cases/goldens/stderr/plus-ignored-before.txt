@@ -1,1 +1,1 @@
-qed: warning: 1:1-14:  before("bar"+): + ignored on before
+qed: warning: 1:1-14: before("bar"+): + ignored on before

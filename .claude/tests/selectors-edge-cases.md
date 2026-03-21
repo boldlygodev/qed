@@ -912,7 +912,7 @@ Script: `at("bar"+) | qed:delete()`
 `at("bar"+)` at `1:1-11` (10 chars); widest span `qed:delete()` at `1:14-26` (12 chars) → location width 7.
 
 ```
-qed: warning: 1:1-11:  at("bar"+): + ignored on at
+qed: warning: 1:1-11: at("bar"+): + ignored on at
 ```
 
 #### `plus-ignored-after.txt`
@@ -923,7 +923,7 @@ Script: `after("bar"+) | qed:upper()`
 `after("bar"+)` at `1:1-14` (13 chars); widest span `qed:upper()` at `1:17-28` (11 chars) → location width 7.
 
 ```
-qed: warning: 1:1-14:  after("bar"+): + ignored on after
+qed: warning: 1:1-14: after("bar"+): + ignored on after
 ```
 
 #### `plus-ignored-before.txt`
@@ -934,7 +934,7 @@ Script: `before("bar"+) | qed:upper()`
 `before("bar"+)` at `1:1-15` (14 chars); widest span `qed:upper()` at `1:18-29` (11 chars) → location width 7.
 
 ```
-qed: warning: 1:1-15:  before("bar"+): + ignored on before
+qed: warning: 1:1-15: before("bar"+): + ignored on before
 ```
 
 #### `nth-zero-warned.txt`
@@ -945,7 +945,7 @@ Script: `at("x", nth:0, on_error:skip) | qed:delete()`
 `nth:0` at `1:9-14` (5 chars); widest span `qed:delete()` at `1:33-45` (12 chars) → location width 7.
 
 ```
-qed: warning: 1:9-14:  nth:0: 0 has no meaning in nth, term ignored
+qed: warning: 1:9-14: nth:0: 0 has no meaning in nth, term ignored
 ```
 
 #### `nth-duplicate-bare.txt`
@@ -956,7 +956,7 @@ Script: `at("x", nth:1,1...3) | qed:delete()`
 `nth:1,1...3` at `1:9-20` (11 chars); widest span `qed:delete()` at `1:24-36` (12 chars) → location width 7.
 
 ```
-qed: warning: 1:9-20:  nth:1,1...3: duplicate occurrence 1, deduplicated
+qed: warning: 1:9-20: nth:1,1...3: duplicate occurrence 1, deduplicated
 ```
 
 #### `nth-duplicate-range.txt`
@@ -967,5 +967,5 @@ Script: `at("x", nth:1...3,2) | qed:delete()`
 `nth:1...3,2` at `1:9-20` (11 chars); widest span `qed:delete()` at `1:24-36` (12 chars) → location width 7.
 
 ```
-qed: warning: 1:9-20:  nth:1...3,2: duplicate occurrence 2, deduplicated
+qed: warning: 1:9-20: nth:1...3,2: duplicate occurrence 2, deduplicated
 ```

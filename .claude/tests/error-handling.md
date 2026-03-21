@@ -357,7 +357,7 @@ Script: `at("quux", on_error:warn) | qed:delete() || at("bar") | qed:delete()` â
 selector at 1:1-25, second `qed:delete()` at 1:57-68 (widest: 7 chars).
 
 ```
-qed: warning: 1:1-25:  at("quux", on_error:warn): no lines matched
+qed: warning: 1:1-25: at("quux", on_error:warn): no lines matched
 ```
 
 #### `processor-failed.txt`

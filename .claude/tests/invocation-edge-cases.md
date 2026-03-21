@@ -297,7 +297,7 @@ Used by: `per-selector-on-error-overrides-global`
 Script: `at("quux", on_error:fail) | qed:delete()` — selector at 1:1-25, `qed:delete()` at 1:29-40 (widest: 7 chars).
 
 ```
-qed: error:   1:1-25:  at("quux", on_error:fail): no lines matched
+qed: error:   1:1-25: at("quux", on_error:fail): no lines matched
 ```
 
 #### `unset-var-warn.txt`
@@ -308,7 +308,7 @@ Script: `at("${QED_UNSET_VAR}", on_error:skip) | qed:delete()` —
 `${QED_UNSET_VAR}` is the env var reference at 1:5-20; `qed:delete()` at 1:41-52 (widest: 7 chars).
 
 ```
-qed: warning: 1:5-20:  ${QED_UNSET_VAR}: environment variable not set, expanding to empty string
+qed: warning: 1:5-20: ${QED_UNSET_VAR}: environment variable not set, expanding to empty string
 ```
 
 ---
