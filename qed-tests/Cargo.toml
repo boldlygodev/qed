@@ -11,6 +11,6 @@ path = "src/main.rs"
 harness = false
 
 [dev-dependencies]
-libtest-mimic = "0.7"
+libtest-mimic = "0.8"
 serde = { version = "1", features = ["derive"] }
-toml = "0.8"
+toml = "0.9"
