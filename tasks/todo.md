@@ -9,7 +9,7 @@
 - [x] Phase 4 — Walking Skeleton
 - [x] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E deferred to Phase 11)
 - [x] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
-- [ ] Phase 7 — Processor Coverage → **Alpha 2**
+- [x] Phase 7 — Processor Coverage → **Alpha 2**
 - [ ] Phase 8 — Generation Processors
 - [ ] Phase 9 — Invocation Features → **Alpha 3**
 - [ ] Phase 10 — Diagnostics
@@ -270,11 +270,13 @@
 - [x] `qed:move(after:p | before:p | at:p)`
 - [x] Execution engine copy/move post-processing pass
 
-### 7E — Test verification
+### 7E — Test verification ✓
 
-- [ ] Full `processors` suite green
-- [ ] Edge case fixtures from `.claude/tests/processors-edge-cases.md`
-- [ ] Edge case tests passing
+- [x] Full `processors` suite green (47/47)
+- [x] Edge case fixtures from `.claude/tests/processors-edge-cases.md` (all present)
+- [x] Edge case tests passing (all `processors-edge-cases::` green)
+- [x] Fix: `at(on_error:skip)` parser — params-only selector without pattern
+- [x] Fix: `NumberProcessor` empty input handling
 
 ---
 

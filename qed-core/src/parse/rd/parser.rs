@@ -337,13 +337,24 @@ fn parse_simple_selector(cursor: &mut Cursor) -> Result<Spanned<SimpleSelector>,
         });
     }
 
-    // Parse pattern ref
-    let pattern = Some(parse_pattern_ref(cursor)?);
+    // Parse pattern ref — but if the first token is a named param (e.g.
+    // `on_error:skip`), skip pattern parsing and go straight to params.
+    let pattern = if is_param_start(cursor) {
+        None
+    } else {
+        Some(parse_pattern_ref(cursor)?)
+    };
 
     cursor.eat_whitespace();
 
-    // Parse optional params after comma
+    // Parse optional params after comma (or directly if pattern was None).
     let mut params = Vec::new();
+    if pattern.is_none() && cursor.peek() != Some(b')') {
+        // No pattern — first token is already a param.
+        let param = parse_param(cursor)?;
+        params.push(param);
+        cursor.eat_whitespace();
+    }
     while cursor.peek() == Some(b',') {
         cursor.advance(); // consume ','
         // Implicit line continuation after ','

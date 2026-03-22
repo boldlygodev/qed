@@ -15,6 +15,10 @@ pub(crate) struct NumberProcessor {
 
 impl Processor for NumberProcessor {
     fn execute(&self, input: &str) -> Result<String, ProcessorError> {
+        if input.is_empty() {
+            return Ok(String::new());
+        }
+
         let has_trailing_newline = input.ends_with('\n');
         let content = if has_trailing_newline {
             &input[..input.len() - 1]
