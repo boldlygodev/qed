@@ -430,6 +430,9 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 
 **Goal:** all CLI flags are fully implemented.
 
+**First:** create missing test fixture `tests/invocation/goldens/output/env-pattern.txt`
+for the `no-env-suppresses-expansion` scenario.
+
 | Feature | Notes |
 |---|---|
 | `-f` / `--file` | Read script from file instead of inline argument |

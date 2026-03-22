@@ -278,7 +278,12 @@
 
 ---
 
-## Phases 8–12
+## Phase 9 — Invocation Features
+
+- [ ] Create missing test fixture `tests/invocation/goldens/output/env-pattern.txt` for `no-env-suppresses-expansion`
+- [ ] See `docs/qed-roadmap.md` for full details
+
+## Phases 8, 10–12
 
 See `docs/qed-roadmap.md` for full details.
 
