@@ -371,18 +371,35 @@ commands, named patterns and aliases, script files, fallback, env var expansion.
 
 **Goal:** all remaining `qed:*` processors are implemented.
 
-Work through processors roughly in order of increasing complexity:
+### 7A — Simple processors
 
-| Processor | Notes |
-|---|---|
-| `qed:suffix()`, `qed:prepend()`, `qed:append()` | String concatenation |
-| `qed:number()` | Line numbering with `width` and `start` params |
-| `qed:substring()` | Pattern matching, narrowing semantics |
-| `qed:trim()`, `qed:indent()`, `qed:dedent()` | Whitespace manipulation |
-| `qed:wrap()` | Line wrapping |
-| `qed:duplicate()`, `qed:copy()`, `qed:move()` | Region duplication and relocation |
-| External processor edge cases | Error handling, empty input, multi-line |
-| Fallback execution | Invoke fallback on processor error |
+- `qed:suffix(text:"...")` — append text to each line
+- `qed:duplicate()` — emit region twice
+- `qed:skip()` — no-op passthrough
+- `qed:trim()` — strip leading/trailing whitespace per line
+- Add `map_lines()` per-line utility in `processor/mod.rs`
+
+### 7B — Parameterized processors
+
+- `qed:number(start:N, width:N)` — line numbering with alignment
+- `qed:indent(width:N, char:"...")` — prepend indentation per line
+- `qed:dedent()` — remove common leading whitespace
+- `qed:wrap(width:N)` — word-wrap at column width
+
+### 7C — Pattern-based processor
+
+- `qed:substring(pattern)` — narrow each line to matched span
+
+### 7D — Copy and move
+
+- `qed:copy(after:p | before:p | at:p)` — copy region to destination
+- `qed:move(after:p | before:p | at:p)` — move region to destination
+- Requires `StatementAction` enum and execution engine changes
+
+### 7E — Test verification and edge cases
+
+- Full `processors` and `external-processors` suite validation
+- Create edge case fixtures from `.claude/tests/processors-edge-cases.md`
 
 **Checkpoint:** `processors` and `external-processors` integration suites are green.
 

@@ -239,7 +239,44 @@
 
 ---
 
-## Phases 7–12
+## Phase 7 — Processor Coverage
+
+### 7A — Simple processors
+
+- [ ] `map_lines()` per-line utility in `processor/mod.rs`
+- [ ] `qed:suffix(text:"...")`
+- [ ] `qed:duplicate()`
+- [ ] `qed:skip()`
+- [ ] `qed:trim()`
+
+### 7B — Parameterized processors
+
+- [ ] `extract_int_param()` compiler helper
+- [ ] `qed:number(start:N, width:N)`
+- [ ] `qed:indent(width:N, char:"...")`
+- [ ] `qed:dedent()`
+- [ ] `qed:wrap(width:N)`
+
+### 7C — Pattern-based processor
+
+- [ ] `qed:substring(pattern)`
+
+### 7D — Copy and move
+
+- [ ] `StatementAction` enum in compile IR
+- [ ] `qed:copy(after:p | before:p | at:p)`
+- [ ] `qed:move(after:p | before:p | at:p)`
+- [ ] Execution engine copy/move path
+
+### 7E — Test verification
+
+- [ ] Full `processors` suite green
+- [ ] Edge case fixtures from `.claude/tests/processors-edge-cases.md`
+- [ ] Edge case tests passing
+
+---
+
+## Phases 8–12
 
 See `docs/qed-roadmap.md` for full details.
 
