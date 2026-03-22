@@ -379,12 +379,12 @@ commands, named patterns and aliases, script files, fallback, env var expansion.
 - `qed:trim()` — strip leading/trailing whitespace per line
 - Add `map_lines()` per-line utility in `processor/mod.rs`
 
-### 7B — Parameterized processors
+### 7B — Parameterized processors ✓
 
-- `qed:number(start:N, width:N)` — line numbering with alignment
-- `qed:indent(width:N, char:"...")` — prepend indentation per line
-- `qed:dedent()` — remove common leading whitespace
-- `qed:wrap(width:N)` — word-wrap at column width
+- `qed:number(start:N, width:N)` — line numbering with alignment ✓
+- `qed:indent(width:N, char:"...")` — prepend indentation per line ✓
+- `qed:dedent()` — remove common leading whitespace ✓
+- `qed:wrap(width:N)` — word-wrap at column width ✓
 
 ### 7C — Pattern-based processor
 

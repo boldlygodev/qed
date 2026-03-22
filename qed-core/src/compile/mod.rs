@@ -26,16 +26,20 @@ use crate::parse::ast::{
 };
 use crate::processor::Processor;
 use crate::processor::chain::ChainProcessor;
+use crate::processor::dedent::DedentProcessor;
 use crate::processor::delete::DeleteProcessor;
 use crate::processor::duplicate::DuplicateProcessor;
 use crate::processor::external::ExternalCommandProcessor;
+use crate::processor::indent::IndentProcessor;
 use crate::processor::lower::LowerProcessor;
+use crate::processor::number::NumberProcessor;
 use crate::processor::prefix::PrefixProcessor;
 use crate::processor::replace;
 use crate::processor::skip::SkipProcessor;
 use crate::processor::suffix::SuffixProcessor;
 use crate::processor::trim::TrimProcessor;
 use crate::processor::upper::UpperProcessor;
+use crate::processor::wrap::WrapProcessor;
 use crate::span::Spanned;
 
 // ── Script (top-level IR) ───────────────────────────────────────────
@@ -739,6 +743,40 @@ fn compile_qed_processor(
             reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
             compile_replace_processor(qed_proc, pattern_defs, alias_defs, no_env, warnings)
         }
+        "number" => {
+            reject_unknown_params(&qed_proc.params, &["start", "width"], &qed_proc.name.node)?;
+            let start = extract_int_param(&qed_proc.params, "start").unwrap_or(1);
+            let width = extract_int_param(&qed_proc.params, "width").unwrap_or(0) as usize;
+            Ok(Box::new(NumberProcessor { start, width }))
+        }
+        "indent" => {
+            reject_unknown_params(&qed_proc.params, &["width", "char"], &qed_proc.name.node)?;
+            let width = extract_int_param(&qed_proc.params, "width").ok_or_else(|| {
+                CompileError::InvalidParam {
+                    processor: "qed:indent".into(),
+                    param: "missing required parameter 'width'".into(),
+                    span: qed_proc.name.span,
+                }
+            })? as usize;
+            let indent_char =
+                extract_string_param(&qed_proc.params, "char").unwrap_or_else(|| " ".to_owned());
+            Ok(Box::new(IndentProcessor { width, indent_char }))
+        }
+        "dedent" => {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            Ok(Box::new(DedentProcessor))
+        }
+        "wrap" => {
+            reject_unknown_params(&qed_proc.params, &["width"], &qed_proc.name.node)?;
+            let width = extract_int_param(&qed_proc.params, "width").ok_or_else(|| {
+                CompileError::InvalidParam {
+                    processor: "qed:wrap".into(),
+                    param: "missing required parameter 'width'".into(),
+                    span: qed_proc.name.span,
+                }
+            })? as usize;
+            Ok(Box::new(WrapProcessor { width }))
+        }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),
             span: qed_proc.name.span,
@@ -855,6 +893,27 @@ fn extract_string_param(params: &[Spanned<Param>], name: &str) -> Option<String>
             Some(s.clone())
         } else {
             None
+        }
+    })
+}
+
+fn extract_int_param(params: &[Spanned<Param>], name: &str) -> Option<i64> {
+    params.iter().find_map(|p| {
+        if p.node.name.node != name {
+            return None;
+        }
+        match &p.node.value.node {
+            ParamValue::Integer(n) => Some(*n),
+            // The parser produces NthExpr for bare integers like `width:4`.
+            // Extract the integer when it's a single NthTerm::Integer term.
+            ParamValue::NthExpr(nth) if nth.terms.len() == 1 => {
+                if let NthTerm::Integer(n) = &nth.terms[0].node {
+                    Some(*n)
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }
     })
 }

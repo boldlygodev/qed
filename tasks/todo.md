@@ -250,13 +250,13 @@
 - [x] `qed:trim()`
 - [x] Fix `qed:prefix()` to use per-line semantics
 
-### 7B — Parameterized processors
+### 7B — Parameterized processors ✓
 
-- [ ] `extract_int_param()` compiler helper
-- [ ] `qed:number(start:N, width:N)`
-- [ ] `qed:indent(width:N, char:"...")`
-- [ ] `qed:dedent()`
-- [ ] `qed:wrap(width:N)`
+- [x] `extract_int_param()` compiler helper (handles NthExpr → Integer unwrap)
+- [x] `qed:number(start:N, width:N)`
+- [x] `qed:indent(width:N, char:"...")`
+- [x] `qed:dedent()`
+- [x] `qed:wrap(width:N)`
 
 ### 7C — Pattern-based processor
 

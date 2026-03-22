@@ -69,13 +69,13 @@ qed/
 
 ## Current Phase
 
-**Phase 7 — Processor Coverage** (in progress, sub-phase 7A complete).
+**Phase 7 — Processor Coverage** (in progress, sub-phases 7A–7B complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–6 are complete (scaffold, harness, core types, parser POC, walking skeleton, full parser, full compiler).
 Phase 7 implements all remaining `qed:*` processors.
-214/396 integration tests pass. 46/46 selector tests pass.
+228/396 integration tests pass. 46/46 selector tests pass.
 21/27 external processor tests pass (6 deferred to Phase 8 for `qed:file()`).
-Next: Sub-phase 7B (parameterized processors: number, indent, dedent, wrap).
+Next: Sub-phase 7C (pattern-based processor: substring).
 
 ---
 
