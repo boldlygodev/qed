@@ -9,8 +9,8 @@
 
 use crate::parse::ast::{
     ExternalArg, ExternalProcessor, Fallback, NthExpr, NthTerm, Param, ParamValue, PatternRef,
-    PatternRefValue, PatternValue, ProcessorChain, Program, QedArg, QedProcessor,
-    SelectActionNode, Selector, SelectorOp, SimpleSelector, Statement,
+    PatternRefValue, PatternValue, ProcessorChain, Program, QedArg, QedProcessor, SelectActionNode,
+    Selector, SelectorOp, SimpleSelector, Statement,
 };
 use crate::parse::error::{ParseError, ParseResult};
 use crate::span::Spanned;
@@ -399,30 +399,36 @@ fn parse_pattern_ref(cursor: &mut Cursor) -> Result<Spanned<PatternRef>, ParseEr
 fn parse_pattern_value(cursor: &mut Cursor) -> Result<PatternRefValue, ParseError> {
     match cursor.peek() {
         Some(b'"') => {
-            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
-                expected: "closing '\"' for string literal".into(),
-                span: cursor.span_from(cursor.pos()),
-            })?;
-            Ok(PatternRefValue::Inline(PatternValue::String(s)))
-        }
-        Some(b'\'') => {
             let s = cursor
-                .eat_single_quoted_string_literal()
+                .eat_string_literal()
                 .ok_or_else(|| ParseError::UnexpectedEof {
-                    expected: "closing \"'\" for string literal".into(),
+                    expected: "closing '\"' for string literal".into(),
                     span: cursor.span_from(cursor.pos()),
                 })?;
             Ok(PatternRefValue::Inline(PatternValue::String(s)))
         }
-        Some(b'/') => {
-            let r = cursor.eat_regex_literal().ok_or_else(|| ParseError::UnexpectedEof {
-                expected: "closing '/' for regex literal".into(),
-                span: cursor.span_from(cursor.pos()),
+        Some(b'\'') => {
+            let s = cursor.eat_single_quoted_string_literal().ok_or_else(|| {
+                ParseError::UnexpectedEof {
+                    expected: "closing \"'\" for string literal".into(),
+                    span: cursor.span_from(cursor.pos()),
+                }
             })?;
+            Ok(PatternRefValue::Inline(PatternValue::String(s)))
+        }
+        Some(b'/') => {
+            let r = cursor
+                .eat_regex_literal()
+                .ok_or_else(|| ParseError::UnexpectedEof {
+                    expected: "closing '/' for regex literal".into(),
+                    span: cursor.span_from(cursor.pos()),
+                })?;
             Ok(PatternRefValue::Inline(PatternValue::Regex(r)))
         }
         Some(b) if b.is_ascii_alphabetic() || b == b'_' => {
-            let name = cursor.eat_identifier().expect("identifier start already checked");
+            let name = cursor
+                .eat_identifier()
+                .expect("identifier start already checked");
             Ok(PatternRefValue::Named(name))
         }
         _ => Err(ParseError::UnexpectedToken {
@@ -438,11 +444,13 @@ fn parse_param(cursor: &mut Cursor) -> Result<Spanned<Param>, ParseError> {
     let start = cursor.pos();
 
     let name_start = cursor.pos();
-    let name = cursor.eat_identifier().ok_or_else(|| ParseError::UnexpectedToken {
-        expected: "parameter name".into(),
-        found: peek_found(cursor),
-        span: cursor.span_from(name_start),
-    })?;
+    let name = cursor
+        .eat_identifier()
+        .ok_or_else(|| ParseError::UnexpectedToken {
+            expected: "parameter name".into(),
+            found: peek_found(cursor),
+            span: cursor.span_from(name_start),
+        })?;
     let name_span = cursor.span_from(name_start);
 
     if !cursor.eat_char(b':') {
@@ -475,10 +483,12 @@ fn parse_param_value(cursor: &mut Cursor) -> Result<Spanned<ParamValue>, ParseEr
 
     match cursor.peek() {
         Some(b'"') => {
-            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
-                expected: "closing '\"' for string literal".into(),
-                span: cursor.span_from(start),
-            })?;
+            let s = cursor
+                .eat_string_literal()
+                .ok_or_else(|| ParseError::UnexpectedEof {
+                    expected: "closing '\"' for string literal".into(),
+                    span: cursor.span_from(start),
+                })?;
             let span = cursor.span_from(start);
             Ok(Spanned {
                 node: ParamValue::String(s),
@@ -515,7 +525,7 @@ fn parse_param_value(cursor: &mut Cursor) -> Result<Spanned<ParamValue>, ParseEr
 fn parse_nth_expr_from_cursor(cursor: &mut Cursor) -> Result<NthExpr, ParseError> {
     let mut terms: Vec<Spanned<NthTerm>> = Vec::new();
 
-    let first = parse_nth_term(cursor).map_err(|e| e)?;
+    let first = parse_nth_term(cursor)?;
     if let Some(term) = first.0 {
         terms.push(term);
     }
@@ -538,7 +548,7 @@ fn parse_nth_expr_from_cursor(cursor: &mut Cursor) -> Result<NthExpr, ParseError
             break;
         }
 
-        let term_result = parse_nth_term(cursor).map_err(|e| e)?;
+        let term_result = parse_nth_term(cursor)?;
         if let Some(term) = term_result.0 {
             terms.push(term);
         }
@@ -643,9 +653,7 @@ fn parse_processor(
         return parse_qed_processor(cursor);
     }
     // Explicit external-command prefixes: `\`, `/path`, `./path`
-    if matches!(cursor.peek(), Some(b'\\') | Some(b'/'))
-        || cursor.remaining().starts_with("./")
-    {
+    if matches!(cursor.peek(), Some(b'\\') | Some(b'/')) || cursor.remaining().starts_with("./") {
         return parse_external_processor(cursor);
     }
     // Bare identifier: disambiguate alias ref vs external command
@@ -806,27 +814,34 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
 
     match cursor.peek() {
         Some(b'"') => {
-            let s = cursor.eat_string_literal().ok_or_else(|| ParseError::UnexpectedEof {
-                expected: "closing '\"'".into(),
-                span: cursor.span_from(start),
-            })?;
+            let s = cursor
+                .eat_string_literal()
+                .ok_or_else(|| ParseError::UnexpectedEof {
+                    expected: "closing '\"'".into(),
+                    span: cursor.span_from(start),
+                })?;
             Ok(Spanned {
                 node: QedArg::String(s),
                 span: cursor.span_from(start),
             })
         }
         Some(b'/') => {
-            let r = cursor.eat_regex_literal().ok_or_else(|| ParseError::UnexpectedEof {
-                expected: "closing '/'".into(),
-                span: cursor.span_from(start),
-            })?;
+            let r = cursor
+                .eat_regex_literal()
+                .ok_or_else(|| ParseError::UnexpectedEof {
+                    expected: "closing '/'".into(),
+                    span: cursor.span_from(start),
+                })?;
             Ok(Spanned {
                 node: QedArg::Regex(r),
                 span: cursor.span_from(start),
             })
         }
         // Integer (possibly negative)
-        Some(b) if b.is_ascii_digit() || (b == b'-' && cursor.peek_at(1).is_some_and(|n| n.is_ascii_digit())) => {
+        Some(b)
+            if b.is_ascii_digit()
+                || (b == b'-' && cursor.peek_at(1).is_some_and(|n| n.is_ascii_digit())) =>
+        {
             let neg = cursor.eat_char(b'-');
             let num_start = cursor.pos();
             while cursor.peek().is_some_and(|b| b.is_ascii_digit()) {
@@ -854,7 +869,8 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
         // Processor chain: `qed:name(...)`, bare command, `\command`, `/path`, `./path`
         _ if cursor.peek().is_some_and(|b| {
             b.is_ascii_alphabetic() || b == b'_' || b == b'\\' || b == b'.' || b == b'/'
-        }) => {
+        }) =>
+        {
             let chain = parse_processor_chain(cursor)?;
             Ok(Spanned {
                 node: QedArg::ProcessorChain(Box::new(chain)),
@@ -862,7 +878,8 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
             })
         }
         _ => Err(ParseError::UnexpectedToken {
-            expected: "processor argument (string, regex, integer, pattern, or processor chain)".into(),
+            expected: "processor argument (string, regex, integer, pattern, or processor chain)"
+                .into(),
             found: peek_found(cursor),
             span: cursor.span_from(start),
         }),
@@ -887,7 +904,9 @@ fn parse_external_processor(
             while let Some(b) = cursor.peek() {
                 match b {
                     b' ' | b'\t' | b'\n' | b'|' | b';' | b')' => break,
-                    _ => { cursor.advance(); }
+                    _ => {
+                        cursor.advance();
+                    }
                 }
             }
         }
@@ -948,12 +967,12 @@ fn parse_external_processor(
             }
             Some(b'\'') => {
                 let arg_start = cursor.pos();
-                let s = cursor
-                    .eat_single_quoted_string_literal()
-                    .ok_or_else(|| ParseError::UnexpectedEof {
+                let s = cursor.eat_single_quoted_string_literal().ok_or_else(|| {
+                    ParseError::UnexpectedEof {
                         expected: "closing '''".into(),
                         span: cursor.span_from(arg_start),
-                    })?;
+                    }
+                })?;
                 args.push(Spanned {
                     node: ExternalArg::Quoted(s),
                     span: cursor.span_from(arg_start),
@@ -961,11 +980,13 @@ fn parse_external_processor(
             }
             _ => {
                 let arg_start = cursor.pos();
-                let s = cursor.eat_unquoted_arg().ok_or_else(|| ParseError::UnexpectedToken {
-                    expected: "argument".into(),
-                    found: peek_found(cursor),
-                    span: cursor.span_from(arg_start),
-                })?;
+                let s = cursor
+                    .eat_unquoted_arg()
+                    .ok_or_else(|| ParseError::UnexpectedToken {
+                        expected: "argument".into(),
+                        found: peek_found(cursor),
+                        span: cursor.span_from(arg_start),
+                    })?;
                 args.push(Spanned {
                     node: ExternalArg::Unquoted(s),
                     span: cursor.span_from(arg_start),
@@ -1162,11 +1183,13 @@ fn parse_nth_term(
         cursor.advance(); // consume 'n'
 
         if had_leading_plus {
-            let coeff_str = if coeff_value == 1 { "n" } else { &format!("{coeff_value}n") };
+            let coeff_str = if coeff_value == 1 {
+                "n"
+            } else {
+                &format!("{coeff_value}n")
+            };
             warnings.push(ParseError::NthWarning {
-                reason: format!(
-                    "leading '+' ignored, `+{coeff_str}` treated as `{coeff_str}`"
-                ),
+                reason: format!("leading '+' ignored, `+{coeff_str}` treated as `{coeff_str}`"),
                 span: cursor.span_from(term_start),
             });
         }
@@ -1196,10 +1219,12 @@ fn parse_nth_term(
                 });
             }
 
-            let v: i64 = offset_digits.parse().map_err(|_| ParseError::InvalidNthExpr {
-                reason: format!("offset too large: {offset_digits}"),
-                span: cursor.span_from(term_start),
-            })?;
+            let v: i64 = offset_digits
+                .parse()
+                .map_err(|_| ParseError::InvalidNthExpr {
+                    reason: format!("offset too large: {offset_digits}"),
+                    span: cursor.span_from(term_start),
+                })?;
             if offset_negative { -v } else { v }
         } else {
             0
@@ -1369,9 +1394,8 @@ mod tests {
     use super::*;
 
     fn parse_ok(input: &str) -> ParseResult {
-        parse_nth_expr(input).unwrap_or_else(|errs| {
-            panic!("expected Ok for {input:?}, got errors: {errs:?}")
-        })
+        parse_nth_expr(input)
+            .unwrap_or_else(|errs| panic!("expected Ok for {input:?}, got errors: {errs:?}"))
     }
 
     fn parse_err(input: &str) -> Vec<ParseError> {
@@ -1404,20 +1428,14 @@ mod tests {
     #[test]
     fn range_positive() {
         let r = parse_ok("1...3");
-        assert_eq!(
-            r.expr.terms[0].node,
-            NthTerm::Range { start: 1, end: 3 }
-        );
+        assert_eq!(r.expr.terms[0].node, NthTerm::Range { start: 1, end: 3 });
         assert_eq!(r.expr.terms[0].span, crate::span::Span { start: 0, end: 5 });
     }
 
     #[test]
     fn range_negative() {
         let r = parse_ok("-3...-1");
-        assert_eq!(
-            r.expr.terms[0].node,
-            NthTerm::Range { start: -3, end: -1 }
-        );
+        assert_eq!(r.expr.terms[0].node, NthTerm::Range { start: -3, end: -1 });
     }
 
     #[test]
@@ -1555,10 +1573,7 @@ mod tests {
     fn range_and_integer() {
         let r = parse_ok("1...3,-2");
         assert_eq!(r.expr.terms.len(), 2);
-        assert_eq!(
-            r.expr.terms[0].node,
-            NthTerm::Range { start: 1, end: 3 }
-        );
+        assert_eq!(r.expr.terms[0].node, NthTerm::Range { start: 1, end: 3 });
         assert_eq!(r.expr.terms[1].node, NthTerm::Integer(-2));
     }
 
@@ -1599,31 +1614,41 @@ mod tests {
     #[test]
     fn error_zero_coefficient() {
         let errs = parse_err("0n");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("coefficient")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("coefficient"))
+        );
     }
 
     #[test]
     fn error_cross_sign_range_neg_to_pos() {
         let errs = parse_err("-3...5");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("same sign")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("same sign"))
+        );
     }
 
     #[test]
     fn error_cross_sign_range_pos_to_neg() {
         let errs = parse_err("3...-1");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("same sign")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("same sign"))
+        );
     }
 
     #[test]
     fn error_zero_offset_plus() {
         let errs = parse_err("2n+0");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("non-zero")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("non-zero"))
+        );
     }
 
     #[test]
     fn error_zero_offset_minus() {
         let errs = parse_err("2n-0");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("non-zero")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("non-zero"))
+        );
     }
 
     // ── Warnings ────────────────────────────────────────────────────
@@ -1634,7 +1659,9 @@ mod tests {
         // '0' is ignored, result has just Integer(1).
         assert_eq!(r.expr.terms.len(), 1);
         assert_eq!(r.expr.terms[0].node, NthTerm::Integer(1));
-        assert!(r.warnings.iter().any(|w| matches!(w, ParseError::NthWarning { reason, .. } if reason.contains("zero"))));
+        assert!(r.warnings.iter().any(
+            |w| matches!(w, ParseError::NthWarning { reason, .. } if reason.contains("zero"))
+        ));
     }
 
     #[test]
@@ -1654,7 +1681,11 @@ mod tests {
                 offset: 0
             }
         );
-        assert!(r.warnings.iter().any(|w| matches!(w, ParseError::NthWarning { reason, .. } if reason.contains("+"))));
+        assert!(
+            r.warnings.iter().any(
+                |w| matches!(w, ParseError::NthWarning { reason, .. } if reason.contains("+"))
+            )
+        );
     }
 
     #[test]
@@ -1704,7 +1735,9 @@ mod tests {
     #[test]
     fn error_two_dots() {
         let errs = parse_err("1..3");
-        assert!(matches!(&errs[0], ParseError::UnexpectedToken { found, .. } if found.contains("two dots")));
+        assert!(
+            matches!(&errs[0], ParseError::UnexpectedToken { found, .. } if found.contains("two dots"))
+        );
     }
 
     #[test]
@@ -1730,10 +1763,7 @@ mod tests {
     #[test]
     fn whitespace_range() {
         let r = parse_ok("1 ... 3");
-        assert_eq!(
-            r.expr.terms[0].node,
-            NthTerm::Range { start: 1, end: 3 }
-        );
+        assert_eq!(r.expr.terms[0].node, NthTerm::Range { start: 1, end: 3 });
     }
 
     #[test]
@@ -1773,15 +1803,16 @@ mod tests {
     #[test]
     fn error_all_zeros() {
         let errs = parse_err("0");
-        assert!(matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("all terms were zero")));
+        assert!(
+            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("all terms were zero"))
+        );
     }
 
     // ── Program parser tests ────────────────────────────────────────
 
     fn program_ok(input: &str) -> Program {
-        parse_program(input).unwrap_or_else(|errs| {
-            panic!("expected Ok for {input:?}, got errors: {errs:?}")
-        })
+        parse_program(input)
+            .unwrap_or_else(|errs| panic!("expected Ok for {input:?}, got errors: {errs:?}"))
     }
 
     fn program_err(input: &str) -> Vec<ParseError> {
@@ -1797,7 +1828,10 @@ mod tests {
         let stmt = &p.statements[0].node;
         if let Statement::SelectAction(sa) = stmt {
             let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
-            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+            assert_eq!(
+                pat.node.value,
+                PatternRefValue::Inline(PatternValue::String("hello".into()))
+            );
             assert!(!pat.node.negated);
             assert!(!pat.node.inclusive);
         } else {
@@ -1811,7 +1845,10 @@ mod tests {
         let stmt = &p.statements[0].node;
         if let Statement::SelectAction(sa) = stmt {
             let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
-            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+            assert_eq!(
+                pat.node.value,
+                PatternRefValue::Inline(PatternValue::String("hello".into()))
+            );
         } else {
             panic!("expected SelectAction");
         }
@@ -1839,7 +1876,10 @@ mod tests {
         if let Statement::SelectAction(sa) = stmt {
             let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
             assert!(pat.node.negated);
-            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::String("hello".into())));
+            assert_eq!(
+                pat.node.value,
+                PatternRefValue::Inline(PatternValue::String("hello".into()))
+            );
         } else {
             panic!("expected SelectAction");
         }
@@ -1852,7 +1892,10 @@ mod tests {
         if let Statement::SelectAction(sa) = stmt {
             let pat = sa.selector.node.steps[0].node.pattern.as_ref().unwrap();
             assert!(pat.node.negated);
-            assert_eq!(pat.node.value, PatternRefValue::Inline(PatternValue::Regex("^b".into())));
+            assert_eq!(
+                pat.node.value,
+                PatternRefValue::Inline(PatternValue::Regex("^b".into()))
+            );
         } else {
             panic!("expected SelectAction");
         }

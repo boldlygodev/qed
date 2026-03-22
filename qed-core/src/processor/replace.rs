@@ -46,11 +46,9 @@ impl Processor for ReplaceProcessor {
                 Ok(input.replace(pat.as_str(), rep.as_str()))
             }
 
-            (ReplaceSearch::Regex(re), ReplaceWith::Literal(rep)) => {
-                Ok(re
-                    .replace_all(input, regex::NoExpand(rep.as_str()))
-                    .into_owned())
-            }
+            (ReplaceSearch::Regex(re), ReplaceWith::Literal(rep)) => Ok(re
+                .replace_all(input, regex::NoExpand(rep.as_str()))
+                .into_owned()),
 
             (ReplaceSearch::Regex(re), ReplaceWith::Template(tmpl)) => {
                 Ok(re.replace_all(input, tmpl.as_str()).into_owned())

@@ -106,7 +106,10 @@ impl Buffer {
 
     /// Text of a single line (including its trailing newline, if any).
     pub(crate) fn line(&self, idx: usize) -> &str {
-        self.slice(LineRange { start: idx, end: idx + 1 })
+        self.slice(LineRange {
+            start: idx,
+            end: idx + 1,
+        })
     }
 
     /// Extract the text for a half-open line range.
@@ -190,6 +193,12 @@ mod tests {
     fn slice_full_range() {
         let content = "aaa\nbb\nccccc\n";
         let buf = Buffer::new(content.into());
-        assert_eq!(buf.slice(LineRange { start: 0, end: buf.line_count() }), content);
+        assert_eq!(
+            buf.slice(LineRange {
+                start: 0,
+                end: buf.line_count()
+            }),
+            content
+        );
     }
 }

@@ -40,11 +40,7 @@ pub(crate) fn expand_env_vars(input: &str, no_env: bool) -> (String, Vec<UnsetVa
 
     while i < len {
         // Escaped dollar: `\${` → literal `${`
-        if bytes[i] == b'\\'
-            && i + 2 < len
-            && bytes[i + 1] == b'$'
-            && bytes[i + 2] == b'{'
-        {
+        if bytes[i] == b'\\' && i + 2 < len && bytes[i + 1] == b'$' && bytes[i + 2] == b'{' {
             // Skip the backslash, emit `$` and continue (the `{…}` will be
             // consumed as ordinary characters on subsequent iterations).
             out.push('$');

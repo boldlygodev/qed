@@ -199,9 +199,7 @@ impl<'src> Cursor<'src> {
         let start = self.pos;
         while let Some(b) = self.peek() {
             match b {
-                b' ' | b'\t' | b'\n' | b'|' | b'\\' | b';' | b'\'' | b'"' | b'(' | b')' => {
-                    break
-                }
+                b' ' | b'\t' | b'\n' | b'|' | b'\\' | b';' | b'\'' | b'"' | b'(' | b')' => break,
                 _ => {
                     self.advance();
                 }

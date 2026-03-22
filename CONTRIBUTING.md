@@ -1,9 +1,7 @@
 # Contributing to qed
 
-> **Note:** qed is in early development (Phase 4 walking skeleton complete).
-> The end-to-end pipeline works for basic cases; most features are not yet
-> implemented. Design docs in `docs/` are the authoritative source for all
-> decisions — read them before writing any code.
+> **Note:** qed is in alpha (Phase 6 compiler complete, ~50% of integration tests passing).
+> Design docs in `docs/` are the authoritative source for all decisions — read them before writing any code.
 
 ---
 
@@ -57,6 +55,7 @@ All common tasks are defined in `mise.toml` and run via `mise run <task>`:
 | `fmt:check`        | `cargo fmt --check`                       | Check formatting (CI mode)   |
 | `lint`             | `cargo clippy --workspace -- -D warnings` | Lint with warnings-as-errors |
 | `ci`               | runs fmt:check → lint → test              | Full CI check suite          |
+| `pre-commit`       | runs fmt:check → lint                     | Git pre-commit gate          |
 
 Run `mise tasks` to see the current task list.
 
@@ -69,6 +68,17 @@ You can also invoke Cargo commands directly — mise just provides named shortcu
 - **Format:** run `mise run fmt` (or `cargo fmt`) before every commit
 - **Lint:** run `mise run lint` (or `cargo clippy --workspace -- -D warnings`) — warnings are errors
 - **CI gate:** `mise run ci` runs the full check suite locally before pushing
+
+### Git pre-commit hook
+
+Install the hook to automatically run `fmt:check` and `lint` before every commit:
+
+```sh
+mise generate git-pre-commit --write
+```
+
+This writes `.git/hooks/pre-commit` and wires it to `mise run pre-commit`.
+The hook is not committed to the repo — each contributor installs it once.
 
 See `docs/qed-rust-conventions.md` for the full list of conventions including
 visibility rules, error handling patterns, exhaustive matching, and newtypes.

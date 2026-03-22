@@ -42,7 +42,11 @@ pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
 pub fn format_span(source: &str, span: Span) -> String {
     let (line, col_start) = offset_to_line_col(source, span.start);
     // End is exclusive in Span, so subtract 1 for inclusive display
-    let end_offset = if span.end > span.start { span.end - 1 } else { span.start };
+    let end_offset = if span.end > span.start {
+        span.end - 1
+    } else {
+        span.start
+    };
     let (_, col_end) = offset_to_line_col(source, end_offset);
     format!("{line}:{col_start}-{col_end}")
 }

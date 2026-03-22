@@ -17,11 +17,14 @@ mod env;
 
 use std::collections::HashMap;
 
+use crate::SelectorId;
+use crate::StatementId;
 use crate::error::{CompileError, CompileWarning};
 use crate::parse::ast::{
     self, NthTerm, Param, ParamValue, PatternRefValue, PatternValue, Program,
     SelectorOp as AstSelectorOp,
 };
+use crate::processor::Processor;
 use crate::processor::chain::ChainProcessor;
 use crate::processor::delete::DeleteProcessor;
 use crate::processor::external::ExternalCommandProcessor;
@@ -29,10 +32,7 @@ use crate::processor::lower::LowerProcessor;
 use crate::processor::prefix::PrefixProcessor;
 use crate::processor::replace;
 use crate::processor::upper::UpperProcessor;
-use crate::processor::Processor;
 use crate::span::Spanned;
-use crate::SelectorId;
-use crate::StatementId;
 
 // ── Script (top-level IR) ───────────────────────────────────────────
 
@@ -105,23 +105,15 @@ pub(crate) enum SelectorOp {
         nth: Option<Vec<NthTerm>>,
     },
     /// Select the zero-width insertion point after each matching line.
-    After {
-        pattern: CompiledPattern,
-    },
+    After { pattern: CompiledPattern },
     /// Select the zero-width insertion point before each matching line.
-    Before {
-        pattern: CompiledPattern,
-    },
+    Before { pattern: CompiledPattern },
     /// Select from the matching line to end of input (inclusivity
     /// controlled by `pattern.inclusive`).
-    From {
-        pattern: CompiledPattern,
-    },
+    From { pattern: CompiledPattern },
     /// Select from start of input to the matching line (inclusivity
     /// controlled by `pattern.inclusive`).
-    To {
-        pattern: CompiledPattern,
-    },
+    To { pattern: CompiledPattern },
 }
 
 // ── Pattern matching ────────────────────────────────────────────────
@@ -211,19 +203,31 @@ pub(crate) fn compile(
         stmt_index += 1;
 
         // Compile the selector
-        let sel_id =
-            match compile_selector(node, &mut selectors, &pattern_defs, &alias_defs, no_env, &mut warnings) {
-                Ok(id) => id,
-                Err(e) => {
-                    errors.push(e);
-                    continue;
-                }
-            };
+        let sel_id = match compile_selector(
+            node,
+            &mut selectors,
+            &pattern_defs,
+            &alias_defs,
+            no_env,
+            &mut warnings,
+        ) {
+            Ok(id) => id,
+            Err(e) => {
+                errors.push(e);
+                continue;
+            }
+        };
 
         // Compile the processor
         let processor: Box<dyn Processor> = match &node.chain {
             Some(chain) => {
-                match compile_processor_chain(&chain.node, &pattern_defs, &alias_defs, no_env, &mut warnings) {
+                match compile_processor_chain(
+                    &chain.node,
+                    &pattern_defs,
+                    &alias_defs,
+                    no_env,
+                    &mut warnings,
+                ) {
                     Ok(p) => p,
                     Err(e) => {
                         errors.push(e);
@@ -242,39 +246,47 @@ pub(crate) fn compile(
         };
 
         // Compile optional fallback, tracking its processor span for diagnostics.
-        let (fallback, fallback_chain_span): (Option<Box<dyn Processor>>, Option<crate::span::Span>) =
-            match &node.fallback {
-                Some(fb) => match &fb.node {
-                    ast::Fallback::Chain(chain) => {
-                        match compile_processor_chain(chain, &pattern_defs, &alias_defs, no_env, &mut warnings) {
-                            Ok(p) => (Some(p), Some(fb.span)),
+        let (fallback, fallback_chain_span): (
+            Option<Box<dyn Processor>>,
+            Option<crate::span::Span>,
+        ) = match &node.fallback {
+            Some(fb) => match &fb.node {
+                ast::Fallback::Chain(chain) => {
+                    match compile_processor_chain(
+                        chain,
+                        &pattern_defs,
+                        &alias_defs,
+                        no_env,
+                        &mut warnings,
+                    ) {
+                        Ok(p) => (Some(p), Some(fb.span)),
+                        Err(e) => {
+                            errors.push(e);
+                            (None, None)
+                        }
+                    }
+                }
+                ast::Fallback::SelectAction(sa) => match &sa.chain {
+                    Some(chain) => {
+                        match compile_processor_chain(
+                            &chain.node,
+                            &pattern_defs,
+                            &alias_defs,
+                            no_env,
+                            &mut warnings,
+                        ) {
+                            Ok(p) => (Some(p), Some(chain.span)),
                             Err(e) => {
                                 errors.push(e);
                                 (None, None)
                             }
                         }
                     }
-                    ast::Fallback::SelectAction(sa) => match &sa.chain {
-                        Some(chain) => {
-                            match compile_processor_chain(
-                                &chain.node,
-                                &pattern_defs,
-                                &alias_defs,
-                                no_env,
-                                &mut warnings,
-                            ) {
-                                Ok(p) => (Some(p), Some(chain.span)),
-                                Err(e) => {
-                                    errors.push(e);
-                                    (None, None)
-                                }
-                            }
-                        }
-                        None => (None, None),
-                    }
+                    None => (None, None),
                 },
-                None => (None, None),
-            };
+            },
+            None => (None, None),
+        };
 
         let sel_span = node.selector.span;
         let sel_text = source[sel_span.start..sel_span.end].to_owned();
@@ -385,9 +397,14 @@ fn compile_simple_selector(
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<RegistryEntry, CompileError> {
     let mut compiled_pattern = match &step.pattern {
-        Some(pat_ref) => {
-            compile_pattern(&pat_ref.node, pat_ref.span, pattern_defs, alias_defs, no_env, warnings)?
-        }
+        Some(pat_ref) => compile_pattern(
+            &pat_ref.node,
+            pat_ref.span,
+            pattern_defs,
+            alias_defs,
+            no_env,
+            warnings,
+        )?,
         None => CompiledPattern {
             matcher: PatternMatcher::Literal(String::new()),
             negated: false,
@@ -451,14 +468,14 @@ fn compile_simple_selector(
         AstSelectorOp::Before => Some("before"),
         AstSelectorOp::From | AstSelectorOp::To => None,
     };
-    if compiled_pattern.inclusive {
-        if let Some(op_name) = non_boundary_op {
-            warnings.push(CompileWarning::InclusiveIgnored {
-                selector_op: op_name,
-                span,
-            });
-            compiled_pattern.inclusive = false;
-        }
+    if compiled_pattern.inclusive
+        && let Some(op_name) = non_boundary_op
+    {
+        warnings.push(CompileWarning::InclusiveIgnored {
+            selector_op: op_name,
+            span,
+        });
+        compiled_pattern.inclusive = false;
     }
 
     let op = match step.op {
@@ -584,7 +601,14 @@ fn compile_processor_chain(
     // Alias refs may expand to multi-step chains; flatten into a single list.
     let mut steps: Vec<Box<dyn Processor>> = Vec::new();
     for proc_spanned in &chain.processors {
-        compile_single_processor_into(proc_spanned, pattern_defs, alias_defs, &mut steps, no_env, warnings)?;
+        compile_single_processor_into(
+            proc_spanned,
+            pattern_defs,
+            alias_defs,
+            &mut steps,
+            no_env,
+            warnings,
+        )?;
     }
     if steps.len() == 1 {
         Ok(steps.into_iter().next().expect("checked len"))
@@ -607,12 +631,17 @@ fn compile_single_processor_into(
 ) -> Result<(), CompileError> {
     match &proc_spanned.node {
         ast::Processor::Qed(qed_proc) => {
-            out.push(compile_qed_processor(qed_proc, pattern_defs, alias_defs, no_env, warnings)?);
+            out.push(compile_qed_processor(
+                qed_proc,
+                pattern_defs,
+                alias_defs,
+                no_env,
+                warnings,
+            )?);
             Ok(())
         }
         ast::Processor::External(ext) => {
-            let command =
-                expand_and_warn(&ext.command.node, no_env, proc_spanned.span, warnings);
+            let command = expand_and_warn(&ext.command.node, no_env, proc_spanned.span, warnings);
             let args: Vec<String> = ext
                 .args
                 .iter()
@@ -629,7 +658,14 @@ fn compile_single_processor_into(
         ast::Processor::AliasRef(name) => match alias_defs.get(name.as_str()) {
             Some(chain) => {
                 for p in &chain.processors {
-                    compile_single_processor_into(p, pattern_defs, alias_defs, out, no_env, warnings)?;
+                    compile_single_processor_into(
+                        p,
+                        pattern_defs,
+                        alias_defs,
+                        out,
+                        no_env,
+                        warnings,
+                    )?;
                 }
                 Ok(())
             }
@@ -762,8 +798,7 @@ fn compile_replace_processor(
             replace::ReplaceWith::Template(expanded)
         }
         ast::QedArg::ProcessorChain(chain) => {
-            let proc =
-                compile_processor_chain(chain, pattern_defs, alias_defs, no_env, warnings)?;
+            let proc = compile_processor_chain(chain, pattern_defs, alias_defs, no_env, warnings)?;
             replace::ReplaceWith::Pipeline(proc)
         }
         _ => {

@@ -20,7 +20,7 @@
 use std::collections::BTreeSet;
 
 use crate::compile::{
-    CompoundSelector, CompiledPattern, CompiledSelector, PatternMatcher, RegistryEntry, SelectorOp,
+    CompiledPattern, CompiledSelector, CompoundSelector, PatternMatcher, RegistryEntry, SelectorOp,
 };
 use crate::parse::ast::NthTerm;
 use crate::{SelectorId, StatementId};
@@ -46,8 +46,8 @@ pub(crate) fn fragment(
         let mut tags: Vec<(StatementId, SelectorId)> = Vec::new();
         for &(stmt_id, sel_id) in requests {
             let entry = &registry[sel_id.value()];
-            if let RegistryEntry::Simple(selector) = entry {
-                if matches!(
+            if let RegistryEntry::Simple(selector) = entry
+                && matches!(
                     &selector.op,
                     SelectorOp::At {
                         pattern: CompiledPattern {
@@ -57,9 +57,9 @@ pub(crate) fn fragment(
                         },
                         nth: None,
                     } if s.is_empty()
-                ) {
-                    tags.push((stmt_id, sel_id));
-                }
+                )
+            {
+                tags.push((stmt_id, sel_id));
             }
         }
         if tags.is_empty() {
@@ -170,8 +170,12 @@ fn collect_compound_matches(
         // Build a per-line coverage mask for this step
         let mut step_covered = vec![false; line_count];
         for range in &ranges {
-            for i in range.start..range.end.min(line_count) {
-                step_covered[i] = true;
+            for covered in step_covered
+                .iter_mut()
+                .take(range.end.min(line_count))
+                .skip(range.start)
+            {
+                *covered = true;
             }
         }
 
@@ -324,7 +328,10 @@ fn collect_to(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
         .filter(|&i| pattern_matches(pattern, buffer.line(i)))
         .map(|i| {
             if pattern.inclusive {
-                LineRange { start: 0, end: i + 1 }
+                LineRange {
+                    start: 0,
+                    end: i + 1,
+                }
             } else {
                 LineRange { start: 0, end: i }
             }
@@ -343,7 +350,11 @@ fn pattern_matches(pattern: &CompiledPattern, line: &str) -> bool {
         PatternMatcher::Regex(re) => re.is_match(line),
     };
 
-    if pattern.negated { !raw_match } else { raw_match }
+    if pattern.negated {
+        !raw_match
+    } else {
+        raw_match
+    }
 }
 
 // ── Nth filtering ──────────────────────────────────────────────────
@@ -379,7 +390,10 @@ fn apply_nth_filter(matching_lines: &[usize], terms: &[NthTerm]) -> Vec<usize> {
                     }
                 }
             }
-            NthTerm::Step { coefficient, offset } => {
+            NthTerm::Step {
+                coefficient,
+                offset,
+            } => {
                 // Generates 1-based indices: coefficient * k + offset for k = 0, 1, 2, ...
                 // Then converts to 0-based
                 if coefficient > 0 {
@@ -582,10 +596,7 @@ fn sweep(events: Vec<BoundaryEvent>, line_count: usize) -> FragmentList {
 
         // Zero-width insertion points: tags with a zero-width End that also
         // Started at this line.
-        let zero_width_tags: Vec<_> = started
-            .intersection(&zero_width_ends)
-            .copied()
-            .collect();
+        let zero_width_tags: Vec<_> = started.intersection(&zero_width_ends).copied().collect();
 
         // Remove zero-width tags from active — they completed at this line
         for tag in &zero_width_tags {
@@ -728,10 +739,7 @@ mod tests {
             on_error: OnError::Fail,
         };
 
-        let registry = vec![
-            RegistryEntry::Simple(sel0),
-            RegistryEntry::Simple(sel1),
-        ];
+        let registry = vec![RegistryEntry::Simple(sel0), RegistryEntry::Simple(sel1)];
         let requests = vec![
             (StatementId::new(0), SelectorId::new(0)),
             (StatementId::new(1), SelectorId::new(1)),
@@ -913,7 +921,14 @@ mod tests {
         // 2n+1: positions 1, 3 → lines 0, 4
         let buf = Buffer::new("x\ny\nx\nz\nx\nw\nx\n".into());
 
-        let selector = literal_at(0, "x", Some(vec![NthTerm::Step { coefficient: 2, offset: 1 }]));
+        let selector = literal_at(
+            0,
+            "x",
+            Some(vec![NthTerm::Step {
+                coefficient: 2,
+                offset: 1,
+            }]),
+        );
         let registry = vec![RegistryEntry::Simple(selector)];
         let requests = vec![(StatementId::new(0), SelectorId::new(0))];
 

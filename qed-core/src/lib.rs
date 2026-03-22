@@ -46,12 +46,12 @@
 // TODO: remove once modules have consumers
 #![allow(dead_code)]
 
-pub mod span;
-pub mod error;
-pub(crate) mod parse;
 pub(crate) mod compile;
+pub mod error;
 pub(crate) mod exec;
+pub(crate) mod parse;
 pub(crate) mod processor;
+pub mod span;
 
 /// Uniquely identifies a statement within a compiled `Script`.
 ///
@@ -232,10 +232,7 @@ fn compile_error_to_diagnostic(e: &error::CompileError) -> (span::Span, String) 
             span,
         } => (
             *span,
-            format!(
-                "{processor}: conflicting parameters: {}",
-                params.join(", ")
-            ),
+            format!("{processor}: conflicting parameters: {}", params.join(", ")),
         ),
         error::CompileError::InvalidNthExpr { reason, span } => (*span, reason.clone()),
     }

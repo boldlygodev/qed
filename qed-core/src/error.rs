@@ -41,15 +41,32 @@ pub enum CompileError {
     UndefinedName { name: String, span: Span },
     /// A name exists in the symbol table but has the wrong kind — e.g., using
     /// a pattern name where an alias is expected.
-    WrongSymbolKind { name: String, expected: SymbolKind, found: SymbolKind, span: Span },
+    WrongSymbolKind {
+        name: String,
+        expected: SymbolKind,
+        found: SymbolKind,
+        span: Span,
+    },
     /// A regex pattern failed to compile.
-    InvalidRegex { pattern: String, reason: String, span: Span },
+    InvalidRegex {
+        pattern: String,
+        reason: String,
+        span: Span,
+    },
     /// A processor or selector received a parameter it does not recognize.
-    InvalidParam { processor: String, param: String, span: Span },
+    InvalidParam {
+        processor: String,
+        param: String,
+        span: Span,
+    },
     /// Two or more mutually exclusive parameters were specified together.
     ///
     /// Reserved — not yet emitted. Will be used by `qed:replace()` in Phase 6C.
-    ConflictingParams { processor: String, params: Vec<String>, span: Span },
+    ConflictingParams {
+        processor: String,
+        params: Vec<String>,
+        span: Span,
+    },
     /// An nth expression is syntactically valid but semantically invalid
     /// (e.g., cross-sign range bounds).
     ///

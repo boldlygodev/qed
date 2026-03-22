@@ -37,11 +37,13 @@ impl Processor for ExternalCommandProcessor {
             let _ = stdin.write_all(input.as_bytes());
         }
 
-        let output = child.wait_with_output().map_err(|e| ProcessorError::ExternalFailed {
-            command: self.command.clone(),
-            exit_code: None,
-            stderr: e.to_string(),
-        })?;
+        let output = child
+            .wait_with_output()
+            .map_err(|e| ProcessorError::ExternalFailed {
+                command: self.command.clone(),
+                exit_code: None,
+                stderr: e.to_string(),
+            })?;
 
         if !output.status.success() {
             return Err(ProcessorError::ExternalFailed {

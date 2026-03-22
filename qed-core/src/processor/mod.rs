@@ -33,15 +33,10 @@ pub(crate) trait Processor: std::fmt::Debug {
 pub(crate) enum ProcessorError {
     /// The selector matched no lines and the statement's `on_error` mode
     /// requires an error.
-    NoMatch {
-        selector_id: SelectorId,
-    },
+    NoMatch { selector_id: SelectorId },
     /// A built-in qed processor encountered an error during execution
     /// (e.g., a regex replacement with an invalid capture reference).
-    ProcessorFailed {
-        processor: String,
-        reason: String,
-    },
+    ProcessorFailed { processor: String, reason: String },
     /// An external command exited with a non-zero status or could not
     /// be spawned.
     ExternalFailed {

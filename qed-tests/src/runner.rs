@@ -58,8 +58,7 @@ pub(crate) fn run_trial(
     std::os::unix::fs::symlink(&qed_binary, &qed_link)
         .map_err(|e| format!("failed to symlink qed binary: {e}"))?;
     #[cfg(not(unix))]
-    std::fs::copy(&qed_binary, &qed_link)
-        .map_err(|e| format!("failed to copy qed binary: {e}"))?;
+    std::fs::copy(&qed_binary, &qed_link).map_err(|e| format!("failed to copy qed binary: {e}"))?;
 
     // Generate and write scenario.sh
     let scenario_content =

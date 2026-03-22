@@ -97,9 +97,8 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
                                     }
                                     Err(fb_err) => {
                                         // Fallback failed — report fallback error
-                                        diag_span = stmt
-                                            .fallback_span
-                                            .unwrap_or(stmt.processor_span);
+                                        diag_span =
+                                            stmt.fallback_span.unwrap_or(stmt.processor_span);
                                         diag_text = stmt
                                             .fallback_text
                                             .clone()

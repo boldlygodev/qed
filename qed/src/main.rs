@@ -43,10 +43,12 @@ fn main() {
     };
 
     let mut input = String::new();
-    std::io::stdin().read_to_string(&mut input).unwrap_or_else(|e| {
-        eprintln!("qed: cannot read stdin: {e}");
-        std::process::exit(2);
-    });
+    std::io::stdin()
+        .read_to_string(&mut input)
+        .unwrap_or_else(|e| {
+            eprintln!("qed: cannot read stdin: {e}");
+            std::process::exit(2);
+        });
 
     match qed_core::run(&script_source, &input) {
         Ok(result) => {
