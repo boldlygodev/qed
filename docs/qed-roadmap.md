@@ -442,11 +442,14 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - Fixed harness `\n` resolution (pre-expanded newline variable instead of inline `$'\n'`)
 - Generation processors now append trailing `\n` for proper line termination in `before`/`after` pipelines
 
-### 8D — `qed:timestamp()`
+### 8D — `qed:timestamp()` ✓
 
-- `qed:timestamp()` — ISO 8601, unix epoch, unix_ms, date, time, datetime, custom format, timezone
+- `qed:timestamp()` — ISO 8601 (default), unix epoch, unix_ms, date, time, datetime, custom LDML format
+- Timezone support: UTC (default), IANA names (`"America/New_York"`), fixed offsets (`"UTC+5:30"`)
+- LDML-to-strftime translation: `yyyy`→`%Y`, `MM`→`%m`, `dd`→`%d`, `HH`→`%H`, `mm`→`%M`, `ss`→`%S`
 
-**Checkpoint:** `generation` and `generation-edge-cases` suites green. 296/396 integration tests pass.
+**Checkpoint:** `generation` and `generation-edge-cases` suites green. 298/396 integration tests pass.
+`qed:file()` deferred to Phase 9 or 11.
 
 ---
 

@@ -10,7 +10,7 @@
 - [x] Phase 5 — Full Parser (5A ✓, 5B ✓, 5C ✓, 5D ✓, 5E deferred to Phase 11)
 - [x] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
 - [x] Phase 7 — Processor Coverage → **Alpha 2**
-- [ ] Phase 8 — Generation Processors
+- [x] Phase 8 — Generation Processors
 - [ ] Phase 9 — Invocation Features → **Alpha 3**
 - [ ] Phase 10 — Diagnostics
 - [ ] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
@@ -311,13 +311,13 @@
 - [x] Generation processors now append `\n` for proper line termination
 - [x] 12 trials green (`generation::uuid-*`, `generation-edge-cases::uuid-*`)
 
-### 8D — `qed:timestamp()`
+### 8D — `qed:timestamp()` ✓
 
-- [ ] Add `chrono` and `chrono-tz` dependencies
-- [ ] `TimestampProcessor` in `processor/timestamp.rs`
-- [ ] LDML-to-strftime translation
-- [ ] Compiler case for `"timestamp"` in `compile_qed_processor()`
-- [ ] 20 trials green (`generation::timestamp-*`, `generation-edge-cases::timestamp-*`)
+- [x] Add `chrono` and `chrono-tz` dependencies
+- [x] `TimestampProcessor` in `processor/timestamp.rs`
+- [x] LDML-to-strftime translation
+- [x] Compiler case for `"timestamp"` in `compile_qed_processor()`
+- [x] 20 trials green (`generation::timestamp-*`, `generation-edge-cases::timestamp-*`)
 
 ## Phases 10–12
 

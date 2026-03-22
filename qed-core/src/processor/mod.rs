@@ -24,6 +24,7 @@ pub(crate) mod replace;
 pub(crate) mod skip;
 pub(crate) mod substring;
 pub(crate) mod suffix;
+pub(crate) mod timestamp;
 pub(crate) mod trim;
 pub(crate) mod upper;
 pub(crate) mod uuid;

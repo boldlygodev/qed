@@ -39,6 +39,7 @@ use crate::processor::replace;
 use crate::processor::skip::SkipProcessor;
 use crate::processor::substring;
 use crate::processor::suffix::SuffixProcessor;
+use crate::processor::timestamp::{self, TimestampFormat, TimestampProcessor, Timezone};
 use crate::processor::trim::TrimProcessor;
 use crate::processor::upper::UpperProcessor;
 use crate::processor::uuid::{UuidProcessor, UuidVersion};
@@ -1110,6 +1111,68 @@ fn compile_qed_processor(
                 }
             };
             Ok(Box::new(UuidProcessor { version }))
+        }
+        "timestamp" => {
+            reject_unknown_params(
+                &qed_proc.params,
+                &["format", "timezone"],
+                &qed_proc.name.node,
+            )?;
+            if !qed_proc.args.is_empty() {
+                return Err(CompileError::InvalidParam {
+                    processor: "qed:timestamp".into(),
+                    param: format!("expected 0 arguments, got {}", qed_proc.args.len()),
+                    span: qed_proc.name.span,
+                });
+            }
+            let format = if let Some(ident) = extract_ident_param(&qed_proc.params, "format") {
+                match ident.as_str() {
+                    "iso8601" => TimestampFormat::Iso8601,
+                    "unix" => TimestampFormat::Unix,
+                    "unix_ms" => TimestampFormat::UnixMs,
+                    "date" => TimestampFormat::Date,
+                    "time" => TimestampFormat::Time,
+                    "datetime" => TimestampFormat::DateTime,
+                    other => {
+                        return Err(CompileError::InvalidParam {
+                            processor: "qed:timestamp".into(),
+                            param: format!("unknown format: {other}"),
+                            span: qed_proc.name.span,
+                        });
+                    }
+                }
+            } else if let Some(custom) = extract_string_param(&qed_proc.params, "format") {
+                TimestampFormat::Custom(timestamp::ldml_to_strftime(&custom))
+            } else {
+                TimestampFormat::Iso8601
+            };
+            let timezone = if let Some(ident) = extract_ident_param(&qed_proc.params, "timezone") {
+                match ident.as_str() {
+                    "UTC" => Timezone::Utc,
+                    other => {
+                        return Err(CompileError::InvalidParam {
+                            processor: "qed:timestamp".into(),
+                            param: format!("unknown timezone identifier: {other}"),
+                            span: qed_proc.name.span,
+                        });
+                    }
+                }
+            } else if let Some(tz_str) = extract_string_param(&qed_proc.params, "timezone") {
+                if let Some(offset) = timestamp::parse_fixed_offset(&tz_str) {
+                    Timezone::Fixed(offset)
+                } else if let Ok(tz) = tz_str.parse::<chrono_tz::Tz>() {
+                    Timezone::Iana(tz)
+                } else {
+                    return Err(CompileError::InvalidParam {
+                        processor: "qed:timestamp".into(),
+                        param: format!("unknown timezone: {tz_str}"),
+                        span: qed_proc.name.span,
+                    });
+                }
+            } else {
+                Timezone::Utc
+            };
+            Ok(Box::new(TimestampProcessor { format, timezone }))
         }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),

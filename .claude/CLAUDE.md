@@ -69,13 +69,12 @@ qed/
 
 ## Current Phase
 
-**Phase 8 — Generation Processors** in progress (sub-phases 8A–8C complete).
+**Phase 8 — Generation Processors** complete.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–7 are complete. Phase 8 sub-phases 8A (harness fix), 8B (random), 8C (uuid) done.
-278/396 integration tests pass. 47/47 processor tests pass.
-All processor edge case tests pass.
+Phases 0–8 are complete. 298/396 integration tests pass.
+47/47 processor tests pass. All processor edge case tests pass.
 21/27 external processor tests pass (6 deferred for `qed:file()`).
-Next: Phase 8D (`qed:timestamp()`).
+Next: Phase 9 — Invocation Features.
 
 ---
 
