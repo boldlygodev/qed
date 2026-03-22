@@ -53,13 +53,13 @@ pub(crate) struct Script {
     pub(crate) selectors: Vec<RegistryEntry>,
 }
 
-/// A compiled statement: selector + processor + optional fallback.
+/// A compiled statement: selector + action + optional fallback.
 /// Cannot derive Clone because it holds `Box<dyn Processor>`.
 #[derive(Debug)]
 pub(crate) struct Statement {
     pub(crate) id: StatementId,
     pub(crate) selector: SelectorId,
-    pub(crate) processor: Box<dyn Processor>,
+    pub(crate) action: StatementAction,
     pub(crate) fallback: Option<Box<dyn Processor>>,
     /// Source span of the fallback processor chain (for diagnostics).
     pub(crate) fallback_span: Option<crate::span::Span>,
@@ -73,6 +73,35 @@ pub(crate) struct Statement {
     pub(crate) processor_span: crate::span::Span,
     /// Original source text of the processor chain (for processor error diagnostics).
     pub(crate) processor_text: String,
+}
+
+/// What a statement does with its selected text.
+#[derive(Debug)]
+pub(crate) enum StatementAction {
+    /// Transform selected text in place via a processor chain.
+    Process(Box<dyn Processor>),
+    /// Copy selected text to a destination; the original remains.
+    CopyTo(Destination),
+    /// Move selected text to a destination; the original is removed.
+    MoveTo(Destination),
+}
+
+/// A destination for copy/move operations.
+#[derive(Debug)]
+pub(crate) struct Destination {
+    pub(crate) kind: DestinationKind,
+    pub(crate) pattern: CompiledPattern,
+}
+
+/// Where to insert the copied/moved text relative to the destination match.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DestinationKind {
+    /// Insert after lines matching the destination pattern.
+    After,
+    /// Insert before lines matching the destination pattern.
+    Before,
+    /// Replace lines matching the destination pattern.
+    At,
 }
 
 // ── Selector registry ───────────────────────────────────────────────
@@ -227,17 +256,19 @@ pub(crate) fn compile(
             }
         };
 
-        // Compile the processor
-        let processor: Box<dyn Processor> = match &node.chain {
+        // Compile the processor chain into a statement action.
+        // Copy/move processors produce CopyTo/MoveTo actions; everything
+        // else produces a regular Process action.
+        let action: StatementAction = match &node.chain {
             Some(chain) => {
-                match compile_processor_chain(
+                match compile_statement_action(
                     &chain.node,
                     &pattern_defs,
                     &alias_defs,
                     no_env,
                     &mut warnings,
                 ) {
-                    Ok(p) => p,
+                    Ok(a) => a,
                     Err(e) => {
                         errors.push(e);
                         continue;
@@ -313,7 +344,7 @@ pub(crate) fn compile(
         statements.push(Statement {
             id: stmt_id,
             selector: sel_id,
-            processor,
+            action,
             fallback,
             fallback_span: fb_span,
             fallback_text: fb_text,
@@ -594,6 +625,155 @@ fn compile_regex_matcher(
         span,
     })?;
     Ok(PatternMatcher::Regex(re))
+}
+
+/// Compile a processor chain into a `StatementAction`.
+///
+/// If the chain is a single `qed:copy()` or `qed:move()` processor,
+/// produces a `CopyTo` or `MoveTo` action. Otherwise delegates to
+/// `compile_processor_chain` and wraps in `StatementAction::Process`.
+fn compile_statement_action(
+    chain: &ast::ProcessorChain,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
+    no_env: bool,
+    warnings: &mut Vec<CompileWarning>,
+) -> Result<StatementAction, CompileError> {
+    // Check for a single copy/move processor (cannot be chained).
+    if chain.processors.len() == 1
+        && let ast::Processor::Qed(qed_proc) = &chain.processors[0].node
+    {
+        match qed_proc.name.node.as_str() {
+            "copy" | "move" => {
+                let is_move = qed_proc.name.node == "move";
+                let dest = compile_copy_move_destination(qed_proc, pattern_defs, no_env, warnings)?;
+                return if is_move {
+                    Ok(StatementAction::MoveTo(dest))
+                } else {
+                    Ok(StatementAction::CopyTo(dest))
+                };
+            }
+            _ => {}
+        }
+    }
+
+    let proc = compile_processor_chain(chain, pattern_defs, alias_defs, no_env, warnings)?;
+    Ok(StatementAction::Process(proc))
+}
+
+/// Compile the destination parameter of a `qed:copy()` or `qed:move()` call.
+///
+/// Exactly one of `after`, `before`, or `at` must be specified, each taking
+/// a string or regex pattern as its value.
+fn compile_copy_move_destination(
+    qed_proc: &ast::QedProcessor,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    no_env: bool,
+    warnings: &mut Vec<CompileWarning>,
+) -> Result<Destination, CompileError> {
+    let proc_name = format!("qed:{}", qed_proc.name.node);
+
+    if !qed_proc.args.is_empty() {
+        return Err(CompileError::InvalidParam {
+            processor: proc_name,
+            param: "takes no positional arguments; use after:, before:, or at: parameter".into(),
+            span: qed_proc.name.span,
+        });
+    }
+
+    reject_unknown_params(
+        &qed_proc.params,
+        &["after", "before", "at"],
+        &qed_proc.name.node,
+    )?;
+
+    // Find which destination param is specified.
+    let mut found: Option<(DestinationKind, &crate::span::Spanned<ast::Param>)> = None;
+    for p in &qed_proc.params {
+        let kind = match p.node.name.node.as_str() {
+            "after" => DestinationKind::After,
+            "before" => DestinationKind::Before,
+            "at" => DestinationKind::At,
+            _ => continue,
+        };
+        if found.is_some() {
+            return Err(CompileError::InvalidParam {
+                processor: proc_name,
+                param: "only one destination parameter allowed (after, before, or at)".into(),
+                span: p.span,
+            });
+        }
+        found = Some((kind, p));
+    }
+
+    let (kind, param) = found.ok_or_else(|| CompileError::InvalidParam {
+        processor: proc_name,
+        param: "missing destination: specify after:, before:, or at: parameter".into(),
+        span: qed_proc.name.span,
+    })?;
+
+    // Compile the destination pattern from the param value.
+    let pattern = compile_destination_pattern(&param.node, pattern_defs, no_env, warnings)?;
+
+    Ok(Destination { kind, pattern })
+}
+
+/// Compile a destination parameter value into a `CompiledPattern`.
+fn compile_destination_pattern(
+    param: &ast::Param,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    no_env: bool,
+    warnings: &mut Vec<CompileWarning>,
+) -> Result<CompiledPattern, CompileError> {
+    match &param.value.node {
+        ParamValue::String(s) => {
+            let expanded = expand_and_warn(s, no_env, param.value.span, warnings);
+            Ok(CompiledPattern {
+                matcher: PatternMatcher::Literal(expanded),
+                negated: false,
+                inclusive: false,
+            })
+        }
+        ParamValue::Identifier(name) => {
+            // Resolve named pattern reference.
+            let pv =
+                pattern_defs
+                    .get(name.as_str())
+                    .ok_or_else(|| CompileError::UndefinedName {
+                        name: name.clone(),
+                        span: param.value.span,
+                    })?;
+            match pv {
+                PatternValue::String(s) => {
+                    let expanded = expand_and_warn(s, no_env, param.value.span, warnings);
+                    Ok(CompiledPattern {
+                        matcher: PatternMatcher::Literal(expanded),
+                        negated: false,
+                        inclusive: false,
+                    })
+                }
+                PatternValue::Regex(r) => {
+                    let expanded = expand_and_warn(r, no_env, param.value.span, warnings);
+                    let re =
+                        regex::Regex::new(&expanded).map_err(|e| CompileError::InvalidRegex {
+                            pattern: expanded,
+                            reason: e.to_string(),
+                            span: param.value.span,
+                        })?;
+                    Ok(CompiledPattern {
+                        matcher: PatternMatcher::Regex(re),
+                        negated: false,
+                        inclusive: false,
+                    })
+                }
+            }
+        }
+        _ => Err(CompileError::InvalidParam {
+            processor: "qed:copy/move".into(),
+            param: "destination must be a string or pattern reference".into(),
+            span: param.value.span,
+        }),
+    }
 }
 
 /// Compile a processor chain into a single `Box<dyn Processor>`.

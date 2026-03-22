@@ -262,12 +262,13 @@
 
 - [x] `qed:substring(pattern)` — literal and regex search
 
-### 7D — Copy and move
+### 7D — Copy and move ✓
 
-- [ ] `StatementAction` enum in compile IR
-- [ ] `qed:copy(after:p | before:p | at:p)`
-- [ ] `qed:move(after:p | before:p | at:p)`
-- [ ] Execution engine copy/move path
+- [x] `StatementAction` enum in compile IR
+- [x] `Destination` and `DestinationKind` types
+- [x] `qed:copy(after:p | before:p | at:p)`
+- [x] `qed:move(after:p | before:p | at:p)`
+- [x] Execution engine copy/move post-processing pass
 
 ### 7E — Test verification
 

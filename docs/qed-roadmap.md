@@ -390,11 +390,11 @@ commands, named patterns and aliases, script files, fallback, env var expansion.
 
 - `qed:substring(pattern)` — narrow each line to matched span ✓
 
-### 7D — Copy and move
+### 7D — Copy and move ✓
 
-- `qed:copy(after:p | before:p | at:p)` — copy region to destination
-- `qed:move(after:p | before:p | at:p)` — move region to destination
-- Requires `StatementAction` enum and execution engine changes
+- `qed:copy(after:p | before:p | at:p)` — copy region to destination ✓
+- `qed:move(after:p | before:p | at:p)` — move region to destination ✓
+- `StatementAction` enum and execution engine post-processing pass ✓
 
 ### 7E — Test verification and edge cases
 
