@@ -434,9 +434,13 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
   `bech32`, `base58`, `base62`, `base64url`, `ascii`, `symbol`, plus custom strings
 - Confirmed: generation processors work directly in `after`/`before` pipelines
 
-### 8C — `qed:uuid()`
+### 8C — `qed:uuid()` ✓
 
 - `qed:uuid()` — v7 (default, time-ordered), v4 (random), v5 (deterministic namespace + name)
+- UUID v5 golden verified (`4fd35a71-71ef-5a55-a9d9-aa75c889a6d0` for `NAMESPACE_URL` + `https://example.com`)
+- Simplified `uuid-v7-after.qed` to direct `after("header") | qed:uuid()` form
+- Fixed harness `\n` resolution (pre-expanded newline variable instead of inline `$'\n'`)
+- Generation processors now append trailing `\n` for proper line termination in `before`/`after` pipelines
 
 ### 8D — `qed:timestamp()`
 

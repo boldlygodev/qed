@@ -26,6 +26,7 @@ pub(crate) mod substring;
 pub(crate) mod suffix;
 pub(crate) mod trim;
 pub(crate) mod upper;
+pub(crate) mod uuid;
 pub(crate) mod wrap;
 
 use crate::SelectorId;

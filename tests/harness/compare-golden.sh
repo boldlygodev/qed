@@ -35,7 +35,8 @@ compare_single() {
             local golden_pattern
             golden_pattern=$(cat "$golden")
             # Resolve literal \n sequences to actual newlines for multiline matching
-            local resolved="${golden_pattern//\\n/$'\n'}"
+            local nl=$'\n'
+            local resolved="${golden_pattern//\\n/${nl}}"
             local re="^(${resolved})$"
             if ! [[ "$actual_content" =~ $re ]]; then
                 echo "FAIL [$scenario_id]: $channel does not match pattern" >&2

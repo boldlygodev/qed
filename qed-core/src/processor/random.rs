@@ -25,9 +25,10 @@ impl Processor for RandomProcessor {
             });
         }
         let mut rng = rand::rng();
-        let result: String = (0..self.length)
+        let mut result: String = (0..self.length)
             .map(|_| chars[rng.random_range(0..chars.len())])
             .collect();
+        result.push('\n');
         Ok(result)
     }
 }

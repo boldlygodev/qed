@@ -69,13 +69,13 @@ qed/
 
 ## Current Phase
 
-**Phase 8 — Generation Processors** in progress (sub-phases 8A–8B complete).
+**Phase 8 — Generation Processors** in progress (sub-phases 8A–8C complete).
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–7 are complete. Phase 8 sub-phases 8A (harness fix) and 8B (random) done.
-264/396 integration tests pass. 47/47 processor tests pass.
+Phases 0–7 are complete. Phase 8 sub-phases 8A (harness fix), 8B (random), 8C (uuid) done.
+278/396 integration tests pass. 47/47 processor tests pass.
 All processor edge case tests pass.
 21/27 external processor tests pass (6 deferred for `qed:file()`).
-Next: Phase 8C (`qed:uuid()`), then 8D (`qed:timestamp()`).
+Next: Phase 8D (`qed:timestamp()`).
 
 ---
 
@@ -148,20 +148,6 @@ See `.claude/tests/harness.md` for full specification.
 ---
 
 ## Open Implementation Notes
-
-Two items flagged in the test scenario docs for verification during implementation:
-
-- **UUID v5 exact golden** (`.claude/tests/generation.md`) — the value `c5c17c18-a4a4-5a46-bcd1-b7d8e9c05694`
-  in `uuid-v5-line.txt` must be verified against actual Rust UUID library output
-  and updated if incorrect.
-  Address during Phase 8 (Generation Processors).
-
-- **`uuid-v7-after` script** (`.claude/tests/generation.md`) — the script uses
-  `after("header") | qed:replace("", qed:uuid())` as a workaround.
-  If generation processors work directly in `after` pipelines
-  (i.e. `after("header") | qed:uuid()` is valid), update the script to use the
-  simpler form.
-  Confirm during Phase 8.
 
 One open design concern (deferred from `docs/qed-implementation-design.md`):
 

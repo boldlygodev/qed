@@ -41,6 +41,7 @@ use crate::processor::substring;
 use crate::processor::suffix::SuffixProcessor;
 use crate::processor::trim::TrimProcessor;
 use crate::processor::upper::UpperProcessor;
+use crate::processor::uuid::{UuidProcessor, UuidVersion};
 use crate::processor::wrap::WrapProcessor;
 use crate::span::Spanned;
 
@@ -1051,6 +1052,64 @@ fn compile_qed_processor(
                 "0123456789".into()
             };
             Ok(Box::new(RandomProcessor { length, alphabet }))
+        }
+        "uuid" => {
+            reject_unknown_params(
+                &qed_proc.params,
+                &["version", "namespace", "name"],
+                &qed_proc.name.node,
+            )?;
+            if !qed_proc.args.is_empty() {
+                return Err(CompileError::InvalidParam {
+                    processor: "qed:uuid".into(),
+                    param: format!("expected 0 arguments, got {}", qed_proc.args.len()),
+                    span: qed_proc.name.span,
+                });
+            }
+            let version_num = extract_int_param(&qed_proc.params, "version").unwrap_or(7);
+            let version = match version_num {
+                4 => UuidVersion::V4,
+                5 => {
+                    let ns_ident =
+                        extract_ident_param(&qed_proc.params, "namespace").ok_or_else(|| {
+                            CompileError::InvalidParam {
+                                processor: "qed:uuid".into(),
+                                param: "version 5 requires a namespace parameter".into(),
+                                span: qed_proc.name.span,
+                            }
+                        })?;
+                    let namespace = match ns_ident.as_str() {
+                        "dns" => uuid::Uuid::NAMESPACE_DNS,
+                        "url" => uuid::Uuid::NAMESPACE_URL,
+                        "oid" => uuid::Uuid::NAMESPACE_OID,
+                        "x500" => uuid::Uuid::NAMESPACE_X500,
+                        other => {
+                            return Err(CompileError::InvalidParam {
+                                processor: "qed:uuid".into(),
+                                param: format!("unknown namespace: {other}"),
+                                span: qed_proc.name.span,
+                            });
+                        }
+                    };
+                    let name = extract_string_param(&qed_proc.params, "name").ok_or_else(|| {
+                        CompileError::InvalidParam {
+                            processor: "qed:uuid".into(),
+                            param: "version 5 requires a name parameter".into(),
+                            span: qed_proc.name.span,
+                        }
+                    })?;
+                    UuidVersion::V5 { namespace, name }
+                }
+                7 => UuidVersion::V7,
+                other => {
+                    return Err(CompileError::InvalidParam {
+                        processor: "qed:uuid".into(),
+                        param: format!("unsupported UUID version: {other}"),
+                        span: qed_proc.name.span,
+                    });
+                }
+            };
+            Ok(Box::new(UuidProcessor { version }))
         }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),

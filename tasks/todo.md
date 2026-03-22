@@ -300,14 +300,16 @@
 - [x] Compiler case for `"random"` in `compile_qed_processor()`
 - [x] 16 trials green (`generation::random-*`, `generation-edge-cases::random-*`)
 
-### 8C — `qed:uuid()`
+### 8C — `qed:uuid()` ✓
 
-- [ ] Add `uuid` dependency with v4, v5, v7 features
-- [ ] `UuidProcessor` in `processor/uuid.rs`
-- [ ] Compiler case for `"uuid"` in `compile_qed_processor()`
-- [ ] Verify UUID v5 golden value
-- [ ] Resolve `uuid-v7-after` script simplification
-- [ ] 12 trials green (`generation::uuid-*`, `generation-edge-cases::uuid-*`)
+- [x] Add `uuid` dependency with v4, v5, v7 features
+- [x] `UuidProcessor` in `processor/uuid.rs`
+- [x] Compiler case for `"uuid"` in `compile_qed_processor()`
+- [x] Verify UUID v5 golden value (corrected to `4fd35a71-71ef-5a55-a9d9-aa75c889a6d0`)
+- [x] Simplified `uuid-v7-after.qed` to `after("header") | qed:uuid()`
+- [x] Fixed harness `\n` resolution (`$'\n'` → pre-expanded `${nl}`)
+- [x] Generation processors now append `\n` for proper line termination
+- [x] 12 trials green (`generation::uuid-*`, `generation-edge-cases::uuid-*`)
 
 ### 8D — `qed:timestamp()`
 
