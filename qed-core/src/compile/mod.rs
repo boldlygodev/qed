@@ -34,6 +34,7 @@ use crate::processor::indent::IndentProcessor;
 use crate::processor::lower::LowerProcessor;
 use crate::processor::number::NumberProcessor;
 use crate::processor::prefix::PrefixProcessor;
+use crate::processor::random::RandomProcessor;
 use crate::processor::replace;
 use crate::processor::skip::SkipProcessor;
 use crate::processor::substring;
@@ -992,6 +993,65 @@ fn compile_qed_processor(
             };
             Ok(Box::new(substring::SubstringProcessor { search }))
         }
+        "random" => {
+            reject_unknown_params(&qed_proc.params, &["alphabet"], &qed_proc.name.node)?;
+            if qed_proc.args.len() != 1 {
+                return Err(CompileError::InvalidParam {
+                    processor: "qed:random".into(),
+                    param: format!("expected 1 argument (length), got {}", qed_proc.args.len()),
+                    span: qed_proc.name.span,
+                });
+            }
+            let length = match &qed_proc.args[0].node {
+                ast::QedArg::Integer(n) => *n as usize,
+                _ => {
+                    return Err(CompileError::InvalidParam {
+                        processor: "qed:random".into(),
+                        param: "argument must be an integer (length)".into(),
+                        span: qed_proc.args[0].span,
+                    });
+                }
+            };
+            let alphabet = if let Some(ident) = extract_ident_param(&qed_proc.params, "alphabet") {
+                match ident.as_str() {
+                    "numeric" => "0123456789".into(),
+                    "alpha" => "abcdefghijklmnopqrstuvwxyz".into(),
+                    "upper" => "ABCDEFGHIJKLMNOPQRSTUVWXYZ".into(),
+                    "alnum" => {
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".into()
+                    }
+                    "hex" => "0123456789abcdef".into(),
+                    "HEX" => "0123456789ABCDEF".into(),
+                    "base32" => "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".into(),
+                    "crockford" => "0123456789ABCDEFGHJKMNPQRSTVWXYZ".into(),
+                    "bech32" => "qpzry9x8gf2tvdw0s3jn54khce6mua7l".into(),
+                    "base58" => "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".into(),
+                    "base62" => {
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".into()
+                    }
+                    "base64url" => {
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".into()
+                    }
+                    "ascii" => (b' '..=b'~').map(|b| b as char).collect(),
+                    "symbol" => (b' '..=b'~')
+                        .filter(|b| !b.is_ascii_alphanumeric())
+                        .map(|b| b as char)
+                        .collect(),
+                    other => {
+                        return Err(CompileError::InvalidParam {
+                            processor: "qed:random".into(),
+                            param: format!("unknown alphabet: {other}"),
+                            span: qed_proc.name.span,
+                        });
+                    }
+                }
+            } else if let Some(custom) = extract_string_param(&qed_proc.params, "alphabet") {
+                custom
+            } else {
+                "0123456789".into()
+            };
+            Ok(Box::new(RandomProcessor { length, alphabet }))
+        }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),
             span: qed_proc.name.span,
@@ -1129,6 +1189,19 @@ fn extract_int_param(params: &[Spanned<Param>], name: &str) -> Option<i64> {
                 }
             }
             _ => None,
+        }
+    })
+}
+
+/// Extract an identifier-valued named parameter from a parameter list.
+fn extract_ident_param(params: &[Spanned<Param>], name: &str) -> Option<String> {
+    params.iter().find_map(|p| {
+        if p.node.name.node == name
+            && let ParamValue::Identifier(s) = &p.node.value.node
+        {
+            Some(s.clone())
+        } else {
+            None
         }
     })
 }

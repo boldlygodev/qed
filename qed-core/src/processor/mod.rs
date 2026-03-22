@@ -19,6 +19,7 @@ pub(crate) mod indent;
 pub(crate) mod lower;
 pub(crate) mod number;
 pub(crate) mod prefix;
+pub(crate) mod random;
 pub(crate) mod replace;
 pub(crate) mod skip;
 pub(crate) mod substring;

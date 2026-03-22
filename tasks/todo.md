@@ -292,13 +292,13 @@
 - [x] Update `compare-golden.sh`: switch from `grep -qE` to bash `=~` with `\n` resolution
 - [x] Verify no regressions (248/396 still passing)
 
-### 8B — `qed:random()`
+### 8B — `qed:random()` ✓
 
-- [ ] Add `rand = "0.10"` dependency
-- [ ] `RandomProcessor` in `processor/random.rs`
-- [ ] `extract_ident_param()` helper in `compile/mod.rs`
-- [ ] Compiler case for `"random"` in `compile_qed_processor()`
-- [ ] 16 trials green (`generation::random-*`, `generation-edge-cases::random-*`)
+- [x] Add `rand = "0.10"` dependency
+- [x] `RandomProcessor` in `processor/random.rs`
+- [x] `extract_ident_param()` helper in `compile/mod.rs`
+- [x] Compiler case for `"random"` in `compile_qed_processor()`
+- [x] 16 trials green (`generation::random-*`, `generation-edge-cases::random-*`)
 
 ### 8C — `qed:uuid()`
 

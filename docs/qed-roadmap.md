@@ -427,10 +427,12 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - Resolves literal `\n` in `.pattern` files to actual newlines before matching
 - Bash `=~` handles multiline content natively; no regressions in existing tests
 
-### 8B — `qed:random()`
+### 8B — `qed:random()` ✓
 
 - `qed:random(N)` — default numeric, configurable alphabet and length
-- Named alphabets: `numeric`, `alpha`, `alnum`, `hex`, plus custom strings
+- Named alphabets: `numeric`, `alpha`, `alnum`, `hex`, `upper`, `base32`, `crockford`,
+  `bech32`, `base58`, `base62`, `base64url`, `ascii`, `symbol`, plus custom strings
+- Confirmed: generation processors work directly in `after`/`before` pipelines
 
 ### 8C — `qed:uuid()`
 
