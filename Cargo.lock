@@ -213,7 +213,7 @@ dependencies = [
 
 [[package]]
 name = "qed"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "qed-core",
@@ -221,7 +221,7 @@ dependencies = [
 
 [[package]]
 name = "qed-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rayon",
  "regex",
@@ -229,7 +229,7 @@ dependencies = [
 
 [[package]]
 name = "qed-tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "libtest-mimic",
  "serde",
