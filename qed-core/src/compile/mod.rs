@@ -36,6 +36,7 @@ use crate::processor::number::NumberProcessor;
 use crate::processor::prefix::PrefixProcessor;
 use crate::processor::replace;
 use crate::processor::skip::SkipProcessor;
+use crate::processor::substring;
 use crate::processor::suffix::SuffixProcessor;
 use crate::processor::trim::TrimProcessor;
 use crate::processor::upper::UpperProcessor;
@@ -776,6 +777,40 @@ fn compile_qed_processor(
                 }
             })? as usize;
             Ok(Box::new(WrapProcessor { width }))
+        }
+        "substring" => {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            if qed_proc.args.len() != 1 {
+                return Err(CompileError::InvalidParam {
+                    processor: "qed:substring".into(),
+                    param: format!("expected 1 argument (pattern), got {}", qed_proc.args.len()),
+                    span: qed_proc.name.span,
+                });
+            }
+            let search = match &qed_proc.args[0].node {
+                ast::QedArg::String(s) => {
+                    let expanded = expand_and_warn(s, no_env, qed_proc.args[0].span, warnings);
+                    substring::SubstringSearch::Literal(expanded)
+                }
+                ast::QedArg::Regex(r) => {
+                    let expanded = expand_and_warn(r, no_env, qed_proc.args[0].span, warnings);
+                    let re =
+                        regex::Regex::new(&expanded).map_err(|e| CompileError::InvalidRegex {
+                            pattern: expanded,
+                            reason: e.to_string(),
+                            span: qed_proc.args[0].span,
+                        })?;
+                    substring::SubstringSearch::Regex(re)
+                }
+                _ => {
+                    return Err(CompileError::InvalidParam {
+                        processor: "qed:substring".into(),
+                        param: "argument must be a string or regex pattern".into(),
+                        span: qed_proc.args[0].span,
+                    });
+                }
+            };
+            Ok(Box::new(substring::SubstringProcessor { search }))
         }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),

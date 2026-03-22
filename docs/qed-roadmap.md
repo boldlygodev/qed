@@ -386,9 +386,9 @@ commands, named patterns and aliases, script files, fallback, env var expansion.
 - `qed:dedent()` — remove common leading whitespace ✓
 - `qed:wrap(width:N)` — word-wrap at column width ✓
 
-### 7C — Pattern-based processor
+### 7C — Pattern-based processor ✓
 
-- `qed:substring(pattern)` — narrow each line to matched span
+- `qed:substring(pattern)` — narrow each line to matched span ✓
 
 ### 7D — Copy and move
 

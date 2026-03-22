@@ -21,6 +21,7 @@ pub(crate) mod number;
 pub(crate) mod prefix;
 pub(crate) mod replace;
 pub(crate) mod skip;
+pub(crate) mod substring;
 pub(crate) mod suffix;
 pub(crate) mod trim;
 pub(crate) mod upper;

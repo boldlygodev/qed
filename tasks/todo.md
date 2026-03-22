@@ -258,9 +258,9 @@
 - [x] `qed:dedent()`
 - [x] `qed:wrap(width:N)`
 
-### 7C — Pattern-based processor
+### 7C — Pattern-based processor ✓
 
-- [ ] `qed:substring(pattern)`
+- [x] `qed:substring(pattern)` — literal and regex search
 
 ### 7D — Copy and move
 
