@@ -285,7 +285,39 @@
 - [ ] Create missing test fixture `tests/invocation/goldens/output/env-pattern.txt` for `no-env-suppresses-expansion`
 - [ ] See `docs/qed-roadmap.md` for full details
 
-## Phases 8, 10–12
+## Phase 8 — Generation Processors
+
+### 8A — Harness `.pattern` multiline fix ✓
+
+- [x] Update `compare-golden.sh`: switch from `grep -qE` to bash `=~` with `\n` resolution
+- [x] Verify no regressions (248/396 still passing)
+
+### 8B — `qed:random()`
+
+- [ ] Add `rand = "0.10"` dependency
+- [ ] `RandomProcessor` in `processor/random.rs`
+- [ ] `extract_ident_param()` helper in `compile/mod.rs`
+- [ ] Compiler case for `"random"` in `compile_qed_processor()`
+- [ ] 16 trials green (`generation::random-*`, `generation-edge-cases::random-*`)
+
+### 8C — `qed:uuid()`
+
+- [ ] Add `uuid` dependency with v4, v5, v7 features
+- [ ] `UuidProcessor` in `processor/uuid.rs`
+- [ ] Compiler case for `"uuid"` in `compile_qed_processor()`
+- [ ] Verify UUID v5 golden value
+- [ ] Resolve `uuid-v7-after` script simplification
+- [ ] 12 trials green (`generation::uuid-*`, `generation-edge-cases::uuid-*`)
+
+### 8D — `qed:timestamp()`
+
+- [ ] Add `chrono` and `chrono-tz` dependencies
+- [ ] `TimestampProcessor` in `processor/timestamp.rs`
+- [ ] LDML-to-strftime translation
+- [ ] Compiler case for `"timestamp"` in `compile_qed_processor()`
+- [ ] 20 trials green (`generation::timestamp-*`, `generation-edge-cases::timestamp-*`)
+
+## Phases 10–12
 
 See `docs/qed-roadmap.md` for full details.
 

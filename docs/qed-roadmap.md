@@ -416,16 +416,31 @@ Alpha 2 is reached after Phase 7. All text transformation processors work.
 ## Phase 8 — Generation Processors
 
 **Goal:** `qed:uuid()`, `qed:timestamp()`, and `qed:random()` are implemented.
-
-- `qed:uuid()` — v4 (random), v5 (namespace + name), v7 (time-ordered)
-- `qed:timestamp()` — ISO 8601, unix epoch, custom format, timezone
-- `qed:random()` — configurable alphabet and length
+`qed:file()` deferred to Phase 9 or 11.
 
 These processors ignore stdin entirely.
 They compose with `qed:replace()` for substitution and with `after`/`before` for insertion.
 
-**Checkpoint:** `generation` integration suite is green.
-`.pattern` golden matching is exercised here — verify harness handles it correctly.
+### 8A — Harness `.pattern` multiline fix ✓
+
+- Updated `compare-golden.sh`: switched from `grep -qE` to bash `=~` for pattern matching
+- Resolves literal `\n` in `.pattern` files to actual newlines before matching
+- Bash `=~` handles multiline content natively; no regressions in existing tests
+
+### 8B — `qed:random()`
+
+- `qed:random(N)` — default numeric, configurable alphabet and length
+- Named alphabets: `numeric`, `alpha`, `alnum`, `hex`, plus custom strings
+
+### 8C — `qed:uuid()`
+
+- `qed:uuid()` — v7 (default, time-ordered), v4 (random), v5 (deterministic namespace + name)
+
+### 8D — `qed:timestamp()`
+
+- `qed:timestamp()` — ISO 8601, unix epoch, unix_ms, date, time, datetime, custom format, timezone
+
+**Checkpoint:** `generation` and `generation-edge-cases` suites green. 296/396 integration tests pass.
 
 ---
 

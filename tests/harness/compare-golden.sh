@@ -34,7 +34,10 @@ compare_single() {
             actual_content=$(cat "$actual")
             local golden_pattern
             golden_pattern=$(cat "$golden")
-            if ! printf '%s' "$actual_content" | grep -qE "^(${golden_pattern})$"; then
+            # Resolve literal \n sequences to actual newlines for multiline matching
+            local resolved="${golden_pattern//\\n/$'\n'}"
+            local re="^(${resolved})$"
+            if ! [[ "$actual_content" =~ $re ]]; then
                 echo "FAIL [$scenario_id]: $channel does not match pattern" >&2
                 echo "--- pattern ($(basename "$golden"))" >&2
                 cat "$golden" >&2
