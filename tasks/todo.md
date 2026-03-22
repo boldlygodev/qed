@@ -241,13 +241,14 @@
 
 ## Phase 7 — Processor Coverage
 
-### 7A — Simple processors
+### 7A — Simple processors ✓
 
-- [ ] `map_lines()` per-line utility in `processor/mod.rs`
-- [ ] `qed:suffix(text:"...")`
-- [ ] `qed:duplicate()`
-- [ ] `qed:skip()`
-- [ ] `qed:trim()`
+- [x] `map_lines()` per-line utility in `processor/mod.rs`
+- [x] `qed:suffix(text:"...")`
+- [x] `qed:duplicate()`
+- [x] `qed:skip()`
+- [x] `qed:trim()`
+- [x] Fix `qed:prefix()` to use per-line semantics
 
 ### 7B — Parameterized processors
 

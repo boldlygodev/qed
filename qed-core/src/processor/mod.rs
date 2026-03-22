@@ -12,10 +12,14 @@
 
 pub(crate) mod chain;
 pub(crate) mod delete;
+pub(crate) mod duplicate;
 pub(crate) mod external;
 pub(crate) mod lower;
 pub(crate) mod prefix;
 pub(crate) mod replace;
+pub(crate) mod skip;
+pub(crate) mod suffix;
+pub(crate) mod trim;
 pub(crate) mod upper;
 
 use crate::SelectorId;
@@ -44,4 +48,22 @@ pub(crate) enum ProcessorError {
         exit_code: Option<i32>,
         stderr: String,
     },
+}
+
+/// Apply a function to each line of the input, preserving trailing newline.
+///
+/// Splits on `\n`, maps each line through `f`, and rejoins with `\n`.
+/// A trailing newline in the input is preserved in the output.
+pub(crate) fn map_lines(input: &str, f: impl Fn(&str) -> String) -> String {
+    let has_trailing_newline = input.ends_with('\n');
+    let content = if has_trailing_newline {
+        &input[..input.len() - 1]
+    } else {
+        input
+    };
+    let mut result: String = content.split('\n').map(&f).collect::<Vec<_>>().join("\n");
+    if has_trailing_newline {
+        result.push('\n');
+    }
+    result
 }

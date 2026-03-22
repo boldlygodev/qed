@@ -1,8 +1,8 @@
-//! The `qed:prefix()` processor — prepends text to selected content.
+//! The `qed:prefix()` processor — prepends text to each selected line.
 
-use super::{Processor, ProcessorError};
+use super::{Processor, ProcessorError, map_lines};
 
-/// Prepends the configured text to the beginning of the selected content.
+/// Prepends the configured text to the beginning of each line.
 #[derive(Debug)]
 pub(crate) struct PrefixProcessor {
     pub(crate) text: String,
@@ -10,6 +10,6 @@ pub(crate) struct PrefixProcessor {
 
 impl Processor for PrefixProcessor {
     fn execute(&self, input: &str) -> Result<String, ProcessorError> {
-        Ok(format!("{}{}", self.text, input))
+        Ok(map_lines(input, |line| format!("{}{}", self.text, line)))
     }
 }

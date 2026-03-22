@@ -27,10 +27,14 @@ use crate::parse::ast::{
 use crate::processor::Processor;
 use crate::processor::chain::ChainProcessor;
 use crate::processor::delete::DeleteProcessor;
+use crate::processor::duplicate::DuplicateProcessor;
 use crate::processor::external::ExternalCommandProcessor;
 use crate::processor::lower::LowerProcessor;
 use crate::processor::prefix::PrefixProcessor;
 use crate::processor::replace;
+use crate::processor::skip::SkipProcessor;
+use crate::processor::suffix::SuffixProcessor;
+use crate::processor::trim::TrimProcessor;
 use crate::processor::upper::UpperProcessor;
 use crate::span::Spanned;
 
@@ -703,26 +707,33 @@ fn compile_qed_processor(
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<Box<dyn Processor>, CompileError> {
     match qed_proc.name.node.as_str() {
-        "delete" | "upper" | "lower" => {
+        "delete" | "upper" | "lower" | "duplicate" | "skip" | "trim" => {
             reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
             match qed_proc.name.node.as_str() {
                 "delete" => Ok(Box::new(DeleteProcessor)),
                 "upper" => Ok(Box::new(UpperProcessor)),
                 "lower" => Ok(Box::new(LowerProcessor)),
+                "duplicate" => Ok(Box::new(DuplicateProcessor)),
+                "skip" => Ok(Box::new(SkipProcessor)),
+                "trim" => Ok(Box::new(TrimProcessor)),
                 _ => unreachable!(),
             }
         }
-        "prefix" => {
+        "prefix" | "suffix" => {
             reject_unknown_params(&qed_proc.params, &["text"], &qed_proc.name.node)?;
             let raw = extract_string_param(&qed_proc.params, "text").ok_or_else(|| {
                 CompileError::InvalidParam {
-                    processor: "qed:prefix".into(),
+                    processor: format!("qed:{}", qed_proc.name.node),
                     param: "missing required parameter 'text'".into(),
                     span: qed_proc.name.span,
                 }
             })?;
             let text = expand_and_warn(&raw, no_env, qed_proc.name.span, warnings);
-            Ok(Box::new(PrefixProcessor { text }))
+            match qed_proc.name.node.as_str() {
+                "prefix" => Ok(Box::new(PrefixProcessor { text })),
+                "suffix" => Ok(Box::new(SuffixProcessor { text })),
+                _ => unreachable!(),
+            }
         }
         "replace" => {
             reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
