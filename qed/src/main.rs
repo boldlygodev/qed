@@ -115,7 +115,30 @@ fn main() {
 
     match qed_core::run(&script_source, &input, &options) {
         Ok(result) => {
-            print!("{}", result.output);
+            // Route output: --output → file, --in-place → atomic overwrite, else → stdout
+            if let Some(ref path) = cli.output {
+                std::fs::write(path, &result.output).unwrap_or_else(|e| {
+                    eprintln!("qed: cannot write output file: {e}");
+                    std::process::exit(2);
+                });
+            } else if cli.in_place {
+                // Atomic write: temp file in same directory, then rename.
+                let path = input_path.as_ref().expect("validated above");
+                let tmp_path = path.with_extension("qed-tmp");
+                std::fs::write(&tmp_path, &result.output).unwrap_or_else(|e| {
+                    eprintln!("qed: cannot write temp file: {e}");
+                    std::process::exit(2);
+                });
+                std::fs::rename(&tmp_path, path).unwrap_or_else(|e| {
+                    // Clean up temp file on rename failure.
+                    let _ = std::fs::remove_file(&tmp_path);
+                    eprintln!("qed: cannot rename temp file: {e}");
+                    std::process::exit(2);
+                });
+            } else {
+                print!("{}", result.output);
+            }
+
             for d in &result.diagnostics {
                 eprintln!(
                     "qed: {level:<9}{loc}: {sel}: {msg}",

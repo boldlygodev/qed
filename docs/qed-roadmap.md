@@ -481,10 +481,10 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - `no_env` → `compile()`; `on_error` → `compile()` as `global_on_error` default; `extract` → `execute()` passthrough suppression
 - Per-selector `on_error:X` still overrides global; invocation 10/13, edge cases 8/13
 
-### 9C — `--output` + `--in-place`
+### 9C — `--output` + `--in-place` ✓
 
-- `--output`: write result to file, suppress stdout
-- `--in-place`: atomic write via temp file + rename (same directory)
+- `--output`: write result to file via `std::fs::write()`, suppress stdout
+- `--in-place`: atomic write via `.qed-tmp` temp file + `std::fs::rename()`, with cleanup on failure
 
 ### 9D — `--dry-run`
 

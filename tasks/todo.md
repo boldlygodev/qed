@@ -300,11 +300,11 @@
 - [x] Wire `extract` → `execute()` (skip passthrough fragments)
 - [x] Construct `RunOptions` from `Cli` in `main.rs`
 
-### 9C — `--output` + `--in-place`
+### 9C — `--output` + `--in-place` ✓
 
-- [ ] `--output`: write `result.output` to file; suppress stdout
-- [ ] `--in-place`: atomic write via temp file + rename in same directory
-- [ ] Error handling: I/O failures → stderr + exit 2
+- [x] `--output`: write `result.output` to file; suppress stdout
+- [x] `--in-place`: atomic write via temp file (`.qed-tmp`) + rename in same directory
+- [x] Error handling: I/O failures → stderr + exit 2; temp file cleanup on rename failure
 
 ### 9D — `--dry-run`
 
