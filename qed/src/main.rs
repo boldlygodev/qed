@@ -107,7 +107,13 @@ fn main() {
         buf
     };
 
-    match qed_core::run(&script_source, &input) {
+    let options = qed_core::RunOptions {
+        no_env: cli.no_env,
+        on_error: cli.on_error,
+        extract: cli.extract,
+    };
+
+    match qed_core::run(&script_source, &input, &options) {
         Ok(result) => {
             print!("{}", result.output);
             for d in &result.diagnostics {

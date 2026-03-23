@@ -46,6 +46,16 @@ use crate::processor::uuid::{UuidProcessor, UuidVersion};
 use crate::processor::wrap::WrapProcessor;
 use crate::span::Spanned;
 
+// ── Compile options ─────────────────────────────────────────────────
+
+/// Options that influence compilation behavior, sourced from CLI flags.
+pub(crate) struct CompileOptions {
+    /// When true, `${VAR}` references are left as literal text.
+    pub(crate) no_env: bool,
+    /// Default on-error mode for selectors that do not specify `on_error` explicitly.
+    pub(crate) global_on_error: OnError,
+}
+
 // ── Script (top-level IR) ───────────────────────────────────────────
 
 /// Compiled script — the output of the compilation pass and input
@@ -222,7 +232,7 @@ impl std::str::FromStr for OnError {
 pub(crate) fn compile(
     program: &Program,
     source: &str,
-    no_env: bool,
+    options: &CompileOptions,
 ) -> Result<(Script, Vec<CompileWarning>), Vec<CompileError>> {
     let mut errors = Vec::new();
     let mut warnings: Vec<CompileWarning> = Vec::new();
@@ -274,7 +284,7 @@ pub(crate) fn compile(
             &mut selectors,
             &pattern_defs,
             &alias_defs,
-            no_env,
+            options,
             &mut warnings,
         ) {
             Ok(id) => id,
@@ -293,7 +303,7 @@ pub(crate) fn compile(
                     &chain.node,
                     &pattern_defs,
                     &alias_defs,
-                    no_env,
+                    options.no_env,
                     &mut warnings,
                 ) {
                     Ok(a) => a,
@@ -324,7 +334,7 @@ pub(crate) fn compile(
                         chain,
                         &pattern_defs,
                         &alias_defs,
-                        no_env,
+                        options.no_env,
                         &mut warnings,
                     ) {
                         Ok(p) => (Some(p), Some(fb.span)),
@@ -340,7 +350,7 @@ pub(crate) fn compile(
                             &chain.node,
                             &pattern_defs,
                             &alias_defs,
-                            no_env,
+                            options.no_env,
                             &mut warnings,
                         ) {
                             Ok(p) => (Some(p), Some(chain.span)),
@@ -407,7 +417,7 @@ fn compile_selector(
     registry: &mut Vec<RegistryEntry>,
     pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
-    no_env: bool,
+    options: &CompileOptions,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<SelectorId, CompileError> {
     let selector_ast = &node.selector.node;
@@ -422,7 +432,7 @@ fn compile_selector(
             node.selector.span,
             pattern_defs,
             alias_defs,
-            no_env,
+            options,
             warnings,
         )?;
         registry.push(entry);
@@ -438,7 +448,7 @@ fn compile_selector(
                 step_spanned.span,
                 pattern_defs,
                 alias_defs,
-                no_env,
+                options,
                 warnings,
             )?;
             registry.push(entry);
@@ -461,7 +471,7 @@ fn compile_simple_selector(
     span: crate::span::Span,
     pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
-    no_env: bool,
+    options: &CompileOptions,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<RegistryEntry, CompileError> {
     let mut compiled_pattern = match &step.pattern {
@@ -470,7 +480,7 @@ fn compile_simple_selector(
             pat_ref.span,
             pattern_defs,
             alias_defs,
-            no_env,
+            options.no_env,
             warnings,
         )?,
         None => CompiledPattern {
@@ -480,9 +490,9 @@ fn compile_simple_selector(
         },
     };
 
-    // Extract params
+    // Extract params — default on_error comes from global CLI flag
     let mut nth: Option<Vec<NthTerm>> = None;
-    let mut on_error = OnError::Fail;
+    let mut on_error = options.global_on_error;
 
     for param in &step.params {
         match param.node.name.node.as_str() {

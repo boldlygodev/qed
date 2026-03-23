@@ -475,11 +475,11 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - `OnError` made `pub` with `FromStr` + `Display` impls; re-exported from `qed_core`
 - Created missing golden `tests/invocation/goldens/output/env-pattern.txt`
 
-### 9B — `--no-env`, `--on-error`, `--extract`
+### 9B — `--no-env`, `--on-error`, `--extract` ✓
 
-- `RunOptions` struct in `qed-core` public API
-- `run()` accepts `&RunOptions`; threads `no_env` → `compile()`, `on_error` → `compile()` as global default, `extract` → `execute()`
-- Per-selector `on_error` still overrides global
+- `RunOptions` struct in `qed-core` public API; `run()` accepts `&RunOptions`
+- `no_env` → `compile()`; `on_error` → `compile()` as `global_on_error` default; `extract` → `execute()` passthrough suppression
+- Per-selector `on_error:X` still overrides global; invocation 10/13, edge cases 8/13
 
 ### 9C — `--output` + `--in-place`
 

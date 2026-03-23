@@ -291,14 +291,14 @@
 - [x] `OnError` public with `FromStr` + `Display` impls
 - [x] Wire `input` positional arg (file or stdin fallback)
 
-### 9B — `--no-env`, `--on-error`, `--extract`
+### 9B — `--no-env`, `--on-error`, `--extract` ✓
 
-- [ ] `RunOptions` struct in `qed-core/src/lib.rs`
-- [ ] `run()` signature: accept `&RunOptions`
-- [ ] Wire `no_env` → `compile()` (replace hardcoded `false`)
-- [ ] Wire `on_error` → `compile()` as global default (per-selector overrides)
-- [ ] Wire `extract` → `execute()` (skip passthrough fragments)
-- [ ] Construct `RunOptions` from `Cli` in `main.rs`
+- [x] `RunOptions` struct in `qed-core/src/lib.rs`
+- [x] `run()` signature: accept `&RunOptions`
+- [x] Wire `no_env` → `compile()` (replace hardcoded `false`)
+- [x] Wire `on_error` → `compile()` as global default (per-selector overrides)
+- [x] Wire `extract` → `execute()` (skip passthrough fragments)
+- [x] Construct `RunOptions` from `Cli` in `main.rs`
 
 ### 9C — `--output` + `--in-place`
 

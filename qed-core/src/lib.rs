@@ -55,6 +55,17 @@ pub mod span;
 
 pub use compile::OnError;
 
+/// Options that control how a qed script is executed.
+pub struct RunOptions {
+    /// Disable environment variable expansion in patterns and processor args.
+    pub no_env: bool,
+    /// Global on-error mode — sets the default for selectors that do not
+    /// specify `on_error` explicitly.
+    pub on_error: OnError,
+    /// Suppress passthrough output; only selected (processed) regions are emitted.
+    pub extract: bool,
+}
+
 /// Uniquely identifies a statement within a compiled `Script`.
 ///
 /// Newtype over `usize` to prevent accidentally passing a raw index where a
@@ -115,7 +126,7 @@ pub struct RunDiagnostic {
 }
 
 /// Run a qed script against input text, returning the result with diagnostics.
-pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
+pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<RunResult, String> {
     let program = parse::parse_program(script_source).map_err(|errors| {
         errors
             .iter()
@@ -124,31 +135,37 @@ pub fn run(script_source: &str, input: &str) -> Result<RunResult, String> {
             .join("\n")
     })?;
 
-    let (script, compile_warnings) = match compile::compile(&program, script_source, false) {
-        Ok(pair) => pair,
-        Err(errors) => {
-            let diagnostics = errors
-                .iter()
-                .map(|e| {
-                    let (span, message) = compile_error_to_diagnostic(e);
-                    RunDiagnostic {
-                        level: "error",
-                        location: span::format_span(script_source, span),
-                        selector_text: script_source[span.start..span.end].to_owned(),
-                        message,
-                    }
-                })
-                .collect();
-            return Ok(RunResult {
-                output: String::new(),
-                diagnostics,
-                has_errors: true,
-            });
-        }
+    let compile_options = compile::CompileOptions {
+        no_env: options.no_env,
+        global_on_error: options.on_error,
     };
 
+    let (script, compile_warnings) =
+        match compile::compile(&program, script_source, &compile_options) {
+            Ok(pair) => pair,
+            Err(errors) => {
+                let diagnostics = errors
+                    .iter()
+                    .map(|e| {
+                        let (span, message) = compile_error_to_diagnostic(e);
+                        RunDiagnostic {
+                            level: "error",
+                            location: span::format_span(script_source, span),
+                            selector_text: script_source[span.start..span.end].to_owned(),
+                            message,
+                        }
+                    })
+                    .collect();
+                return Ok(RunResult {
+                    output: String::new(),
+                    diagnostics,
+                    has_errors: true,
+                });
+            }
+        };
+
     let buffer = exec::Buffer::new(input.to_owned());
-    let result = exec::engine::execute(&script, &buffer);
+    let result = exec::engine::execute(&script, &buffer, options.extract);
 
     let mut has_errors = false;
     let mut diagnostics: Vec<RunDiagnostic> = Vec::new();

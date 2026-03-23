@@ -52,7 +52,10 @@ struct PendingRelocation {
 }
 
 /// Execute a compiled script against a buffer, producing output and diagnostics.
-pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
+///
+/// When `extract` is true, passthrough fragments are suppressed — only selected
+/// (and processed) regions appear in the output.
+pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> ExecuteResult {
     // Build requests: (StatementId, SelectorId) for fragmentation
     let requests: Vec<_> = script
         .statements
@@ -80,7 +83,9 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer) -> ExecuteResult {
     for frag in &fragments {
         match frag {
             Fragment::Passthrough(content) => {
-                output.push_str(&resolve_content(content, buffer));
+                if !extract {
+                    output.push_str(&resolve_content(content, buffer));
+                }
             }
             Fragment::Selected { content, tags } => {
                 let text = resolve_content(content, buffer);
