@@ -182,6 +182,10 @@ pub(crate) struct CompiledPattern {
 pub(crate) enum PatternMatcher {
     Literal(String),
     Regex(regex::Regex),
+    /// An unresolvable pattern (e.g., an unset env var expanded to empty).
+    /// Always fails to match — distinct from `Literal("")` which means
+    /// "match every line" (the intentional entire-stream selector).
+    NeverMatch,
 }
 
 // ── Error behavior ──────────────────────────────────────────────────
@@ -612,12 +616,46 @@ fn compile_pattern(
 ) -> Result<CompiledPattern, CompileError> {
     let matcher = match &pat_ref.value {
         PatternRefValue::Inline(PatternValue::String(s)) => {
-            let expanded = expand_and_warn(s, no_env, span, warnings);
-            PatternMatcher::Literal(expanded)
+            let (expanded, unset) = env::expand_env_vars(s, no_env);
+            let content_start = span.start + 1; // skip opening quote
+            let has_unset = !unset.is_empty();
+            for var in unset {
+                let var_start = content_start + var.offset;
+                let var_end = var_start + 2 + var.name.len() + 1; // ${NAME}
+                warnings.push(CompileWarning::UnsetEnvVar {
+                    name: var.name,
+                    span: crate::span::Span {
+                        start: var_start,
+                        end: var_end,
+                    },
+                });
+            }
+            if has_unset && expanded.is_empty() {
+                PatternMatcher::NeverMatch
+            } else {
+                PatternMatcher::Literal(expanded)
+            }
         }
         PatternRefValue::Inline(PatternValue::Regex(r)) => {
-            let expanded = expand_and_warn(r, no_env, span, warnings);
-            compile_regex_matcher(&expanded, span)?
+            let (expanded, unset) = env::expand_env_vars(r, no_env);
+            let content_start = span.start + 1; // skip opening /
+            let has_unset = !unset.is_empty();
+            for var in unset {
+                let var_start = content_start + var.offset;
+                let var_end = var_start + 2 + var.name.len() + 1;
+                warnings.push(CompileWarning::UnsetEnvVar {
+                    name: var.name,
+                    span: crate::span::Span {
+                        start: var_start,
+                        end: var_end,
+                    },
+                });
+            }
+            if has_unset && expanded.is_empty() {
+                PatternMatcher::NeverMatch
+            } else {
+                compile_regex_matcher(&expanded, span)?
+            }
         }
         PatternRefValue::Named(name) => match pattern_defs.get(name.as_str()) {
             Some(PatternValue::String(s)) => {

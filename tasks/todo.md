@@ -11,7 +11,7 @@
 - [x] Phase 6 — Full Compiler (6A–6D) → **Alpha 1**
 - [x] Phase 7 — Processor Coverage → **Alpha 2**
 - [x] Phase 8 — Generation Processors
-- [ ] Phase 9 — Invocation Features → **Alpha 3**
+- [x] Phase 9 — Invocation Features → **Alpha 3**
 - [ ] Phase 10 — Diagnostics
 - [ ] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
 - [ ] Phase 12 — Release Polish → **v1.0**
@@ -312,13 +312,13 @@
 - [x] `qed/src/diff.rs`: unified diff generation (check equality first, `header("a","b")`, `missing_newline_hint(false)`)
 - [x] Wire `--dry-run` in `main.rs`: run script, diff original vs output, print diff
 
-### 9E — Phase checkpoint + documentation
+### 9E — Phase checkpoint + documentation ✓
 
-- [ ] Full integration suite: verify ~330/396
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] `cargo fmt --check` clean
-- [ ] Update `docs/qed-roadmap.md` — Phase 9 complete
-- [ ] Update `.claude/CLAUDE.md` — current phase update
+- [x] Full integration suite: 332/396 pass
+- [x] `cargo clippy --workspace -- -D warnings` clean
+- [x] `cargo fmt --check` clean
+- [x] Update `docs/qed-roadmap.md` — Phase 9 complete
+- [x] Update `.claude/CLAUDE.md` — current phase update
 
 ## Phase 8 — Generation Processors
 

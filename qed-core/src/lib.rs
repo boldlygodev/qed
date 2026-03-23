@@ -173,10 +173,10 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
     // Convert compile warnings into diagnostics.
     for w in &compile_warnings {
         let (span, source_text, message) = match w {
-            error::CompileWarning::UnsetEnvVar { name, span } => (
+            error::CompileWarning::UnsetEnvVar { span, .. } => (
                 *span,
-                String::new(),
-                format!("unset environment variable: {name}"),
+                script_source[span.start..span.end].to_owned(),
+                "environment variable not set, expanding to empty string".to_owned(),
             ),
             error::CompileWarning::DuplicateName { name, kind, span } => (
                 *span,

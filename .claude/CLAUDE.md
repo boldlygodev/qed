@@ -69,12 +69,11 @@ qed/
 
 ## Current Phase
 
-**Phase 8 — Generation Processors** complete.
+**Phase 9 — Invocation Features** complete.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–8 are complete. 298/396 integration tests pass.
-47/47 processor tests pass. All processor edge case tests pass.
-21/27 external processor tests pass (6 deferred for `qed:file()`).
-Next: Phase 9 — Invocation Features.
+Phases 0–9 are complete. 332/396 integration tests pass.
+All CLI flags implemented: `-f`, `-i`, `-x`, `-o`, `-d`, `--on-error`, `--no-env`.
+Next: Phase 10 — Diagnostics.
 
 ---
 

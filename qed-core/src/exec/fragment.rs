@@ -348,6 +348,7 @@ fn pattern_matches(pattern: &CompiledPattern, line: &str) -> bool {
     let raw_match = match &pattern.matcher {
         PatternMatcher::Literal(lit) => line.contains(lit.as_str()),
         PatternMatcher::Regex(re) => re.is_match(line),
+        PatternMatcher::NeverMatch => false,
     };
 
     if pattern.negated {

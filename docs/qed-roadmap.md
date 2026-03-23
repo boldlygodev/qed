@@ -492,15 +492,18 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - `qed/src/diff.rs`: unified diff generation with `header("a","b")`, equality check, `missing_newline_hint(false)`
 - Invocation: 13/13, edge cases: 11/13 (only `env-expand-unset-warns` pre-existing)
 
-### 9E — Phase checkpoint + documentation
+### 9E — Phase checkpoint + documentation ✓
 
-**Checkpoint:** `invocation`, `invocation-edge-cases`, `stream-control`, and `script-files` integration
-suites are green. ~330/396 integration tests pass.
+- Fix `env-expand-unset-warns`: add `PatternMatcher::NeverMatch` to distinguish
+  "intentional match-all" (`at()`) from "empty after unset env var expansion"
+- Precise env var spans in `UnsetEnvVar` warnings; updated diagnostic message
+- **Checkpoint:** 332/396 integration tests pass. Clippy and fmt clean.
+  All CLI flags implemented. 13/13 invocation, 13/13 edge cases.
 
-### ✦ Alpha 3 — Generation + Full CLI
+### ✦ Alpha 3 — Generation + Full CLI ✓
 
-Alpha 3 is reached after Phase 9. Content generation and all invocation modes work.
-~330/396 integration tests pass.
+Alpha 3 reached. Content generation and all invocation modes work.
+332/396 integration tests pass.
 
 ---
 
