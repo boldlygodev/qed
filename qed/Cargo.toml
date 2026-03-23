@@ -13,3 +13,4 @@ path = "src/main.rs"
 [dependencies]
 qed-core = { path = "../qed-core" }
 clap = { version = "4", features = ["derive"] }
+similar = "2.7"

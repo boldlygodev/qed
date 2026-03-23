@@ -9,6 +9,8 @@
 //! - `1` — script execution error (parse, compile, or runtime failure)
 //! - `2` — usage error (no script, conflicting flags, I/O failure)
 
+mod diff;
+
 use clap::Parser;
 use std::io::Read;
 use std::path::PathBuf;
@@ -115,8 +117,10 @@ fn main() {
 
     match qed_core::run(&script_source, &input, &options) {
         Ok(result) => {
-            // Route output: --output → file, --in-place → atomic overwrite, else → stdout
-            if let Some(ref path) = cli.output {
+            // Route output: --dry-run → diff, --output → file, --in-place → atomic overwrite, else → stdout
+            if cli.dry_run {
+                print!("{}", diff::unified_diff(&input, &result.output));
+            } else if let Some(ref path) = cli.output {
                 std::fs::write(path, &result.output).unwrap_or_else(|e| {
                     eprintln!("qed: cannot write output file: {e}");
                     std::process::exit(2);

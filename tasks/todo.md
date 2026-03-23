@@ -306,11 +306,11 @@
 - [x] `--in-place`: atomic write via temp file (`.qed-tmp`) + rename in same directory
 - [x] Error handling: I/O failures → stderr + exit 2; temp file cleanup on rename failure
 
-### 9D — `--dry-run`
+### 9D — `--dry-run` ✓
 
-- [ ] Add `similar = "2.7"` to `qed/Cargo.toml`
-- [ ] `qed/src/diff.rs`: unified diff generation (check equality first, `header("a","b")`, `missing_newline_hint(false)`)
-- [ ] Wire `--dry-run` in `main.rs`: run script, diff original vs output, print diff
+- [x] Add `similar = "2.7"` to `qed/Cargo.toml`
+- [x] `qed/src/diff.rs`: unified diff generation (check equality first, `header("a","b")`, `missing_newline_hint(false)`)
+- [x] Wire `--dry-run` in `main.rs`: run script, diff original vs output, print diff
 
 ### 9E — Phase checkpoint + documentation
 

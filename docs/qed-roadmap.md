@@ -486,10 +486,11 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 - `--output`: write result to file via `std::fs::write()`, suppress stdout
 - `--in-place`: atomic write via `.qed-tmp` temp file + `std::fs::rename()`, with cleanup on failure
 
-### 9D — `--dry-run`
+### 9D — `--dry-run` ✓
 
 - `similar = "2.7"` in `qed/Cargo.toml` (CLI concern, not core)
 - `qed/src/diff.rs`: unified diff generation with `header("a","b")`, equality check, `missing_newline_hint(false)`
+- Invocation: 13/13, edge cases: 11/13 (only `env-expand-unset-warns` pre-existing)
 
 ### 9E — Phase checkpoint + documentation
 
