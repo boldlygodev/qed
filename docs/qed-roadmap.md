@@ -457,21 +457,44 @@ They compose with `qed:replace()` for substitution and with `after`/`before` for
 
 **Goal:** all CLI flags are fully implemented.
 
-**First:** create missing test fixture `tests/invocation/goldens/output/env-pattern.txt`
-for the `no-env-suppresses-expansion` scenario.
-
 | Feature | Notes |
 |---|---|
-| `-f` / `--file` | Read script from file instead of inline argument |
-| `--in-place` | Atomic write via temp file + rename |
-| `--extract` | Suppress passthrough output |
-| `--output` | Write to file instead of stdout |
-| `--dry-run` | Unified diff output, 3 context lines, `a`/`b` placeholders |
-| `--on-error` | `fail` / `warn` / `skip` routing |
+| Input file positional | Read from file instead of stdin; stdin fallback when absent |
+| `--extract` (`-x`) | Suppress passthrough output; only selected regions emitted |
 | `--no-env` | Disable env var expansion in patterns and args |
+| `--on-error` | Global default `fail`/`warn`/`skip`; per-selector overrides |
+| `--output` (`-o`) | Write to file instead of stdout |
+| `--in-place` (`-i`) | Atomic write via temp file + rename |
+| `--dry-run` (`-d`) | Unified diff output, 3 context lines, `a`/`b` placeholders |
 
-**Checkpoint:** `invocation`, `stream-control`, and `script-files` integration
-suites are green.
+### 9A — CLI struct expansion + input file ✓
+
+- `Cli` struct expanded: all flags (`-i`, `-x`, `-o`, `-d`, `--on-error`, `--no-env`) + positional `args` Vec
+- Positional arg reinterpretation: without `-f`, args[0]=script, args[1]=file; with `-f`, args[0]=file
+- Clap `conflicts_with` for `in_place`/`output` and `in_place`/`dry_run`; post-parse `--in-place` requires file
+- `OnError` made `pub` with `FromStr` + `Display` impls; re-exported from `qed_core`
+- Created missing golden `tests/invocation/goldens/output/env-pattern.txt`
+
+### 9B — `--no-env`, `--on-error`, `--extract`
+
+- `RunOptions` struct in `qed-core` public API
+- `run()` accepts `&RunOptions`; threads `no_env` → `compile()`, `on_error` → `compile()` as global default, `extract` → `execute()`
+- Per-selector `on_error` still overrides global
+
+### 9C — `--output` + `--in-place`
+
+- `--output`: write result to file, suppress stdout
+- `--in-place`: atomic write via temp file + rename (same directory)
+
+### 9D — `--dry-run`
+
+- `similar = "2.7"` in `qed/Cargo.toml` (CLI concern, not core)
+- `qed/src/diff.rs`: unified diff generation with `header("a","b")`, equality check, `missing_newline_hint(false)`
+
+### 9E — Phase checkpoint + documentation
+
+**Checkpoint:** `invocation`, `invocation-edge-cases`, `stream-control`, and `script-files` integration
+suites are green. ~330/396 integration tests pass.
 
 ### ✦ Alpha 3 — Generation + Full CLI
 

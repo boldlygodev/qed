@@ -53,6 +53,8 @@ pub(crate) mod parse;
 pub(crate) mod processor;
 pub mod span;
 
+pub use compile::OnError;
+
 /// Uniquely identifies a statement within a compiled `Script`.
 ///
 /// Newtype over `usize` to prevent accidentally passing a raw index where a

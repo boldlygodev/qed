@@ -178,13 +178,38 @@ pub(crate) enum PatternMatcher {
 
 /// How the engine handles a selector that matches nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OnError {
+pub enum OnError {
     /// Abort execution and report an error (default).
     Fail,
     /// Emit a diagnostic warning but continue execution.
     Warn,
     /// Silently skip the statement as if it were not present.
     Skip,
+}
+
+impl std::fmt::Display for OnError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OnError::Fail => write!(f, "fail"),
+            OnError::Warn => write!(f, "warn"),
+            OnError::Skip => write!(f, "skip"),
+        }
+    }
+}
+
+impl std::str::FromStr for OnError {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "fail" => Ok(OnError::Fail),
+            "warn" => Ok(OnError::Warn),
+            "skip" => Ok(OnError::Skip),
+            other => Err(format!(
+                "invalid on-error mode: {other} (expected fail, warn, or skip)"
+            )),
+        }
+    }
 }
 
 // ── Compilation ────────────────────────────────────────────────────

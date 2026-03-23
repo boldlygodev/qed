@@ -282,8 +282,43 @@
 
 ## Phase 9 — Invocation Features
 
-- [ ] Create missing test fixture `tests/invocation/goldens/output/env-pattern.txt` for `no-env-suppresses-expansion`
-- [ ] See `docs/qed-roadmap.md` for full details
+### 9A — CLI struct expansion + input file ✓
+
+- [x] Create missing `tests/invocation/goldens/output/env-pattern.txt` (`${QED_PATTERN}`)
+- [x] Expand `Cli` struct: `in_place`, `extract`, `output`, `dry_run`, `on_error`, `no_env`, positional `args` Vec
+- [x] Clap `conflicts_with`: `in_place`/`output`, `in_place`/`dry_run`; manual validation for `script`/`file` positional semantics
+- [x] Post-parse validation: `--in-place` requires input file
+- [x] `OnError` public with `FromStr` + `Display` impls
+- [x] Wire `input` positional arg (file or stdin fallback)
+
+### 9B — `--no-env`, `--on-error`, `--extract`
+
+- [ ] `RunOptions` struct in `qed-core/src/lib.rs`
+- [ ] `run()` signature: accept `&RunOptions`
+- [ ] Wire `no_env` → `compile()` (replace hardcoded `false`)
+- [ ] Wire `on_error` → `compile()` as global default (per-selector overrides)
+- [ ] Wire `extract` → `execute()` (skip passthrough fragments)
+- [ ] Construct `RunOptions` from `Cli` in `main.rs`
+
+### 9C — `--output` + `--in-place`
+
+- [ ] `--output`: write `result.output` to file; suppress stdout
+- [ ] `--in-place`: atomic write via temp file + rename in same directory
+- [ ] Error handling: I/O failures → stderr + exit 2
+
+### 9D — `--dry-run`
+
+- [ ] Add `similar = "2.7"` to `qed/Cargo.toml`
+- [ ] `qed/src/diff.rs`: unified diff generation (check equality first, `header("a","b")`, `missing_newline_hint(false)`)
+- [ ] Wire `--dry-run` in `main.rs`: run script, diff original vs output, print diff
+
+### 9E — Phase checkpoint + documentation
+
+- [ ] Full integration suite: verify ~330/396
+- [ ] `cargo clippy --workspace -- -D warnings` clean
+- [ ] `cargo fmt --check` clean
+- [ ] Update `docs/qed-roadmap.md` — Phase 9 complete
+- [ ] Update `.claude/CLAUDE.md` — current phase update
 
 ## Phase 8 — Generation Processors
 
