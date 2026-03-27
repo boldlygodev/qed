@@ -455,7 +455,7 @@ dependencies = [
 
 [[package]]
 name = "qed"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "qed-core",
@@ -464,7 +464,7 @@ dependencies = [
 
 [[package]]
 name = "qed-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "chrono-tz",

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-03-27
+
+Generation processors and full CLI invocation features (Alpha 3).
+
+### Added
+
+- **`qed:random()`** — generate random integers, floats, or strings
+  with configurable `type:`, `min:`, `max:`, `length:`, and `charset:`
+- **`qed:uuid()`** — generate UUIDs (v4, v5, v7) with optional `version:`
+  and `namespace:`/`name:` for deterministic v5
+- **`qed:timestamp()`** — generate timestamps with configurable `format:`
+  and `timezone:`
+- **`--output`** (`-o`) flag — write output to a file
+- **`--in-place`** (`-i`) flag — edit input files in place with atomic writes
+- **`--dry-run`** (`-d`) flag — preview changes as a unified diff
+- **`--no-env`** flag — disable environment variable expansion in patterns
+- **`--on-error`** flag — control error behavior (`stop` or `continue`)
+- **`--extract`** (`-x`) flag — emit only selected regions
+- **`--file`** (`-f`) flag — read script from a file
+- Input file positional argument — read input from a file instead of stdin
+
+### Changed
+
+- `NeverMatch` selector used for env var patterns referencing unset variables
+  (instead of failing), allowing graceful degradation
+- Test harness supports multiline `.pattern` golden matching
+
+### Fixed
+
+- Multiline `.pattern` golden files now match correctly across line boundaries
+
 ## [0.2.0] — 2026-03-22
 
 Full processor suite (Alpha 2).
@@ -56,5 +87,6 @@ Initial alpha release.
 - **Diagnostics** — structured warnings and errors to stderr with source locations
 - **Recursive descent parser** — hand-written parser with clear error messages
 
+[0.3.0]: https://github.com/boldlygodev/qed/releases/tag/v0.3.0
 [0.2.0]: https://github.com/boldlygodev/qed/releases/tag/v0.2.0
 [0.1.0]: https://github.com/boldlygodev/qed/releases/tag/v0.1.0
