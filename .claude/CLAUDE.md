@@ -69,11 +69,11 @@ qed/
 
 ## Current Phase
 
-**Phase 9 — Invocation Features** complete.
+**Phase 10 — Diagnostics** in progress.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–9 are complete. 332/396 integration tests pass.
-All CLI flags implemented: `-f`, `-i`, `-x`, `-o`, `-d`, `--on-error`, `--no-env`.
-Next: Phase 10 — Diagnostics.
+Sub-phases: 10A (fallback on no-match), 10B (stream-control processors),
+10C (location padding), 10D (checkpoint).
 
 ---
 

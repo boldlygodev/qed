@@ -510,16 +510,39 @@ Alpha 3 reached. Content generation and all invocation modes work.
 ## Phase 10 — Diagnostics
 
 **Goal:** all diagnostic output matches the confirmed format.
+`error-handling`, `error-handling-edge-cases`, and `stream-control` suites green.
 
-- Diagnostic formatter: `qed: <severity>: <location>: <source>: <message>`
-- Severity padding to `warning:` width
-- Location padding to widest span in script (computed from AST pre-execution)
-- Warning emission for: `+` on `at`/`after`/`before`, `nth:0`, duplicate `nth`
-  values, unset env vars, duplicate pattern names, `qed:file()` on insertion point
-- `qed:debug:count()` processor
+### 10A — Fallback on selector no-match
 
-**Checkpoint:** all warning scenarios in edge-case files are green.
-`error-handling` and `error-handling-edge-cases` suites are green.
+- Restructure fallback IR: replace `Option<Box<dyn Processor>>` with
+  `CompiledFallback` enum supporting full select-actions with their own selectors
+- Compile `Fallback::SelectAction` including its selector (not just the processor chain)
+- Support nested fallbacks (recursive compilation and execution)
+- Engine: try fallback before emitting no-match error when `on_error:fail`
+- Fix partial output on error: preserve already-assembled output instead of clearing
+
+### 10B — Stream-control processors
+
+- `qed:warn()` — emit selected text to stderr, pass through unchanged
+- `qed:fail()` — emit selected text to stderr, halt execution, exit non-zero
+- `qed:debug:count()` — emit match count diagnostic to stderr, pass through
+- `qed:debug:print()` — echo selected text to stderr, pass through
+- Model as `StatementAction` variants (not `Processor` impls)
+- Add `DiagnosticLevel::Debug` and `stderr_lines` to execution result
+
+### 10C — Location padding
+
+- Pad diagnostic location fields to width of widest span in script
+- Compute max span width from compiled script before formatting diagnostics
+
+### 10D — Phase checkpoint and documentation
+
+- Verify all `error-handling`, `error-handling-edge-cases`,
+  and `stream-control` suites green
+- Update roadmap, CLAUDE.md, and todo with final status
+
+**Checkpoint:** `error-handling`, `error-handling-edge-cases`,
+and `stream-control` suites are green.
 
 ---
 

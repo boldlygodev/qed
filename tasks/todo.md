@@ -354,7 +354,47 @@
 - [x] Compiler case for `"timestamp"` in `compile_qed_processor()`
 - [x] 20 trials green (`generation::timestamp-*`, `generation-edge-cases::timestamp-*`)
 
-## Phases 10–12
+## Phase 10 — Diagnostics
+
+### 10A — Fallback on selector no-match
+
+- [ ] `CompiledFallback` enum: `Chain { processor, span, text }` and `SelectAction { selector, action, spans, fallback }`
+- [ ] Compile `Fallback::SelectAction` with its selector (via `compile_selector()`)
+- [ ] Recursive nested fallback compilation
+- [ ] Engine: try fallback on no-match when `on_error:fail`
+- [ ] Engine: `CompiledFallback::Chain` runs processor against entire buffer
+- [ ] Engine: `CompiledFallback::SelectAction` re-fragments buffer with fallback selector
+- [ ] Fix partial output on error: preserve already-assembled output
+- [ ] Update `handle_processor_error` for new `CompiledFallback` type
+- [ ] Checkpoint: 14 new tests green (346/396)
+
+### 10B — Stream-control processors
+
+- [ ] `StatementAction::Warn` — emit selected text to stderr, pass through
+- [ ] `StatementAction::Fail` — emit selected text to stderr, halt, exit non-zero
+- [ ] `StatementAction::DebugCount` — count matches, emit diagnostic
+- [ ] `StatementAction::DebugPrint` — echo selected text to stderr, pass through
+- [ ] Compiler: recognize `warn`, `fail`, `debug:count`, `debug:print` in `compile_qed_processor()`
+- [ ] Engine: `stderr_lines: Vec<String>` in `ExecuteResult`
+- [ ] Engine: `DiagnosticLevel::Debug`
+- [ ] Public API: `stderr_lines` in `RunResult`, `"debug"` level string
+- [ ] CLI: emit `result.stderr_lines` to stderr
+- [ ] Checkpoint: 8 new tests green (354/396)
+
+### 10C — Location padding
+
+- [ ] `format_span_padded()` in `span.rs`
+- [ ] Compute max span width from script statements
+- [ ] Pad location in `RunDiagnostic` construction
+
+### 10D — Phase checkpoint and documentation
+
+- [ ] Full test suite verification
+- [ ] Update `docs/qed-roadmap.md` with Phase 10 status
+- [ ] Update `.claude/CLAUDE.md` with current phase
+- [ ] Update `tasks/todo.md` with completion status
+
+## Phases 11–12
 
 See `docs/qed-roadmap.md` for full details.
 
