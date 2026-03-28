@@ -9,7 +9,7 @@
 //! text is collected during the fragment walk, then inserted at the
 //! destination after the main output is assembled.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::StatementId;
 use crate::compile::{
@@ -38,12 +38,18 @@ pub(crate) struct Diagnostic {
 pub(crate) enum DiagnosticLevel {
     Error,
     Warning,
+    Debug,
 }
 
 /// Result of executing a script.
 pub(crate) struct ExecuteResult {
     pub(crate) output: String,
     pub(crate) diagnostics: Vec<Diagnostic>,
+    /// Raw lines to emit to stderr (from `qed:warn()`, `qed:fail()`,
+    /// `qed:debug:print()`).
+    pub(crate) stderr_lines: Vec<String>,
+    /// Whether execution was halted by `qed:fail()`.
+    pub(crate) halted_by_fail: bool,
 }
 
 /// A pending copy/move insertion collected during the fragment walk.
@@ -78,9 +84,12 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
 
     let mut output = String::new();
     let mut diagnostics = Vec::new();
+    let mut stderr_lines: Vec<String> = Vec::new();
     let mut has_unrecovered_error = false;
     let mut has_processor_error = false;
+    let mut halted_by_fail = false;
     let mut pending_relocations: Vec<PendingRelocation> = Vec::new();
+    let mut debug_counts: HashMap<StatementId, usize> = HashMap::new();
 
     // ── Pre-check: handle no-match before the fragment walk ─────────
     //
@@ -106,6 +115,8 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                     return ExecuteResult {
                         output: fb_output,
                         diagnostics,
+                        stderr_lines,
+                        halted_by_fail: false,
                     };
                 }
                 // No fallback or fallback failed
@@ -218,6 +229,31 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                             handled = true;
                             break;
                         }
+                        StatementAction::Warn => {
+                            stderr_lines.push(text.clone());
+                            output.push_str(&text);
+                            handled = true;
+                            break;
+                        }
+                        StatementAction::Fail => {
+                            stderr_lines.push(text.clone());
+                            halted_by_fail = true;
+                            halted = true;
+                            handled = true;
+                            break;
+                        }
+                        StatementAction::DebugCount => {
+                            *debug_counts.entry(*stmt_id).or_insert(0) += 1;
+                            output.push_str(&text);
+                            handled = true;
+                            break;
+                        }
+                        StatementAction::DebugPrint => {
+                            stderr_lines.push(text.clone());
+                            output.push_str(&text);
+                            handled = true;
+                            break;
+                        }
                     }
                 }
 
@@ -233,6 +269,20 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
         output = apply_relocations(&output, &pending_relocations);
     }
 
+    // Emit debug:count diagnostics for each statement that used DebugCount.
+    for stmt in &script.statements {
+        if let Some(&count) = debug_counts.get(&stmt.id) {
+            let noun = if count == 1 { "match" } else { "matches" };
+            diagnostics.push(Diagnostic {
+                level: DiagnosticLevel::Debug,
+                message: format!("{count} {noun}"),
+                span: stmt.selector_span,
+                selector_text: stmt.selector_text.clone(),
+                recovered: false,
+            });
+        }
+    }
+
     // Discard output on unrecovered processor error — the script failed
     // mid-processing, so partial output should not be emitted. No-match
     // errors preserve output since the fragment walk completed normally.
@@ -243,6 +293,8 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
     ExecuteResult {
         output,
         diagnostics,
+        stderr_lines,
+        halted_by_fail,
     }
 }
 
@@ -334,6 +386,12 @@ fn execute_no_match_fallback(
                                 StatementAction::CopyTo(_) | StatementAction::MoveTo(_) => {
                                     fb_output.push_str(&frag_text);
                                 }
+                                StatementAction::Warn
+                                | StatementAction::Fail
+                                | StatementAction::DebugCount
+                                | StatementAction::DebugPrint => {
+                                    fb_output.push_str(&frag_text);
+                                }
                             }
                         }
                     }
@@ -405,6 +463,13 @@ fn handle_processor_error(
                     }
                 },
                 StatementAction::CopyTo(_) | StatementAction::MoveTo(_) => {
+                    output.push_str(text);
+                    recovered = true;
+                }
+                StatementAction::Warn
+                | StatementAction::Fail
+                | StatementAction::DebugCount
+                | StatementAction::DebugPrint => {
                     output.push_str(text);
                     recovered = true;
                 }

@@ -522,7 +522,7 @@ Alpha 3 reached. Content generation and all invocation modes work.
 - Fix partial output on error: preserve already-assembled output instead of clearing
 - +12 tests green (344/396)
 
-### 10B — Stream-control processors
+### 10B — Stream-control processors ✓
 
 - `qed:warn()` — emit selected text to stderr, pass through unchanged
 - `qed:fail()` — emit selected text to stderr, halt execution, exit non-zero
@@ -530,6 +530,7 @@ Alpha 3 reached. Content generation and all invocation modes work.
 - `qed:debug:print()` — echo selected text to stderr, pass through
 - Model as `StatementAction` variants (not `Processor` impls)
 - Add `DiagnosticLevel::Debug` and `stderr_lines` to execution result
+- +8 tests green (352/396)
 
 ### 10C — Location padding
 

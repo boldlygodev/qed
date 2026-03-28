@@ -93,6 +93,14 @@ pub(crate) enum StatementAction {
     CopyTo(Destination),
     /// Move selected text to a destination; the original is removed.
     MoveTo(Destination),
+    /// Emit selected text to stderr, pass through unchanged.
+    Warn,
+    /// Emit selected text to stderr, halt execution, exit non-zero.
+    Fail,
+    /// Count matches; emit count as a debug diagnostic at end of execution.
+    DebugCount,
+    /// Echo selected text to stderr, pass through unchanged.
+    DebugPrint,
 }
 
 /// A compiled fallback — tried when the primary selector matches nothing
@@ -786,7 +794,7 @@ fn compile_statement_action(
     no_env: bool,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<StatementAction, CompileError> {
-    // Check for a single copy/move processor (cannot be chained).
+    // Check for single-processor statement actions (cannot be chained).
     if chain.processors.len() == 1
         && let ast::Processor::Qed(qed_proc) = &chain.processors[0].node
     {
@@ -798,6 +806,16 @@ fn compile_statement_action(
                     Ok(StatementAction::MoveTo(dest))
                 } else {
                     Ok(StatementAction::CopyTo(dest))
+                };
+            }
+            "warn" | "fail" | "debug:count" | "debug:print" => {
+                reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+                return match qed_proc.name.node.as_str() {
+                    "warn" => Ok(StatementAction::Warn),
+                    "fail" => Ok(StatementAction::Fail),
+                    "debug:count" => Ok(StatementAction::DebugCount),
+                    "debug:print" => Ok(StatementAction::DebugPrint),
+                    _ => unreachable!(),
                 };
             }
             _ => {}

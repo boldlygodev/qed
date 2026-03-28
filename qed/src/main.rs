@@ -143,6 +143,11 @@ fn main() {
                 print!("{}", result.output);
             }
 
+            // Emit raw stderr lines (from qed:warn, qed:fail, qed:debug:print).
+            for line in &result.stderr_lines {
+                eprint!("{line}");
+            }
+
             for d in &result.diagnostics {
                 eprintln!(
                     "qed: {level:<9}{loc}: {sel}: {msg}",

@@ -111,6 +111,9 @@ pub struct RunResult {
     pub diagnostics: Vec<RunDiagnostic>,
     /// Whether any diagnostic is an error (execution should be considered failed).
     pub has_errors: bool,
+    /// Raw lines to emit to stderr (from `qed:warn()`, `qed:fail()`,
+    /// `qed:debug:print()`).
+    pub stderr_lines: Vec<String>,
 }
 
 /// A diagnostic message from script execution.
@@ -160,6 +163,7 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
                     output: String::new(),
                     diagnostics,
                     has_errors: true,
+                    stderr_lines: Vec::new(),
                 });
             }
         };
@@ -207,6 +211,7 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
                 "error"
             }
             exec::engine::DiagnosticLevel::Warning => "warning",
+            exec::engine::DiagnosticLevel::Debug => "debug",
         };
         diagnostics.push(RunDiagnostic {
             level,
@@ -216,10 +221,15 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
         });
     }
 
+    if result.halted_by_fail {
+        has_errors = true;
+    }
+
     Ok(RunResult {
         output: result.output,
         diagnostics,
         has_errors,
+        stderr_lines: result.stderr_lines,
     })
 }
 

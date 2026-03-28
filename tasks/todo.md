@@ -368,18 +368,18 @@
 - [x] Update `handle_processor_error` for new `CompiledFallback` type
 - [x] Checkpoint: +12 tests green (344/396)
 
-### 10B — Stream-control processors
+### 10B — Stream-control processors ✓
 
-- [ ] `StatementAction::Warn` — emit selected text to stderr, pass through
-- [ ] `StatementAction::Fail` — emit selected text to stderr, halt, exit non-zero
-- [ ] `StatementAction::DebugCount` — count matches, emit diagnostic
-- [ ] `StatementAction::DebugPrint` — echo selected text to stderr, pass through
-- [ ] Compiler: recognize `warn`, `fail`, `debug:count`, `debug:print` in `compile_qed_processor()`
-- [ ] Engine: `stderr_lines: Vec<String>` in `ExecuteResult`
-- [ ] Engine: `DiagnosticLevel::Debug`
-- [ ] Public API: `stderr_lines` in `RunResult`, `"debug"` level string
-- [ ] CLI: emit `result.stderr_lines` to stderr
-- [ ] Checkpoint: 8 new tests green (354/396)
+- [x] `StatementAction::Warn` — emit selected text to stderr, pass through
+- [x] `StatementAction::Fail` — emit selected text to stderr, halt, exit non-zero
+- [x] `StatementAction::DebugCount` — count matches, emit diagnostic
+- [x] `StatementAction::DebugPrint` — echo selected text to stderr, pass through
+- [x] Compiler: recognize `warn`, `fail`, `debug:count`, `debug:print` in `compile_statement_action()`
+- [x] Engine: `stderr_lines: Vec<String>` in `ExecuteResult`
+- [x] Engine: `DiagnosticLevel::Debug`
+- [x] Public API: `stderr_lines` in `RunResult`, `"debug"` level string
+- [x] CLI: emit `result.stderr_lines` to stderr
+- [x] Checkpoint: +8 tests green (352/396)
 
 ### 10C — Location padding
 
