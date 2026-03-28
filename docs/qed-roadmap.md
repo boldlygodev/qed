@@ -532,7 +532,7 @@ Alpha 3 reached. Content generation and all invocation modes work.
 - Add `DiagnosticLevel::Debug` and `stderr_lines` to execution result
 - +8 tests green (352/396)
 
-### 10C — Location padding
+### 10C — Location padding ✓
 
 - Pad diagnostic location fields to width of widest span in script
 - Compute max span width from compiled script before formatting diagnostics

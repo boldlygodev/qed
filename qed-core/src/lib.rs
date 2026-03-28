@@ -225,6 +225,19 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
         has_errors = true;
     }
 
+    // Pad location fields to the width of the widest location string.
+    let max_loc_width = diagnostics
+        .iter()
+        .map(|d| d.location.len())
+        .max()
+        .unwrap_or(0);
+    for d in &mut diagnostics {
+        let pad = max_loc_width - d.location.len();
+        if pad > 0 {
+            d.location.push_str(&" ".repeat(pad));
+        }
+    }
+
     Ok(RunResult {
         output: result.output,
         diagnostics,

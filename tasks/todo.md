@@ -381,11 +381,10 @@
 - [x] CLI: emit `result.stderr_lines` to stderr
 - [x] Checkpoint: +8 tests green (352/396)
 
-### 10C — Location padding
+### 10C — Location padding ✓
 
-- [ ] `format_span_padded()` in `span.rs`
-- [ ] Compute max span width from script statements
-- [ ] Pad location in `RunDiagnostic` construction
+- [x] Compute max location width from all diagnostics
+- [x] Pad location fields to uniform width in `run()`
 
 ### 10D — Phase checkpoint and documentation
 
