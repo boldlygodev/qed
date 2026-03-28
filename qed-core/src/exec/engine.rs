@@ -13,7 +13,8 @@ use std::collections::HashSet;
 
 use crate::StatementId;
 use crate::compile::{
-    CompiledPattern, Destination, DestinationKind, OnError, PatternMatcher, Script, StatementAction,
+    CompiledFallback, CompiledPattern, Destination, DestinationKind, OnError, PatternMatcher,
+    Script, StatementAction,
 };
 use crate::processor::ProcessorError;
 use crate::span::Span;
@@ -78,9 +79,72 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
     let mut output = String::new();
     let mut diagnostics = Vec::new();
     let mut has_unrecovered_error = false;
+    let mut has_processor_error = false;
     let mut pending_relocations: Vec<PendingRelocation> = Vec::new();
 
+    // ── Pre-check: handle no-match before the fragment walk ─────────
+    //
+    // For each unmatched statement with on_error:fail, try its fallback.
+    // If fallback succeeds, return immediately with the fallback output.
+    // If no fallback or fallback exhausted, record the error and the ID
+    // of the first failed statement for halting the fragment walk.
+    let mut first_failed_stmt: Option<StatementId> = None;
+
+    for stmt in &script.statements {
+        if matched_statements.contains(&stmt.id) {
+            continue;
+        }
+
+        let on_error = get_on_error(stmt, script);
+
+        match on_error {
+            OnError::Fail => {
+                if let Some(ref fb) = stmt.fallback
+                    && let Some(fb_output) =
+                        execute_no_match_fallback(fb, buffer, script, extract, &mut diagnostics)
+                {
+                    return ExecuteResult {
+                        output: fb_output,
+                        diagnostics,
+                    };
+                }
+                // No fallback or fallback failed
+                if stmt.fallback.is_none() {
+                    diagnostics.push(Diagnostic {
+                        level: DiagnosticLevel::Error,
+                        message: "no lines matched".into(),
+                        span: stmt.selector_span,
+                        selector_text: stmt.selector_text.clone(),
+                        recovered: false,
+                    });
+                }
+                has_unrecovered_error = true;
+                if first_failed_stmt.is_none() {
+                    first_failed_stmt = Some(stmt.id);
+                }
+            }
+            OnError::Warn => {
+                diagnostics.push(Diagnostic {
+                    level: DiagnosticLevel::Warning,
+                    message: "no lines matched".into(),
+                    span: stmt.selector_span,
+                    selector_text: stmt.selector_text.clone(),
+                    recovered: false,
+                });
+            }
+            OnError::Skip => {
+                // Silently skip
+            }
+        }
+    }
+
+    // ── Fragment walk ────────────────────────────────────────────────
+    let mut halted = false;
+
     for frag in &fragments {
+        if halted {
+            break;
+        }
         match frag {
             Fragment::Passthrough(content) => {
                 if !extract {
@@ -88,6 +152,15 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                 }
             }
             Fragment::Selected { content, tags } => {
+                // Halt if this fragment is tagged by a statement at or after
+                // the first failed statement — those lines are blocked.
+                if let Some(failed_id) = first_failed_stmt
+                    && tags.iter().any(|(sid, _)| *sid >= failed_id)
+                {
+                    halted = true;
+                    continue;
+                }
+
                 let text = resolve_content(content, buffer);
 
                 let mut handled = false;
@@ -113,13 +186,16 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                                     &mut has_unrecovered_error,
                                     &mut handled,
                                 );
+                                if has_unrecovered_error {
+                                    has_processor_error = true;
+                                    halted = true;
+                                }
                                 if handled {
                                     break;
                                 }
                             }
                         },
                         StatementAction::CopyTo(dest) => {
-                            // Copy: emit source text in place AND record for insertion.
                             output.push_str(&text);
                             pending_relocations.push(PendingRelocation {
                                 source_text: text.clone(),
@@ -132,7 +208,6 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                             break;
                         }
                         StatementAction::MoveTo(dest) => {
-                            // Move: do NOT emit source text, only record for insertion.
                             pending_relocations.push(PendingRelocation {
                                 source_text: text.clone(),
                                 destination: Destination {
@@ -146,7 +221,7 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                     }
                 }
 
-                if !handled {
+                if !handled && !halted {
                     output.push_str(&text);
                 }
             }
@@ -158,53 +233,125 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
         output = apply_relocations(&output, &pending_relocations);
     }
 
-    // Discard output on unrecovered processor error — the script failed,
-    // so partial output should not be emitted.
-    if has_unrecovered_error {
+    // Discard output on unrecovered processor error — the script failed
+    // mid-processing, so partial output should not be emitted. No-match
+    // errors preserve output since the fragment walk completed normally.
+    if has_processor_error {
         output.clear();
-    }
-
-    // Check for no-match diagnostics
-    for stmt in &script.statements {
-        if !matched_statements.contains(&stmt.id) {
-            let on_error = script
-                .selectors
-                .get(stmt.selector.value())
-                .map(|entry| match entry {
-                    crate::compile::RegistryEntry::Simple(s) => s.on_error,
-                    crate::compile::RegistryEntry::Compound(_) => OnError::Fail,
-                })
-                .unwrap_or(OnError::Fail);
-
-            match on_error {
-                OnError::Fail => {
-                    diagnostics.push(Diagnostic {
-                        level: DiagnosticLevel::Error,
-                        message: "no lines matched".into(),
-                        span: stmt.selector_span,
-                        selector_text: stmt.selector_text.clone(),
-                        recovered: false,
-                    });
-                }
-                OnError::Warn => {
-                    diagnostics.push(Diagnostic {
-                        level: DiagnosticLevel::Warning,
-                        message: "no lines matched".into(),
-                        span: stmt.selector_span,
-                        selector_text: stmt.selector_text.clone(),
-                        recovered: false,
-                    });
-                }
-                OnError::Skip => {
-                    // Silently skip
-                }
-            }
-        }
     }
 
     ExecuteResult {
         output,
         diagnostics,
+    }
+}
+
+/// Look up the `OnError` mode for a statement's selector.
+fn get_on_error(stmt: &crate::compile::Statement, script: &Script) -> OnError {
+    script
+        .selectors
+        .get(stmt.selector.value())
+        .map(|entry| match entry {
+            crate::compile::RegistryEntry::Simple(s) => s.on_error,
+            crate::compile::RegistryEntry::Compound(_) => OnError::Fail,
+        })
+        .unwrap_or(OnError::Fail)
+}
+
+/// Execute a fallback when the primary selector matched nothing.
+///
+/// Returns `Some(output)` if the fallback succeeds, `None` if all
+/// fallback branches are exhausted. Diagnostics for failed branches
+/// are pushed into `diagnostics`.
+fn execute_no_match_fallback(
+    fallback: &CompiledFallback,
+    buffer: &Buffer,
+    script: &Script,
+    extract: bool,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Option<String> {
+    match fallback {
+        CompiledFallback::Chain {
+            processor,
+            span,
+            text,
+        } => match processor.execute(buffer.content()) {
+            Ok(result) => Some(result),
+            Err(e) => {
+                diagnostics.push(Diagnostic {
+                    level: DiagnosticLevel::Error,
+                    message: format_processor_error(&e),
+                    span: *span,
+                    selector_text: text.clone(),
+                    recovered: false,
+                });
+                None
+            }
+        },
+        CompiledFallback::SelectAction {
+            selector,
+            action,
+            selector_span,
+            selector_text,
+            processor_span,
+            processor_text,
+            fallback: nested_fb,
+        } => {
+            // Re-fragment the buffer with the fallback's selector.
+            let dummy_id = StatementId::new(0);
+            let requests = vec![(dummy_id, *selector)];
+            let fb_fragments = fragment::fragment(buffer, &requests, &script.selectors);
+
+            let matched = fb_fragments
+                .iter()
+                .any(|f| matches!(f, Fragment::Selected { .. }));
+
+            if matched {
+                let mut fb_output = String::new();
+                for frag in &fb_fragments {
+                    match frag {
+                        Fragment::Passthrough(content) => {
+                            if !extract {
+                                fb_output.push_str(&resolve_content(content, buffer));
+                            }
+                        }
+                        Fragment::Selected { content, .. } => {
+                            let frag_text = resolve_content(content, buffer);
+                            match action {
+                                StatementAction::Process(proc) => match proc.execute(&frag_text) {
+                                    Ok(result) => fb_output.push_str(&result),
+                                    Err(e) => {
+                                        diagnostics.push(Diagnostic {
+                                            level: DiagnosticLevel::Error,
+                                            message: format_processor_error(&e),
+                                            span: *processor_span,
+                                            selector_text: processor_text.clone(),
+                                            recovered: false,
+                                        });
+                                        return None;
+                                    }
+                                },
+                                StatementAction::CopyTo(_) | StatementAction::MoveTo(_) => {
+                                    fb_output.push_str(&frag_text);
+                                }
+                            }
+                        }
+                    }
+                }
+                Some(fb_output)
+            } else if let Some(nested) = nested_fb {
+                execute_no_match_fallback(nested, buffer, script, extract, diagnostics)
+            } else {
+                diagnostics.push(Diagnostic {
+                    level: DiagnosticLevel::Error,
+                    message: "no lines matched".into(),
+                    span: *selector_span,
+                    selector_text: selector_text.clone(),
+                    recovered: false,
+                });
+                None
+            }
+        }
     }
 }
 
@@ -224,19 +371,44 @@ fn handle_processor_error(
     let mut diag_msg = format_processor_error(&e);
 
     if let Some(ref fb) = stmt.fallback {
-        match fb.execute(text) {
-            Ok(result) => {
-                output.push_str(&result);
-                recovered = true;
-            }
-            Err(fb_err) => {
-                diag_span = stmt.fallback_span.unwrap_or(stmt.processor_span);
-                diag_text = stmt
-                    .fallback_text
-                    .clone()
-                    .unwrap_or(stmt.processor_text.clone());
-                diag_msg = format_processor_error(&fb_err);
-            }
+        match fb {
+            CompiledFallback::Chain {
+                processor,
+                span,
+                text: fb_text_str,
+            } => match processor.execute(text) {
+                Ok(result) => {
+                    output.push_str(&result);
+                    recovered = true;
+                }
+                Err(fb_err) => {
+                    diag_span = *span;
+                    diag_text = fb_text_str.clone();
+                    diag_msg = format_processor_error(&fb_err);
+                }
+            },
+            CompiledFallback::SelectAction {
+                action,
+                processor_span,
+                processor_text: fb_proc_text,
+                ..
+            } => match action {
+                StatementAction::Process(proc) => match proc.execute(text) {
+                    Ok(result) => {
+                        output.push_str(&result);
+                        recovered = true;
+                    }
+                    Err(fb_err) => {
+                        diag_span = *processor_span;
+                        diag_text = fb_proc_text.clone();
+                        diag_msg = format_processor_error(&fb_err);
+                    }
+                },
+                StatementAction::CopyTo(_) | StatementAction::MoveTo(_) => {
+                    output.push_str(text);
+                    recovered = true;
+                }
+            },
         }
     }
 

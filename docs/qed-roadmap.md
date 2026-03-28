@@ -512,7 +512,7 @@ Alpha 3 reached. Content generation and all invocation modes work.
 **Goal:** all diagnostic output matches the confirmed format.
 `error-handling`, `error-handling-edge-cases`, and `stream-control` suites green.
 
-### 10A — Fallback on selector no-match
+### 10A — Fallback on selector no-match ✓
 
 - Restructure fallback IR: replace `Option<Box<dyn Processor>>` with
   `CompiledFallback` enum supporting full select-actions with their own selectors
@@ -520,6 +520,7 @@ Alpha 3 reached. Content generation and all invocation modes work.
 - Support nested fallbacks (recursive compilation and execution)
 - Engine: try fallback before emitting no-match error when `on_error:fail`
 - Fix partial output on error: preserve already-assembled output instead of clearing
+- +12 tests green (344/396)
 
 ### 10B — Stream-control processors
 

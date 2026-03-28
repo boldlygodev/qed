@@ -356,17 +356,17 @@
 
 ## Phase 10 — Diagnostics
 
-### 10A — Fallback on selector no-match
+### 10A — Fallback on selector no-match ✓
 
-- [ ] `CompiledFallback` enum: `Chain { processor, span, text }` and `SelectAction { selector, action, spans, fallback }`
-- [ ] Compile `Fallback::SelectAction` with its selector (via `compile_selector()`)
-- [ ] Recursive nested fallback compilation
-- [ ] Engine: try fallback on no-match when `on_error:fail`
-- [ ] Engine: `CompiledFallback::Chain` runs processor against entire buffer
-- [ ] Engine: `CompiledFallback::SelectAction` re-fragments buffer with fallback selector
-- [ ] Fix partial output on error: preserve already-assembled output
-- [ ] Update `handle_processor_error` for new `CompiledFallback` type
-- [ ] Checkpoint: 14 new tests green (346/396)
+- [x] `CompiledFallback` enum: `Chain { processor, span, text }` and `SelectAction { selector, action, spans, fallback }`
+- [x] Compile `Fallback::SelectAction` with its selector (via `compile_selector()`)
+- [x] Recursive nested fallback compilation
+- [x] Engine: try fallback on no-match when `on_error:fail`
+- [x] Engine: `CompiledFallback::Chain` runs processor against entire buffer
+- [x] Engine: `CompiledFallback::SelectAction` re-fragments buffer with fallback selector
+- [x] Fix partial output on error: preserve already-assembled output
+- [x] Update `handle_processor_error` for new `CompiledFallback` type
+- [x] Checkpoint: +12 tests green (344/396)
 
 ### 10B — Stream-control processors
 

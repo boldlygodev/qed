@@ -73,11 +73,7 @@ pub(crate) struct Statement {
     pub(crate) id: StatementId,
     pub(crate) selector: SelectorId,
     pub(crate) action: StatementAction,
-    pub(crate) fallback: Option<Box<dyn Processor>>,
-    /// Source span of the fallback processor chain (for diagnostics).
-    pub(crate) fallback_span: Option<crate::span::Span>,
-    /// Original source text of the fallback processor chain (for diagnostics).
-    pub(crate) fallback_text: Option<String>,
+    pub(crate) fallback: Option<CompiledFallback>,
     /// Source span of the selector expression (for diagnostics).
     pub(crate) selector_span: crate::span::Span,
     /// Original source text of the selector expression (for diagnostics).
@@ -97,6 +93,28 @@ pub(crate) enum StatementAction {
     CopyTo(Destination),
     /// Move selected text to a destination; the original is removed.
     MoveTo(Destination),
+}
+
+/// A compiled fallback — tried when the primary selector matches nothing
+/// or the primary processor fails.
+#[derive(Debug)]
+pub(crate) enum CompiledFallback {
+    /// Processor-only fallback (no selector) — runs against the full input.
+    Chain {
+        processor: Box<dyn Processor>,
+        span: crate::span::Span,
+        text: String,
+    },
+    /// Full select-action fallback with its own selector.
+    SelectAction {
+        selector: SelectorId,
+        action: StatementAction,
+        selector_span: crate::span::Span,
+        selector_text: String,
+        processor_span: crate::span::Span,
+        processor_text: String,
+        fallback: Option<Box<CompiledFallback>>,
+    },
 }
 
 /// A destination for copy/move operations.
@@ -327,47 +345,25 @@ pub(crate) fn compile(
             }
         };
 
-        // Compile optional fallback, tracking its processor span for diagnostics.
-        let (fallback, fallback_chain_span): (
-            Option<Box<dyn Processor>>,
-            Option<crate::span::Span>,
-        ) = match &node.fallback {
-            Some(fb) => match &fb.node {
-                ast::Fallback::Chain(chain) => {
-                    match compile_processor_chain(
-                        chain,
-                        &pattern_defs,
-                        &alias_defs,
-                        options.no_env,
-                        &mut warnings,
-                    ) {
-                        Ok(p) => (Some(p), Some(fb.span)),
-                        Err(e) => {
-                            errors.push(e);
-                            (None, None)
-                        }
-                    }
+        // Compile optional fallback.
+        let compiled_fallback: Option<CompiledFallback> = match &node.fallback {
+            Some(fb) => match compile_fallback(
+                &fb.node,
+                fb.span,
+                source,
+                &mut selectors,
+                &pattern_defs,
+                &alias_defs,
+                options,
+                &mut warnings,
+            ) {
+                Ok(cf) => Some(cf),
+                Err(e) => {
+                    errors.push(e);
+                    None
                 }
-                ast::Fallback::SelectAction(sa) => match &sa.chain {
-                    Some(chain) => {
-                        match compile_processor_chain(
-                            &chain.node,
-                            &pattern_defs,
-                            &alias_defs,
-                            options.no_env,
-                            &mut warnings,
-                        ) {
-                            Ok(p) => (Some(p), Some(chain.span)),
-                            Err(e) => {
-                                errors.push(e);
-                                (None, None)
-                            }
-                        }
-                    }
-                    None => (None, None),
-                },
             },
-            None => (None, None),
+            None => None,
         };
 
         let sel_span = node.selector.span;
@@ -380,16 +376,11 @@ pub(crate) fn compile(
             .unwrap_or(spanned_stmt.span);
         let proc_text = source[proc_span.start..proc_span.end].to_owned();
 
-        let fb_span = fallback_chain_span;
-        let fb_text = fb_span.map(|s| source[s.start..s.end].to_owned());
-
         statements.push(Statement {
             id: stmt_id,
             selector: sel_id,
             action,
-            fallback,
-            fallback_span: fb_span,
-            fallback_text: fb_text,
+            fallback: compiled_fallback,
             selector_span: sel_span,
             selector_text: sel_text,
             processor_span: proc_span,
@@ -465,6 +456,86 @@ fn compile_selector(
             steps: step_ids,
         }));
         Ok(compound_id)
+    }
+}
+
+/// Recursively compile a fallback expression into a [`CompiledFallback`].
+#[allow(clippy::too_many_arguments)]
+fn compile_fallback(
+    fallback: &ast::Fallback,
+    span: crate::span::Span,
+    source: &str,
+    registry: &mut Vec<RegistryEntry>,
+    pattern_defs: &HashMap<&str, &PatternValue>,
+    alias_defs: &HashMap<&str, &ast::ProcessorChain>,
+    options: &CompileOptions,
+    warnings: &mut Vec<CompileWarning>,
+) -> Result<CompiledFallback, CompileError> {
+    match fallback {
+        ast::Fallback::Chain(chain) => {
+            let processor =
+                compile_processor_chain(chain, pattern_defs, alias_defs, options.no_env, warnings)?;
+            Ok(CompiledFallback::Chain {
+                processor,
+                span,
+                text: source[span.start..span.end].to_owned(),
+            })
+        }
+        ast::Fallback::SelectAction(sa) => {
+            // Compile the fallback's selector
+            let sel_id =
+                compile_selector(sa, registry, pattern_defs, alias_defs, options, warnings)?;
+
+            let sel_span = sa.selector.span;
+            let sel_text = source[sel_span.start..sel_span.end].to_owned();
+
+            // Compile the fallback's processor chain
+            let (action, proc_span, proc_text) = match &sa.chain {
+                Some(chain) => {
+                    let a = compile_statement_action(
+                        &chain.node,
+                        pattern_defs,
+                        alias_defs,
+                        options.no_env,
+                        warnings,
+                    )?;
+                    let ps = chain.span;
+                    (a, ps, source[ps.start..ps.end].to_owned())
+                }
+                None => {
+                    return Err(CompileError::InvalidParam {
+                        processor: "(none)".into(),
+                        param: "missing processor chain in fallback".into(),
+                        span,
+                    });
+                }
+            };
+
+            // Recursively compile nested fallback
+            let nested = match &sa.fallback {
+                Some(nested_fb) => Some(Box::new(compile_fallback(
+                    &nested_fb.node,
+                    nested_fb.span,
+                    source,
+                    registry,
+                    pattern_defs,
+                    alias_defs,
+                    options,
+                    warnings,
+                )?)),
+                None => None,
+            };
+
+            Ok(CompiledFallback::SelectAction {
+                selector: sel_id,
+                action,
+                selector_span: sel_span,
+                selector_text: sel_text,
+                processor_span: proc_span,
+                processor_text: proc_text,
+                fallback: nested,
+            })
+        }
     }
 }
 

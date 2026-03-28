@@ -99,6 +99,11 @@ impl Buffer {
         }
     }
 
+    /// The full content of the buffer as a string slice.
+    pub(crate) fn content(&self) -> &str {
+        &self.content
+    }
+
     /// Number of lines in the buffer.
     pub(crate) fn line_count(&self) -> usize {
         self.line_offsets.len()
