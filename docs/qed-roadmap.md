@@ -537,14 +537,14 @@ Alpha 3 reached. Content generation and all invocation modes work.
 - Pad diagnostic location fields to width of widest span in script
 - Compute max span width from compiled script before formatting diagnostics
 
-### 10D — Phase checkpoint and documentation
+### 10D — Phase checkpoint and documentation ✓
 
 - Verify all `error-handling`, `error-handling-edge-cases`,
   and `stream-control` suites green
 - Update roadmap, CLAUDE.md, and todo with final status
 
 **Checkpoint:** `error-handling`, `error-handling-edge-cases`,
-and `stream-control` suites are green.
+and `stream-control` suites are green. 352/396 integration tests pass.
 
 ---
 

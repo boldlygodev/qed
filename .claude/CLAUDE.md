@@ -69,11 +69,9 @@ qed/
 
 ## Current Phase
 
-**Phase 10 — Diagnostics** in progress.
+**Phase 11 — Edge Cases and Use Cases** is next.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–9 are complete. 10A–10B complete. 352/396 integration tests pass.
-Sub-phases: 10A ✓ (fallback on no-match), 10B ✓ (stream-control processors),
-10C (location padding), 10D (checkpoint).
+Phases 0–10 are complete. 352/396 integration tests pass.
 
 ---
 

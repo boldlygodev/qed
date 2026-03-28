@@ -12,7 +12,7 @@
 - [x] Phase 7 — Processor Coverage → **Alpha 2**
 - [x] Phase 8 — Generation Processors
 - [x] Phase 9 — Invocation Features → **Alpha 3**
-- [ ] Phase 10 — Diagnostics
+- [x] Phase 10 — Diagnostics
 - [ ] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
 - [ ] Phase 12 — Release Polish → **v1.0**
 
@@ -386,12 +386,12 @@
 - [x] Compute max location width from all diagnostics
 - [x] Pad location fields to uniform width in `run()`
 
-### 10D — Phase checkpoint and documentation
+### 10D — Phase checkpoint and documentation ✓
 
-- [ ] Full test suite verification
-- [ ] Update `docs/qed-roadmap.md` with Phase 10 status
-- [ ] Update `.claude/CLAUDE.md` with current phase
-- [ ] Update `tasks/todo.md` with completion status
+- [x] Full test suite verification (352/396)
+- [x] Update `docs/qed-roadmap.md` with Phase 10 status
+- [x] Update `.claude/CLAUDE.md` with current phase
+- [x] Update `tasks/todo.md` with completion status
 
 ## Phases 11–12
 
