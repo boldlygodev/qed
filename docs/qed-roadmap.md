@@ -557,11 +557,11 @@ and `stream-control` suites are green. 352/396 integration tests pass.
 
 Update roadmap, CLAUDE.md, and todo for Phase 11 start.
 
-### 11B — Harness golden extensions
+### 11B — Harness golden extensions ✓
 
-Update `compare-golden.sh` to support arbitrary golden file extensions
-(`.go`, `.yaml`, `.md`, `.toml`, `.ini`, `.log`) as text diffs.
-Run usecases suite, fix any content mismatches.
+Updated `compare-golden.sh` to support arbitrary golden file extensions
+as text diffs. Fixed golden/fixture issues in usecases. +21 tests (373/396).
+3 remaining usecases failures are code bugs (compound pairing, re-fragmentation).
 
 ### 11C — Compound selector on_error
 

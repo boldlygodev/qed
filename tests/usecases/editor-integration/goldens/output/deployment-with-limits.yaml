@@ -4,5 +4,7 @@ spec:
       image: myrepo/myapp:latest
       ports:
         - containerPort: 8080
+      resources:
+        limits:
           cpu: "500m"
           memory: "256Mi"

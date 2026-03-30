@@ -20,15 +20,6 @@ compare_single() {
     local ext="${golden##*.}"
 
     case "$ext" in
-        txt)
-            if ! diff_output=$(diff "$golden" "$actual" 2>&1); then
-                echo "FAIL [$scenario_id]: $channel does not match golden" >&2
-                echo "--- expected ($(basename "$golden"))" >&2
-                echo "+++ actual" >&2
-                echo "$diff_output" >&2
-                exit 1
-            fi
-            ;;
         pattern)
             local actual_content
             actual_content=$(cat "$actual")
@@ -48,8 +39,15 @@ compare_single() {
             fi
             ;;
         *)
-            echo "FAIL [$scenario_id]: unknown golden extension '.$ext' for $channel" >&2
-            exit 1
+            # All other extensions (.txt, .go, .yaml, .md, .toml, etc.)
+            # are compared as exact text diffs.
+            if ! diff_output=$(diff "$golden" "$actual" 2>&1); then
+                echo "FAIL [$scenario_id]: $channel does not match golden" >&2
+                echo "--- expected ($(basename "$golden"))" >&2
+                echo "+++ actual" >&2
+                echo "$diff_output" >&2
+                exit 1
+            fi
             ;;
     esac
 }

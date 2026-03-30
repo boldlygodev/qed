@@ -402,11 +402,12 @@
 
 - [x] Update roadmap, CLAUDE.md, and todo for Phase 11 start
 
-### 11B — Harness golden extensions
+### 11B — Harness golden extensions ✓
 
-- [ ] Update `compare-golden.sh` to treat non-`.pattern` extensions as text diffs
-- [ ] Run usecases suite, fix any content mismatches
-- [ ] Checkpoint: usecases 26/26 green (+24 tests)
+- [x] Update `compare-golden.sh` to treat non-`.pattern` extensions as text diffs
+- [x] Run usecases suite, fix content mismatches (golden + fixture corrections)
+- [x] Checkpoint: usecases 23/26 green (+21 tests, 373/396)
+- 3 remaining usecases failures are code bugs: `from > to` pairing (2), re-fragmentation (1)
 
 ### 11C — Compound selector on_error
 
