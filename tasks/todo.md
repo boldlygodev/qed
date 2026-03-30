@@ -409,12 +409,15 @@
 - [x] Checkpoint: usecases 23/26 green (+21 tests, 373/396)
 - 3 remaining usecases failures are code bugs: `from > to` pairing (2), re-fragmentation (1)
 
-### 11C — Compound selector on_error
+### 11C — Compound selector fixes
 
-- [ ] Add `on_error: OnError` to `CompoundSelector`
-- [ ] Thread `on_error` through compound selector compilation
-- [ ] Update `get_on_error()` in engine.rs
-- [ ] Checkpoint: +4 tests green
+- [ ] Add `on_error: OnError` to `CompoundSelector`, thread through compilation
+- [ ] Update `get_on_error()` in engine.rs (+4 selectors-edge-cases)
+- [ ] Fix `from > to` pairing: pair each from-match with nearest subsequent
+      to-match instead of global intersection (+2 usecases)
+- [ ] Implement re-fragmentation: after each statement's processor runs,
+      re-fragment output against remaining statements (+1 usecases)
+- [ ] Checkpoint: +7 tests green
 
 ### 11D — Nth expression edge cases
 
