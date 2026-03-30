@@ -551,28 +551,44 @@ and `stream-control` suites are green. 352/396 integration tests pass.
 ## Phase 11 — Edge Cases and Use Cases
 
 **Goal:** the full test suite is green.
+352/396 pass at start. 44 failures across 5 categories.
 
-Work through the edge-case scenario files:
+### 11A — Tracking documentation ✓
 
-- `selectors-edge-cases`
-- `processors-edge-cases`
-- `patterns-edge-cases`
-- `external-processors-edge-cases`
-- `invocation-edge-cases`
-- `error-handling-edge-cases`
-- `script-files-edge-cases`
-- `generation-edge-cases`
-- `stream-control` (if not already green)
+Update roadmap, CLAUDE.md, and todo for Phase 11 start.
 
-Then the use case suites:
+### 11B — Harness golden extensions
 
-- `usecases/code-editing`
-- `usecases/config-manipulation`
-- `usecases/log-processing`
-- `usecases/code-generation`
-- `usecases/template-rendering`
-- `usecases/document-processing`
-- `usecases/editor-integration`
+Update `compare-golden.sh` to support arbitrary golden file extensions
+(`.go`, `.yaml`, `.md`, `.toml`, `.ini`, `.log`) as text diffs.
+Run usecases suite, fix any content mismatches.
+
+### 11C — Compound selector on_error
+
+Add `on_error` field to `CompoundSelector`. Thread global/per-selector
+`on_error` through compound compilation. Fix `get_on_error()` hardcoded
+`Fail` for compound selectors.
+
+### 11D — Nth expression edge cases
+
+- D1: Negative step (`nth:-2n`) — reinterpret as count-from-end
+- D2: Zero warning (`nth:0`) — downgrade from hard error to warning
+- D3: Duplicate detection (`nth:1,1...3`) — emit deduplication warnings
+
+### 11E — Script files edge cases
+
+- E1: Fix alias forward reference output bug
+- E2: Add cross-type name redefinition warning
+
+### 11F — `qed:file()` processor
+
+Implement `qed:file()` with compile-time chain fusion.
+Write selected region to temp file, set `${QED_FILE}` in downstream
+external command environment. Warn and ignore on insertion points.
+
+### 11G — Final checkpoint
+
+Verify 396/396 green. Update all tracking documentation.
 
 **Checkpoint:** `cargo test --workspace` is fully green.
 

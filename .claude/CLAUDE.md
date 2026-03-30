@@ -69,9 +69,13 @@ qed/
 
 ## Current Phase
 
-**Phase 11 — Edge Cases and Use Cases** is next.
+**Phase 11 — Edge Cases and Use Cases** is in progress.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–10 are complete. 352/396 integration tests pass.
+
+Remaining work (44 failures): harness golden extensions (24),
+selector edge cases (12), `qed:file()` processor (6),
+script files edge cases (2).
 
 ---
 

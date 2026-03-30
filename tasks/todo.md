@@ -393,9 +393,55 @@
 - [x] Update `.claude/CLAUDE.md` with current phase
 - [x] Update `tasks/todo.md` with completion status
 
-## Phases 11–12
+## Phase 11 — Edge Cases and Use Cases
 
-See `docs/qed-roadmap.md` for full details.
+**Goal:** 396/396 integration tests green → Alpha 4 — Feature Complete.
+44 failures remain across 5 categories.
+
+### 11A — Tracking documentation ✓
+
+- [x] Update roadmap, CLAUDE.md, and todo for Phase 11 start
+
+### 11B — Harness golden extensions
+
+- [ ] Update `compare-golden.sh` to treat non-`.pattern` extensions as text diffs
+- [ ] Run usecases suite, fix any content mismatches
+- [ ] Checkpoint: usecases 26/26 green (+24 tests)
+
+### 11C — Compound selector on_error
+
+- [ ] Add `on_error: OnError` to `CompoundSelector`
+- [ ] Thread `on_error` through compound selector compilation
+- [ ] Update `get_on_error()` in engine.rs
+- [ ] Checkpoint: +4 tests green
+
+### 11D — Nth expression edge cases
+
+- [ ] D1: Fix negative step (`nth:-2n`) — count from end
+- [ ] D2: Fix zero warning (`nth:0`) — downgrade from error to warning
+- [ ] D3: Add duplicate detection and warning (`nth:1,1...3`)
+- [ ] Checkpoint: +8 tests green
+
+### 11E — Script files edge cases
+
+- [ ] E1: Fix alias forward reference output bug
+- [ ] E2: Add cross-type name redefinition warning
+- [ ] Review and correct golden files if needed
+- [ ] Checkpoint: +2 tests green
+
+### 11F — `qed:file()` processor
+
+- [ ] Implement `qed:file()` with compile-time chain fusion
+- [ ] Add `FileHandoffProcessor` with temp file + `${QED_FILE}` env
+- [ ] Add insertion-point warning
+- [ ] Checkpoint: +6 tests green (396/396)
+
+### 11G — Final checkpoint
+
+- [ ] `cargo test --workspace` = 396/396
+- [ ] `cargo clippy --workspace -- -D warnings` clean
+- [ ] `cargo fmt --check` passes
+- [ ] Update roadmap, CLAUDE.md, todo
 
 ---
 
