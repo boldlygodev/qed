@@ -150,6 +150,7 @@ DISPATCH
 } > "$SCRIPT"
 
 # Replace COMMAND_NAME placeholder with actual command name
-sed -i '' "s/COMMAND_NAME/${COMMAND}/g" "$SCRIPT"
+sed "s/COMMAND_NAME/${COMMAND}/g" "$SCRIPT" > "$SCRIPT.tmp"
+mv "$SCRIPT.tmp" "$SCRIPT"
 
 chmod +x "$SCRIPT"
