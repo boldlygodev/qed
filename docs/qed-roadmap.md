@@ -563,14 +563,18 @@ Updated `compare-golden.sh` to support arbitrary golden file extensions
 as text diffs. Fixed golden/fixture issues in usecases. +21 tests (373/396).
 3 remaining usecases failures are code bugs (compound pairing, re-fragmentation).
 
-### 11C — Compound selector fixes
+### 11C — Compound selector fixes ✓
 
-Three related issues:
-- Add `on_error` field to `CompoundSelector`; fix hardcoded `Fail`
-- Fix `from > to` pairing: pair each from-match with nearest subsequent
-  to-match instead of global per-line intersection
-- Implement re-fragmentation: after each statement's processor runs,
-  re-fragment output against remaining statements before splicing back
+Three fixes (+7 tests, 380/396):
+- Added `on_error` field to `CompoundSelector`; threaded through compilation
+  and execution so compound selectors honor `--on-error`
+- Replaced global per-line intersection in `from > to` with nearest-next
+  pairing algorithm: each from-match pairs with the first subsequent
+  to-match that produces a non-empty range; from-matches inside a previous
+  range are skipped (handles same-pattern fences correctly)
+- Implemented processor chaining with re-fragmentation: after a processor
+  transforms text, remaining tagged processors only run if their selector
+  still matches the new text; empty output (delete) halts the chain
 
 ### 11D — Nth expression edge cases
 

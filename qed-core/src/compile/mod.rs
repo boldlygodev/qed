@@ -166,6 +166,7 @@ pub(crate) struct CompiledSelector {
 pub(crate) struct CompoundSelector {
     pub(crate) id: SelectorId,
     pub(crate) steps: Vec<SelectorId>,
+    pub(crate) on_error: OnError,
 }
 
 // ── Selector operations ─────────────────────────────────────────────
@@ -458,10 +459,21 @@ fn compile_selector(
             step_ids.push(step_id);
         }
 
+        // Derive on_error from the first step's compiled selector.
+        let first_on_error = step_ids
+            .first()
+            .and_then(|id| registry.get(id.value()))
+            .map(|entry| match entry {
+                RegistryEntry::Simple(s) => s.on_error,
+                RegistryEntry::Compound(c) => c.on_error,
+            })
+            .unwrap_or(options.global_on_error);
+
         let compound_id = SelectorId::new(registry.len());
         registry.push(RegistryEntry::Compound(CompoundSelector {
             id: compound_id,
             steps: step_ids,
+            on_error: first_on_error,
         }));
         Ok(compound_id)
     }

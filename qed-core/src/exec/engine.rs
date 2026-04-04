@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 use crate::StatementId;
 use crate::compile::{
     CompiledFallback, CompiledPattern, Destination, DestinationKind, OnError, PatternMatcher,
-    Script, StatementAction,
+    RegistryEntry, Script, SelectorOp, StatementAction,
 };
 use crate::processor::ProcessorError;
 use crate::span::Span;
@@ -172,22 +172,41 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                     continue;
                 }
 
-                let text = resolve_content(content, buffer);
+                let mut text = resolve_content(content, buffer);
 
-                let mut handled = false;
-                for (stmt_id, _sel_id) in tags {
+                // `finished` tracks whether a non-Process action already
+                // wrote to `output`, so we know not to push `text` again
+                // after the loop.
+                let mut finished = false;
+                let mut processed = false;
+                for (stmt_id, sel_id) in tags {
                     let Some(stmt) = script.statements.iter().find(|s| s.id == *stmt_id) else {
                         continue;
                     };
 
+                    // After a processor has transformed the text, only
+                    // chain the next statement's processor if its selector
+                    // still matches the new text (re-fragmentation).
+                    if processed && !selector_still_matches(&script.selectors, *sel_id, &text) {
+                        continue;
+                    }
+
                     match &stmt.action {
                         StatementAction::Process(processor) => match processor.execute(&text) {
                             Ok(result) => {
-                                output.push_str(&result);
-                                handled = true;
-                                break;
+                                // Chain: update text so the next tagged
+                                // processor sees this processor's output.
+                                // If the processor deleted the content (empty
+                                // result), stop — the line is gone.
+                                text = result;
+                                processed = true;
+                                if text.is_empty() {
+                                    finished = true;
+                                    break;
+                                }
                             }
                             Err(e) => {
+                                let mut error_handled = false;
                                 handle_processor_error(
                                     e,
                                     stmt,
@@ -195,13 +214,15 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                                     &mut output,
                                     &mut diagnostics,
                                     &mut has_unrecovered_error,
-                                    &mut handled,
+                                    &mut error_handled,
                                 );
                                 if has_unrecovered_error {
                                     has_processor_error = true;
                                     halted = true;
                                 }
-                                if handled {
+                                if error_handled {
+                                    // Fallback already pushed to output
+                                    finished = true;
                                     break;
                                 }
                             }
@@ -215,7 +236,7 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                                     pattern: dest.pattern.clone(),
                                 },
                             });
-                            handled = true;
+                            finished = true;
                             break;
                         }
                         StatementAction::MoveTo(dest) => {
@@ -226,38 +247,38 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                                     pattern: dest.pattern.clone(),
                                 },
                             });
-                            handled = true;
+                            finished = true;
                             break;
                         }
                         StatementAction::Warn => {
                             stderr_lines.push(text.clone());
                             output.push_str(&text);
-                            handled = true;
+                            finished = true;
                             break;
                         }
                         StatementAction::Fail => {
                             stderr_lines.push(text.clone());
                             halted_by_fail = true;
                             halted = true;
-                            handled = true;
+                            finished = true;
                             break;
                         }
                         StatementAction::DebugCount => {
                             *debug_counts.entry(*stmt_id).or_insert(0) += 1;
                             output.push_str(&text);
-                            handled = true;
+                            finished = true;
                             break;
                         }
                         StatementAction::DebugPrint => {
                             stderr_lines.push(text.clone());
                             output.push_str(&text);
-                            handled = true;
+                            finished = true;
                             break;
                         }
                     }
                 }
 
-                if !handled && !halted {
+                if !finished && !halted {
                     output.push_str(&text);
                 }
             }
@@ -305,9 +326,45 @@ fn get_on_error(stmt: &crate::compile::Statement, script: &Script) -> OnError {
         .get(stmt.selector.value())
         .map(|entry| match entry {
             crate::compile::RegistryEntry::Simple(s) => s.on_error,
-            crate::compile::RegistryEntry::Compound(_) => OnError::Fail,
+            crate::compile::RegistryEntry::Compound(c) => c.on_error,
         })
         .unwrap_or(OnError::Fail)
+}
+
+/// Check if a selector still matches the (possibly transformed) text.
+///
+/// Used for re-fragmentation: after one processor has transformed the
+/// text, we only chain the next statement's processor if its selector
+/// pattern still matches a line in the new text.
+fn selector_still_matches(
+    registry: &[RegistryEntry],
+    sel_id: crate::SelectorId,
+    text: &str,
+) -> bool {
+    let Some(entry) = registry.get(sel_id.value()) else {
+        return false;
+    };
+    match entry {
+        RegistryEntry::Simple(sel) => {
+            let pattern = match &sel.op {
+                SelectorOp::At { pattern, .. } => pattern,
+                SelectorOp::After { pattern } => pattern,
+                SelectorOp::Before { pattern } => pattern,
+                SelectorOp::From { pattern } => pattern,
+                SelectorOp::To { pattern } => pattern,
+            };
+            // Check if any line in the text still matches
+            text.lines()
+                .any(|line| fragment::pattern_matches(pattern, line))
+        }
+        RegistryEntry::Compound(compound) => {
+            // All steps must still match for the compound to hold
+            compound
+                .steps
+                .iter()
+                .all(|step_id| selector_still_matches(registry, *step_id, text))
+        }
+    }
 }
 
 /// Execute a fallback when the primary selector matched nothing.

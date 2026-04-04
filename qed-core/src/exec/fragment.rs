@@ -146,9 +146,20 @@ fn collect_compound_matches(
     registry: &[RegistryEntry],
     stmt_id: StatementId,
 ) -> Vec<MatchResult> {
-    // Run each step, then intersect results.
-    // We track a set of "covered" lines: a line is in the result only if
-    // every step covers it.
+    // Detect from > to pairs and use nearest-next pairing instead of
+    // global intersection — see C2 fix in Phase 11C.
+    if compound.steps.len() == 2 {
+        let step_0 = &registry[compound.steps[0].value()];
+        let step_1 = &registry[compound.steps[1].value()];
+        if let (RegistryEntry::Simple(s0), RegistryEntry::Simple(s1)) = (step_0, step_1)
+            && let (SelectorOp::From { pattern: from_pat }, SelectorOp::To { pattern: to_pat }) =
+                (&s0.op, &s1.op)
+        {
+            return pair_from_to(buffer, from_pat, to_pat, compound.id, stmt_id);
+        }
+    }
+
+    // General compound: per-line boolean intersection of all steps.
     let line_count = buffer.line_count();
     let mut covered: Vec<bool> = vec![true; line_count];
 
@@ -201,6 +212,76 @@ fn collect_compound_matches(
             });
         } else {
             i += 1;
+        }
+    }
+
+    results
+}
+
+/// Pair each `from` match with the nearest subsequent `to` match that
+/// produces a non-empty range, yielding discrete regions. Only `to`
+/// matches strictly after the `from` line are eligible — the same line
+/// cannot serve as both start and end of a region.
+///
+/// From-matches that fall inside an already-emitted range are skipped,
+/// preventing the same-pattern case (e.g. `` from(/^```/) > to(/^```/) ``)
+/// from treating a closing fence as a new opening.
+fn pair_from_to(
+    buffer: &Buffer,
+    from_pat: &CompiledPattern,
+    to_pat: &CompiledPattern,
+    selector_id: SelectorId,
+    stmt_id: StatementId,
+) -> Vec<MatchResult> {
+    let line_count = buffer.line_count();
+
+    let from_lines: Vec<usize> = (0..line_count)
+        .filter(|&i| pattern_matches(from_pat, buffer.line(i)))
+        .collect();
+    let to_lines: Vec<usize> = (0..line_count)
+        .filter(|&i| pattern_matches(to_pat, buffer.line(i)))
+        .collect();
+
+    let mut results: Vec<MatchResult> = Vec::new();
+    let mut to_cursor = 0;
+
+    for &from_line in &from_lines {
+        // Skip from-matches inside a previously emitted range.
+        if let Some(last) = results.last()
+            && from_line < last.range.end
+        {
+            continue;
+        }
+
+        // Advance past to-matches at or before the from-match line.
+        while to_cursor < to_lines.len() && to_lines[to_cursor] <= from_line {
+            to_cursor += 1;
+        }
+
+        let start = if from_pat.inclusive {
+            from_line
+        } else {
+            from_line + 1
+        };
+
+        // Find the first to-match that produces a non-empty range.
+        while to_cursor < to_lines.len() {
+            let to_line = to_lines[to_cursor];
+            let end = if to_pat.inclusive {
+                to_line + 1
+            } else {
+                to_line
+            };
+
+            to_cursor += 1; // consume this to-match
+            if start < end {
+                results.push(MatchResult {
+                    range: LineRange { start, end },
+                    statement_id: stmt_id,
+                    selector_id,
+                });
+                break;
+            }
         }
     }
 
@@ -341,7 +422,7 @@ fn collect_to(buffer: &Buffer, pattern: &CompiledPattern) -> Vec<LineRange> {
 
 // ── Pattern matching ───────────────────────────────────────────────
 
-fn pattern_matches(pattern: &CompiledPattern, line: &str) -> bool {
+pub(crate) fn pattern_matches(pattern: &CompiledPattern, line: &str) -> bool {
     // Strip trailing newline for matching purposes
     let line = line.strip_suffix('\n').unwrap_or(line);
 
