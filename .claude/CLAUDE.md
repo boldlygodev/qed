@@ -71,10 +71,10 @@ qed/
 
 **Phase 11 — Edge Cases and Use Cases** is in progress.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–10 are complete. 388/396 integration tests pass.
+Phases 0–10 are complete. 390/396 integration tests pass.
 
-Remaining work (8 failures):
-`qed:file()` processor (6), script files edge cases (2).
+Remaining work (6 failures):
+`qed:file()` processor (6).
 
 ---
 

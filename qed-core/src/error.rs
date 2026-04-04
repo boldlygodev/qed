@@ -92,6 +92,9 @@ pub enum CompileWarning {
     DuplicateName {
         name: String,
         kind: SymbolKind,
+        /// Kind of the previous definition (differs from `kind` for cross-type
+        /// redefinitions, e.g. pattern→alias).
+        previous_kind: SymbolKind,
         /// Span of the new (overwriting) definition.
         span: Span,
     },

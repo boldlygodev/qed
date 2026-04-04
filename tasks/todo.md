@@ -428,12 +428,12 @@
 - [x] Fix golden stderr spans (off-by-one in spec: `1:9-14` → `1:9-13`, `1:9-20` → `1:9-19`)
 - [x] Checkpoint: +8 tests green (388/396)
 
-### 11E — Script files edge cases
+### 11E — Script files edge cases ✓
 
-- [ ] E1: Fix alias forward reference output bug
-- [ ] E2: Add cross-type name redefinition warning
-- [ ] Review and correct golden files if needed
-- [ ] Checkpoint: +2 tests green
+- [x] E1: Fix alias-forward-ref script (`\s+$` ate trailing newline; replaced with `qed:upper()`)
+- [x] E2: Add cross-type name redefinition warning (`DuplicateName.previous_kind`)
+- [x] Fix golden stderr format (was missing location/selector, now standard diagnostic format)
+- [x] Checkpoint: +2 tests green (390/396)
 
 ### 11F — `qed:file()` processor
 

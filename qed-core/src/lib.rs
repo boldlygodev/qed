@@ -182,10 +182,21 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
                 script_source[span.start..span.end].to_owned(),
                 "environment variable not set, expanding to empty string".to_owned(),
             ),
-            error::CompileWarning::DuplicateName { name, kind, span } => (
+            error::CompileWarning::DuplicateName {
+                name,
+                kind,
+                previous_kind,
+                span,
+            } => (
                 *span,
                 script_source[span.start..span.end].to_owned(),
-                format!("{kind} {name} already defined, using last definition"),
+                if *kind == *previous_kind {
+                    format!("{kind} {name} already defined, using last definition")
+                } else {
+                    format!(
+                        "{kind} {name} already defined as {previous_kind}, using last definition"
+                    )
+                },
             ),
             error::CompileWarning::InclusiveIgnored { selector_op, span } => (
                 *span,

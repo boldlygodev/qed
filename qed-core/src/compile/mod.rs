@@ -275,19 +275,35 @@ pub(crate) fn compile(
     for spanned_stmt in &program.statements {
         match &spanned_stmt.node {
             ast::Statement::PatternDef { name, value } => {
-                if pattern_defs.insert(&name.node, &value.node).is_some() {
+                let previous_kind = if pattern_defs.insert(&name.node, &value.node).is_some() {
+                    Some(crate::error::SymbolKind::Pattern)
+                } else if alias_defs.contains_key(name.node.as_str()) {
+                    Some(crate::error::SymbolKind::Alias)
+                } else {
+                    None
+                };
+                if let Some(prev) = previous_kind {
                     warnings.push(CompileWarning::DuplicateName {
                         name: name.node.clone(),
                         kind: crate::error::SymbolKind::Pattern,
+                        previous_kind: prev,
                         span: spanned_stmt.span,
                     });
                 }
             }
             ast::Statement::AliasDef { name, chain } => {
-                if alias_defs.insert(&name.node, &chain.node).is_some() {
+                let previous_kind = if alias_defs.insert(&name.node, &chain.node).is_some() {
+                    Some(crate::error::SymbolKind::Alias)
+                } else if pattern_defs.contains_key(name.node.as_str()) {
+                    Some(crate::error::SymbolKind::Pattern)
+                } else {
+                    None
+                };
+                if let Some(prev) = previous_kind {
                     warnings.push(CompileWarning::DuplicateName {
                         name: name.node.clone(),
                         kind: crate::error::SymbolKind::Alias,
+                        previous_kind: prev,
                         span: spanned_stmt.span,
                     });
                 }

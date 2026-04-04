@@ -76,9 +76,9 @@ id = "alias-forward-ref"
 description = "an alias can be referenced before its definition; forward references are permitted"
 script = "alias-forward-ref.qed"
 input = "three-lines.txt"
-stdout = "foo-baz.txt"
+stdout = "foo-bar-upper-baz.txt"
 stderr = "empty.txt"
-output = "foo-baz.txt"
+output = "foo-bar-upper-baz.txt"
 exit_code = 0
 invoke = [
   """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,

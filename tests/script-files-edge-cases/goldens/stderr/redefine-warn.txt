@@ -1,1 +1,1 @@
-qed: warning: "target" redefined; last definition wins
+qed: warning: 2:1-18: target=qed:upper(): alias target already defined as pattern, using last definition

@@ -583,10 +583,10 @@ Three fixes (+7 tests, 380/396):
 - D3: Duplicate detection (`nth:1,1...3`, `nth:1...3,2`) — compile warnings
 - Golden stderr span corrections (spec off-by-one: inclusive vs exclusive cols)
 
-### 11E — Script files edge cases
+### 11E — Script files edge cases ✓
 
-- E1: Fix alias forward reference output bug
-- E2: Add cross-type name redefinition warning
+- E1: Fix alias-forward-ref script (regex ate trailing newline)
+- E2: Cross-type name redefinition warning (`DuplicateName.previous_kind`)
 
 ### 11F — `qed:file()` processor
 

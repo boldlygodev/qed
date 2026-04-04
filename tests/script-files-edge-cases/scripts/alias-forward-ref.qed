@@ -1,2 +1,2 @@
-at("bar") | trim
-trim=qed:replace(/^\s+/, "") | qed:replace(/\s+$/, "")
+at("bar") | shout
+shout=qed:upper()
