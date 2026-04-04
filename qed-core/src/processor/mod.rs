@@ -15,6 +15,7 @@ pub(crate) mod dedent;
 pub(crate) mod delete;
 pub(crate) mod duplicate;
 pub(crate) mod external;
+pub(crate) mod file;
 pub(crate) mod indent;
 pub(crate) mod lower;
 pub(crate) mod number;
@@ -38,6 +39,12 @@ use crate::SelectorId;
 /// which lets `Statement` derive `Debug`.
 pub(crate) trait Processor: std::fmt::Debug {
     fn execute(&self, input: &str) -> Result<String, ProcessorError>;
+
+    /// Returns `true` if this processor is a `qed:file()` marker that should
+    /// be fused with the next external command in the chain.
+    fn is_file_marker(&self) -> bool {
+        false
+    }
 }
 
 /// Errors that can occur during processor execution.
@@ -56,6 +63,9 @@ pub(crate) enum ProcessorError {
         exit_code: Option<i32>,
         stderr: String,
     },
+    /// `qed:file()` was applied to an empty region (insertion point).
+    /// This is a non-fatal warning: the empty text passes through unchanged.
+    FileEmptyRegion { span: crate::span::Span },
 }
 
 /// Apply a function to each line of the input, preserving trailing newline.

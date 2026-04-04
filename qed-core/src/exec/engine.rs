@@ -205,6 +205,17 @@ pub(crate) fn execute(script: &Script, buffer: &Buffer, extract: bool) -> Execut
                                     break;
                                 }
                             }
+                            Err(ProcessorError::FileEmptyRegion { span }) => {
+                                // qed:file() on an empty region (insertion
+                                // point) — emit warning, pass text through.
+                                diagnostics.push(Diagnostic {
+                                    level: DiagnosticLevel::Warning,
+                                    message: "qed:file() ignored for empty region".into(),
+                                    span,
+                                    selector_text: "qed:file()".into(),
+                                    recovered: false,
+                                });
+                            }
                             Err(e) => {
                                 let mut error_handled = false;
                                 handle_processor_error(
@@ -648,5 +659,6 @@ fn format_processor_error(e: &ProcessorError) -> String {
         } => "command failed".into(),
         ProcessorError::ProcessorFailed { reason, .. } => reason.clone(),
         ProcessorError::NoMatch { .. } => "no lines matched".into(),
+        ProcessorError::FileEmptyRegion { .. } => "qed:file() ignored for empty region".into(),
     }
 }

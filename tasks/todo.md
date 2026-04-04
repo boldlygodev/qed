@@ -435,12 +435,13 @@
 - [x] Fix golden stderr format (was missing location/selector, now standard diagnostic format)
 - [x] Checkpoint: +2 tests green (390/396)
 
-### 11F — `qed:file()` processor
+### 11F — `qed:file()` processor ✓
 
-- [ ] Implement `qed:file()` with compile-time chain fusion
-- [ ] Add `FileHandoffProcessor` with temp file + `${QED_FILE}` env
-- [ ] Add insertion-point warning
-- [ ] Checkpoint: +6 tests green (396/396)
+- [x] Compile-time chain fusion: `qed:file()` + external → `FileHandoffProcessor`
+- [x] `FileHandoffProcessor`: temp file write, `${QED_FILE}` runtime substitution in args
+- [x] `FileMarker` passthrough with empty-region warning for insertion points
+- [x] Fix golden stderr span (off-by-one: `1:16-26` → `1:16-25`)
+- [x] Checkpoint: +6 tests green (396/396)
 
 ### 11G — Final checkpoint
 

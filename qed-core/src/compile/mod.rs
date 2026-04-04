@@ -30,6 +30,7 @@ use crate::processor::dedent::DedentProcessor;
 use crate::processor::delete::DeleteProcessor;
 use crate::processor::duplicate::DuplicateProcessor;
 use crate::processor::external::ExternalCommandProcessor;
+use crate::processor::file;
 use crate::processor::indent::IndentProcessor;
 use crate::processor::lower::LowerProcessor;
 use crate::processor::number::NumberProcessor;
@@ -1017,8 +1018,43 @@ fn compile_processor_chain(
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<Box<dyn Processor>, CompileError> {
     // Alias refs may expand to multi-step chains; flatten into a single list.
+    // A `pending_file_span` tracks whether the previous step was `qed:file()`,
+    // so the next external command can be compiled as a FileHandoffProcessor
+    // with `${QED_FILE}` kept as a runtime placeholder.
     let mut steps: Vec<Box<dyn Processor>> = Vec::new();
+    let mut pending_file_span: Option<crate::span::Span> = None;
+
     for proc_spanned in &chain.processors {
+        if let ast::Processor::Qed(qed_proc) = &proc_spanned.node
+            && qed_proc.name.node == "file"
+        {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            pending_file_span = Some(proc_spanned.span);
+            continue;
+        }
+        if let Some(file_span) = pending_file_span.take() {
+            if let ast::Processor::External(ext) = &proc_spanned.node {
+                // Fuse: compile external command with QED_FILE as runtime env
+                let command =
+                    expand_and_warn(&ext.command.node, no_env, proc_spanned.span, warnings);
+                let raw_args: Vec<String> = ext
+                    .args
+                    .iter()
+                    .map(|a| {
+                        let raw = match &a.node {
+                            ast::ExternalArg::Quoted(s) | ast::ExternalArg::Unquoted(s) => {
+                                s.as_str()
+                            }
+                        };
+                        raw.to_owned()
+                    })
+                    .collect();
+                steps.push(Box::new(file::FileHandoffProcessor { command, raw_args }));
+                continue;
+            }
+            // Not an external command — keep file marker as passthrough
+            steps.push(Box::new(file::FileMarker { span: file_span }));
+        }
         compile_single_processor_into(
             proc_spanned,
             pattern_defs,
@@ -1028,6 +1064,12 @@ fn compile_processor_chain(
             warnings,
         )?;
     }
+
+    // Trailing qed:file() with no following processor
+    if let Some(file_span) = pending_file_span {
+        steps.push(Box::new(file::FileMarker { span: file_span }));
+    }
+
     if steps.len() == 1 {
         Ok(steps.into_iter().next().expect("checked len"))
     } else {
@@ -1051,6 +1093,7 @@ fn compile_single_processor_into(
         ast::Processor::Qed(qed_proc) => {
             out.push(compile_qed_processor(
                 qed_proc,
+                proc_spanned.span,
                 pattern_defs,
                 alias_defs,
                 no_env,
@@ -1115,6 +1158,7 @@ fn compile_single_processor_into(
 /// Compile a `qed:*` processor invocation.
 fn compile_qed_processor(
     qed_proc: &ast::QedProcessor,
+    proc_span: crate::span::Span,
     pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     no_env: bool,
@@ -1399,6 +1443,10 @@ fn compile_qed_processor(
                 Timezone::Utc
             };
             Ok(Box::new(TimestampProcessor { format, timezone }))
+        }
+        "file" => {
+            reject_unknown_params(&qed_proc.params, &[], &qed_proc.name.node)?;
+            Ok(Box::new(file::FileMarker { span: proc_span }))
         }
         other => Err(CompileError::UndefinedName {
             name: format!("qed:{other}"),

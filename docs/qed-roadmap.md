@@ -588,11 +588,11 @@ Three fixes (+7 tests, 380/396):
 - E1: Fix alias-forward-ref script (regex ate trailing newline)
 - E2: Cross-type name redefinition warning (`DuplicateName.previous_kind`)
 
-### 11F — `qed:file()` processor
+### 11F — `qed:file()` processor ✓
 
-Implement `qed:file()` with compile-time chain fusion.
-Write selected region to temp file, set `${QED_FILE}` in downstream
-external command environment. Warn and ignore on insertion points.
+Compile-time chain fusion of `qed:file()` with downstream external command.
+`FileHandoffProcessor` writes temp file, resolves `${QED_FILE}` in args at
+runtime. `FileMarker` passthrough warns on empty region (insertion point).
 
 ### 11G — Final checkpoint
 
