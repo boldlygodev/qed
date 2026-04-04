@@ -36,3 +36,6 @@ jobs:
 
       - name: Run unit tests
         run: cargo test --package qed-core
+
+      - name: Run integration tests
+        run: cargo build --bin qed && cargo test --package qed-tests --test integration

@@ -50,7 +50,6 @@ run = "cargo clippy --workspace -- -D warnings"
 description = "Run all CI checks (fmt, lint, test)"
 depends = ["fmt:check", "lint", "test"]
 
-# TODO: Switch test:unit back to test once all 396 integration tests pass (Phase 11G)
 [tasks."pre-commit"]
-description = "Run before each git commit (fmt check + lint + unit tests)"
-depends = ["fmt:check", "lint", "test:unit"]
+description = "Run before each git commit (fmt check + lint + test)"
+depends = ["fmt:check", "lint", "test"]

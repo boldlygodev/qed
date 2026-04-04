@@ -594,16 +594,18 @@ Compile-time chain fusion of `qed:file()` with downstream external command.
 `FileHandoffProcessor` writes temp file, resolves `${QED_FILE}` in args at
 runtime. `FileMarker` passthrough warns on empty region (insertion point).
 
-### 11G — Final checkpoint
+### 11G — Final checkpoint ✓
 
-Verify 396/396 green. Update all tracking documentation.
+396/396 integration tests green. Clippy clean. Formatting clean.
+Added integration tests to CI workflow. Switched pre-commit task to full
+test suite.
 
 **Checkpoint:** `cargo test --workspace` is fully green.
 
-### ✦ Alpha 4 — Feature Complete
+### ✦ Alpha 4 — Feature Complete ✓
 
-Alpha 4 is reached after Phase 11. Full test suite green. All edge cases and
-use cases pass. 396/396 integration tests pass.
+396/396 integration tests pass. All edge cases and use cases green.
+CI runs both unit and integration tests on Linux and macOS.
 
 ---
 

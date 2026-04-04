@@ -69,10 +69,10 @@ qed/
 
 ## Current Phase
 
-**Phase 11 — Edge Cases and Use Cases** is in progress.
+**Phase 11 — Edge Cases and Use Cases** is complete.
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–11 are complete. 396/396 integration tests pass.
-**Alpha 4 — Feature Complete.**
+**Alpha 4 — Feature Complete.** Next: Phase 12 — Release Polish.
 
 ---
 

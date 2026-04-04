@@ -13,7 +13,7 @@
 - [x] Phase 8 — Generation Processors
 - [x] Phase 9 — Invocation Features → **Alpha 3**
 - [x] Phase 10 — Diagnostics
-- [ ] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
+- [x] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
 - [ ] Phase 12 — Release Polish → **v1.0**
 
 ---
@@ -443,12 +443,14 @@
 - [x] Fix golden stderr span (off-by-one: `1:16-26` → `1:16-25`)
 - [x] Checkpoint: +6 tests green (396/396)
 
-### 11G — Final checkpoint
+### 11G — Final checkpoint ✓
 
-- [ ] `cargo test --workspace` = 396/396
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] `cargo fmt --check` passes
-- [ ] Update roadmap, CLAUDE.md, todo
+- [x] `cargo test --workspace` = 396/396
+- [x] `cargo clippy --workspace -- -D warnings` clean
+- [x] `cargo fmt --check` passes
+- [x] Update roadmap, CLAUDE.md, todo
+- [x] Add integration tests to CI workflow
+- [x] Switch pre-commit task from `test:unit` back to `test`
 
 ---
 
