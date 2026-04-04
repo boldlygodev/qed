@@ -565,13 +565,6 @@ fn parse_nth_expr_from_cursor(cursor: &mut Cursor) -> Result<NthExpr, ParseError
         }
     }
 
-    if terms.is_empty() {
-        return Err(ParseError::InvalidNthExpr {
-            reason: "all terms were zero and ignored".into(),
-            span: cursor.span_from(cursor.pos()),
-        });
-    }
-
     Ok(NthExpr { terms })
 }
 
@@ -1130,13 +1123,6 @@ pub(super) fn parse_nth_expr(source: &str) -> Result<ParseResult, Vec<ParseError
 
     if !errors.is_empty() {
         return Err(errors);
-    }
-
-    if terms.is_empty() {
-        return Err(vec![ParseError::InvalidNthExpr {
-            reason: "all terms were zero and ignored".into(),
-            span: Cursor::new(source).span_from(0),
-        }]);
     }
 
     Ok(ParseResult {
@@ -1812,11 +1798,10 @@ mod tests {
     // ── All-zero edge case ──────────────────────────────────────────
 
     #[test]
-    fn error_all_zeros() {
-        let errs = parse_err("0");
-        assert!(
-            matches!(&errs[0], ParseError::InvalidNthExpr { reason, .. } if reason.contains("all terms were zero"))
-        );
+    fn all_zeros_returns_empty() {
+        // Zero terms are stripped at parse time; the compiler emits a warning.
+        let r = parse_ok("0");
+        assert!(r.expr.terms.is_empty());
     }
 
     // ── Program parser tests ────────────────────────────────────────

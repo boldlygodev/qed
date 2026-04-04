@@ -101,4 +101,18 @@ pub enum CompileWarning {
         selector_op: &'static str,
         span: Span,
     },
+    /// A zero term appeared in an nth expression and was ignored.
+    NthZeroTerm {
+        /// The full nth expression source text (e.g. `"nth:0"`).
+        nth_source: String,
+        span: Span,
+    },
+    /// A duplicate occurrence was detected in an nth expression.
+    NthDuplicate {
+        /// The full nth expression source text.
+        nth_source: String,
+        /// The 1-based occurrence number that was duplicated.
+        occurrence: i64,
+        span: Span,
+    },
 }

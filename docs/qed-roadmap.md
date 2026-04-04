@@ -576,11 +576,12 @@ Three fixes (+7 tests, 380/396):
   transforms text, remaining tagged processors only run if their selector
   still matches the new text; empty output (delete) halts the chain
 
-### 11D — Nth expression edge cases
+### 11D — Nth expression edge cases ✓
 
 - D1: Negative step (`nth:-2n`) — reinterpret as count-from-end
-- D2: Zero warning (`nth:0`) — downgrade from hard error to warning
-- D3: Duplicate detection (`nth:1,1...3`) — emit deduplication warnings
+- D2: Zero warning (`nth:0`) — downgrade from hard error to compile warning
+- D3: Duplicate detection (`nth:1,1...3`, `nth:1...3,2`) — compile warnings
+- Golden stderr span corrections (spec off-by-one: inclusive vs exclusive cols)
 
 ### 11E — Script files edge cases
 

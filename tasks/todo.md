@@ -420,12 +420,13 @@
 - [x] Fix `delete-function` golden (extra blank line is correct behavior)
 - [x] Checkpoint: +7 tests green (380/396)
 
-### 11D — Nth expression edge cases
+### 11D — Nth expression edge cases ✓
 
-- [ ] D1: Fix negative step (`nth:-2n`) — count from end
-- [ ] D2: Fix zero warning (`nth:0`) — downgrade from error to warning
-- [ ] D3: Add duplicate detection and warning (`nth:1,1...3`)
-- [ ] Checkpoint: +8 tests green
+- [x] D1: Fix negative step (`nth:-2n`) — count from end in `apply_nth_filter()`
+- [x] D2: Fix zero warning (`nth:0`) — remove hard parse error, add `CompileWarning::NthZeroTerm`
+- [x] D3: Add duplicate detection (`nth:1,1...3`, `nth:1...3,2`) — `CompileWarning::NthDuplicate`
+- [x] Fix golden stderr spans (off-by-one in spec: `1:9-14` → `1:9-13`, `1:9-20` → `1:9-19`)
+- [x] Checkpoint: +8 tests green (388/396)
 
 ### 11E — Script files edge cases
 

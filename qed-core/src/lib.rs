@@ -192,6 +192,20 @@ pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<Run
                 script_source[span.start..span.end].to_owned(),
                 format!("+ ignored on {selector_op}"),
             ),
+            error::CompileWarning::NthZeroTerm { nth_source, span } => (
+                *span,
+                nth_source.clone(),
+                "0 has no meaning in nth, term ignored".to_owned(),
+            ),
+            error::CompileWarning::NthDuplicate {
+                nth_source,
+                occurrence,
+                span,
+            } => (
+                *span,
+                nth_source.clone(),
+                format!("duplicate occurrence {occurrence}, deduplicated"),
+            ),
         };
         diagnostics.push(RunDiagnostic {
             level: "warning",

@@ -1,1 +1,1 @@
-qed: warning: 1:9-14: nth:0: 0 has no meaning in nth, term ignored
+qed: warning: 1:9-13: nth:0: 0 has no meaning in nth, term ignored

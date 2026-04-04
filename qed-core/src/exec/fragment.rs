@@ -491,15 +491,22 @@ fn apply_nth_filter(matching_lines: &[usize], terms: &[NthTerm]) -> Vec<usize> {
                         selected_indices.insert(zero_based);
                     }
                 } else if coefficient < 0 {
-                    // Negative coefficient: sequence decreases, iterate
-                    // downward from the first k that produces one_based >= 1
-                    for k in 0.. {
-                        let one_based = coefficient * k + offset;
-                        if one_based < 1 {
-                            break;
-                        }
-                        let zero_based = (one_based - 1) as usize;
-                        if zero_based < count {
+                    // Negative coefficient: count from the end.
+                    // `-An+B` selects positions `|A|*k + B` from the end
+                    // (1-based from end) for k = 1, 2, ...
+                    // With offset 0, `-An` means every |A|th from the end.
+                    let step = coefficient.unsigned_abs() as usize;
+                    if step == 0 {
+                        // Degenerate: coefficient is 0 handled above
+                    } else {
+                        // Generate positions from the end: step*k for k=1,2,...
+                        // Convert to 0-based forward index
+                        for k in 1.. {
+                            let from_end = step * k; // 1-based distance from end
+                            if from_end > count {
+                                break;
+                            }
+                            let zero_based = count - from_end;
                             selected_indices.insert(zero_based);
                         }
                     }
@@ -905,6 +912,7 @@ mod tests {
         let compound = CompoundSelector {
             id: SelectorId::new(2),
             steps: vec![SelectorId::new(0), SelectorId::new(1)],
+            on_error: OnError::Fail,
         };
 
         let registry = vec![

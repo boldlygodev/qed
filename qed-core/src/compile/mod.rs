@@ -316,6 +316,7 @@ pub(crate) fn compile(
             &pattern_defs,
             &alias_defs,
             options,
+            source,
             &mut warnings,
         ) {
             Ok(id) => id,
@@ -422,6 +423,7 @@ fn compile_selector(
     pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     options: &CompileOptions,
+    source: &str,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<SelectorId, CompileError> {
     let selector_ast = &node.selector.node;
@@ -437,6 +439,7 @@ fn compile_selector(
             pattern_defs,
             alias_defs,
             options,
+            source,
             warnings,
         )?;
         registry.push(entry);
@@ -453,6 +456,7 @@ fn compile_selector(
                 pattern_defs,
                 alias_defs,
                 options,
+                source,
                 warnings,
             )?;
             registry.push(entry);
@@ -503,8 +507,15 @@ fn compile_fallback(
         }
         ast::Fallback::SelectAction(sa) => {
             // Compile the fallback's selector
-            let sel_id =
-                compile_selector(sa, registry, pattern_defs, alias_defs, options, warnings)?;
+            let sel_id = compile_selector(
+                sa,
+                registry,
+                pattern_defs,
+                alias_defs,
+                options,
+                source,
+                warnings,
+            )?;
 
             let sel_span = sa.selector.span;
             let sel_text = source[sel_span.start..sel_span.end].to_owned();
@@ -560,6 +571,7 @@ fn compile_fallback(
 }
 
 /// Compile a single `SimpleSelector` AST node into a `RegistryEntry::Simple`.
+#[allow(clippy::too_many_arguments)]
 fn compile_simple_selector(
     step: &ast::SimpleSelector,
     sel_id: SelectorId,
@@ -567,6 +579,7 @@ fn compile_simple_selector(
     pattern_defs: &HashMap<&str, &PatternValue>,
     alias_defs: &HashMap<&str, &ast::ProcessorChain>,
     options: &CompileOptions,
+    source: &str,
     warnings: &mut Vec<CompileWarning>,
 ) -> Result<RegistryEntry, CompileError> {
     let mut compiled_pattern = match &step.pattern {
@@ -593,7 +606,30 @@ fn compile_simple_selector(
         match param.node.name.node.as_str() {
             "nth" => {
                 if let ParamValue::NthExpr(expr) = &param.node.value.node {
-                    nth = Some(expr.terms.iter().map(|t| t.node).collect());
+                    let terms: Vec<NthTerm> = expr.terms.iter().map(|t| t.node).collect();
+                    let nth_source = source[param.span.start..param.span.end].to_owned();
+
+                    if terms.is_empty() {
+                        // All terms were zero — emit warning and set empty
+                        // nth filter so the selector matches nothing
+                        warnings.push(CompileWarning::NthZeroTerm {
+                            nth_source,
+                            span: param.span,
+                        });
+                        nth = Some(Vec::new());
+                    } else {
+                        // Check for duplicates: expand all terms to concrete
+                        // indices and detect overlap
+                        let duplicates = detect_nth_duplicates(&terms);
+                        for dup in duplicates {
+                            warnings.push(CompileWarning::NthDuplicate {
+                                nth_source: nth_source.clone(),
+                                occurrence: dup,
+                                span: param.span,
+                            });
+                        }
+                        nth = Some(terms);
+                    }
                 } else {
                     return Err(CompileError::InvalidParam {
                         processor: "selector".into(),
@@ -1520,4 +1556,49 @@ fn expand_and_warn(
         });
     }
     expanded
+}
+
+/// Detect duplicate occurrences in a set of nth terms.
+///
+/// Returns the 1-based occurrence numbers that appear more than once
+/// (either as duplicate bare integers or as a bare integer already
+/// covered by a range). Only checks positive integers and ranges
+/// since negative indices and steps cannot be statically resolved.
+fn detect_nth_duplicates(terms: &[NthTerm]) -> Vec<i64> {
+    use std::collections::BTreeSet;
+
+    // Collect all concrete indices from ranges
+    let mut range_indices: BTreeSet<i64> = BTreeSet::new();
+    for term in terms {
+        if let NthTerm::Range { start, end } = *term {
+            let lo = start.min(end);
+            let hi = start.max(end);
+            for i in lo..=hi {
+                range_indices.insert(i);
+            }
+        }
+    }
+
+    // Collect bare integers and check for duplicates
+    let mut seen_integers: BTreeSet<i64> = BTreeSet::new();
+    let mut duplicates: Vec<i64> = Vec::new();
+
+    for term in terms {
+        if let NthTerm::Integer(n) = *term {
+            // Duplicate if: already seen as bare integer, or covered by a range
+            if !seen_integers.insert(n) {
+                // Duplicate bare integer
+                if !duplicates.contains(&n) {
+                    duplicates.push(n);
+                }
+            } else if range_indices.contains(&n) {
+                // Bare integer already covered by a range
+                if !duplicates.contains(&n) {
+                    duplicates.push(n);
+                }
+            }
+        }
+    }
+
+    duplicates
 }
