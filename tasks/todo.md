@@ -472,10 +472,10 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] Update tracking docs with Phase 12 sub-phase breakdown
 - [x] Clear resolved deferred items
 
-### 12B — `--version` flag
+### 12B — `--version` flag ✓
 
-- [ ] Add `version` to `#[command(...)]` in `qed/src/main.rs`
-- [ ] Verify `qed --version` prints version from `Cargo.toml`
+- [x] Add `version` to `#[command(...)]` in `qed/src/main.rs`
+- [x] Verify `qed --version` prints `qed 0.4.0`
 
 ### 12C — Rayon parallelization
 

@@ -16,7 +16,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "qed", about = "Stream editor")]
+#[command(name = "qed", version, about = "Stream editor")]
 struct Cli {
     /// Read script from file
     #[arg(short = 'f', long = "file")]
