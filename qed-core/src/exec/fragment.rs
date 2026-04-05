@@ -96,23 +96,22 @@ fn collect_all_matches(
     requests: &[(StatementId, SelectorId)],
     registry: &[RegistryEntry],
 ) -> Vec<MatchResult> {
-    let mut all_matches = Vec::new();
+    use rayon::prelude::*;
 
-    for &(stmt_id, sel_id) in requests {
-        let entry = &registry[sel_id.value()];
-        match entry {
-            RegistryEntry::Simple(selector) => {
-                all_matches.extend(collect_simple_matches(buffer, selector, stmt_id));
+    requests
+        .par_iter()
+        .flat_map_iter(|&(stmt_id, sel_id)| {
+            let entry = &registry[sel_id.value()];
+            match entry {
+                RegistryEntry::Simple(selector) => {
+                    collect_simple_matches(buffer, selector, stmt_id)
+                }
+                RegistryEntry::Compound(compound) => {
+                    collect_compound_matches(buffer, compound, registry, stmt_id)
+                }
             }
-            RegistryEntry::Compound(compound) => {
-                all_matches.extend(collect_compound_matches(
-                    buffer, compound, registry, stmt_id,
-                ));
-            }
-        }
-    }
-
-    all_matches
+        })
+        .collect()
 }
 
 fn collect_simple_matches(

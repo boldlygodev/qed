@@ -477,10 +477,10 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] Add `version` to `#[command(...)]` in `qed/src/main.rs`
 - [x] Verify `qed --version` prints `qed 0.4.0`
 
-### 12C — Rayon parallelization
+### 12C — Rayon parallelization ✓
 
-- [ ] Convert `collect_all_matches` in `exec/fragment.rs` to `par_iter`
-- [ ] Verify all 396 integration tests still pass
+- [x] Convert `collect_all_matches` in `exec/fragment.rs` to `par_iter`
+- [x] Verify all 487 tests pass (91 unit + 396 integration)
 
 ### 12D — Backslash line continuation
 
