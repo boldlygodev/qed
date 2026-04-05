@@ -625,23 +625,23 @@ parser error recovery (line-based recovery in `parser.rs`), span accuracy
 Update tracking docs with Phase 12 sub-phase breakdown.
 Clear resolved deferred items.
 
-### 12B — `--version` flag
+### 12B — `--version` flag ✓
 
 - Add `version` to `#[command(...)]` in `qed/src/main.rs`
 - Clap pulls version from `Cargo.toml` automatically
 
-### 12C — Rayon parallelization
+### 12C — Rayon parallelization ✓
 
 - Convert `collect_all_matches` in `exec/fragment.rs` from sequential
   `for` loop to `par_iter` (rayon already a dependency)
 
-### 12D — Backslash line continuation
+### 12D — Backslash line continuation ✓
 
 - `\<newline>` in external processor args joins lines
 - Trailing whitespace after `\` before newline → hard parse error
 - Scope: `eat_unquoted_arg()` in `cursor.rs`, external arg loop in `parser.rs`
 
-### 12E — Shell completions
+### 12E — Shell completions ✓
 
 - Add `clap_complete` dependency
 - `--completions <shell>` hidden flag prints completions to stdout
@@ -656,9 +656,10 @@ Clear resolved deferred items.
 - Verify examples against built binary
 - Verify internal doc links
 
-### 12G — Final checkpoint
+### 12G — Final checkpoint ✓
 
-- `cargo test --workspace` fully green
+- Use `Scenario::description` in harness failure messages (fix dead_code warning)
+- 494 tests green (94 unit + 400 integration), zero warnings
 - `cargo clippy --workspace -- -D warnings` clean
 - `cargo fmt --check` passes
 - Update tracking docs with final status

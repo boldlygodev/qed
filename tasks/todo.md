@@ -14,7 +14,7 @@
 - [x] Phase 9 — Invocation Features → **Alpha 3**
 - [x] Phase 10 — Diagnostics
 - [x] Phase 11 — Edge Cases and Use Cases → **Alpha 4**
-- [ ] Phase 12 — Release Polish → **v1.0**
+- [x] Phase 12 — Release Polish (12A–12G) → **v1.0**
 
 ---
 
@@ -507,9 +507,10 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] Verify README examples against built binary
 - [x] Verify internal doc links resolve
 
-### 12G — Final checkpoint
+### 12G — Final checkpoint ✓
 
-- [ ] `cargo test --workspace` = 396+ integration tests green
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] `cargo fmt --check` passes
-- [ ] Update roadmap, CLAUDE.md, todo with final status
+- [x] Use `Scenario::description` in harness failure messages (fix dead_code warning)
+- [x] `cargo test --workspace` = 494 tests green (94 unit + 400 integration), zero warnings
+- [x] `cargo clippy --workspace -- -D warnings` clean
+- [x] `cargo fmt --check` passes
+- [x] Update roadmap, CLAUDE.md, todo with final status

@@ -44,7 +44,7 @@ set -e
 
 # Exit code assertion
 if [[ "$ACTUAL_EXIT" -ne "$EXPECTED_EXIT_CODE" ]]; then
-    echo "FAIL [$SCENARIO_ID]: exit code $ACTUAL_EXIT, expected $EXPECTED_EXIT_CODE" >&2
+    echo "FAIL [$SCENARIO_ID]: exit code $ACTUAL_EXIT, expected $EXPECTED_EXIT_CODE — $SCENARIO_DESC" >&2
     exit 1
 fi
 

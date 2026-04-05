@@ -13,6 +13,8 @@ pub(crate) fn generate(
 
     // Scalar fields
     out.push_str(&format!("SCENARIO_ID='{scenario_id}'\n"));
+    let desc_escaped = scenario.description.replace('\'', "'\\''");
+    out.push_str(&format!("SCENARIO_DESC='{desc_escaped}'\n"));
     out.push_str(&format!("SUITE_DIR='{suite_dir}'\n"));
     out.push_str(&format!(
         "SCRIPT='{suite_dir}/scripts/{}'\n",

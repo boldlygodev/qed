@@ -69,11 +69,10 @@ qed/
 
 ## Current Phase
 
-**Phase 12 — Release Polish** is in progress.
+**All 12 phases complete.**
 See `docs/qed-roadmap.md` for the full 12-phase plan.
-Phases 0–11 are complete. 396/396 integration tests pass.
-**Alpha 4 — Feature Complete.**
-Sub-phases: 12A–12F ✓, 12G remaining.
+494 tests pass (94 unit + 400 integration), zero warnings.
+**v1.0 — Ready for release.**
 
 ---
 
