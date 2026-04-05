@@ -945,11 +945,38 @@ fn parse_external_processor(
     let command = cursor.slice_from(cmd_start).to_owned();
     let command_span = cursor.span_from(cmd_start);
 
-    // Parse arguments: space-separated, quoted or unquoted
+    // Parse arguments: space-separated, quoted or unquoted.
+    // `\<newline>` joins lines (explicit line continuation).
+    // `\<whitespace><newline>` is a hard error.
     let mut args: Vec<Spanned<ExternalArg>> = Vec::new();
     loop {
         let saved = cursor.pos();
         cursor.eat_whitespace();
+
+        // Handle backslash line continuation
+        if cursor.peek() == Some(b'\\') {
+            let bs_pos = cursor.pos();
+            cursor.advance(); // consume `\`
+            match cursor.peek() {
+                Some(b'\n') => {
+                    cursor.advance(); // consume newline — join lines
+                    continue;
+                }
+                Some(b' ') | Some(b'\t') => {
+                    // Trailing whitespace after `\` — hard error
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "newline after '\\'".into(),
+                        found: "trailing whitespace".into(),
+                        span: cursor.span_from(bs_pos),
+                    });
+                }
+                _ => {
+                    // Not a continuation — backtrack so the `\` is handled
+                    // as a command escape prefix or causes a normal stop
+                    cursor.set_pos(bs_pos);
+                }
+            }
+        }
 
         match cursor.peek() {
             None | Some(b'|') | Some(b')') | Some(b'\n') | Some(b';') => {
@@ -2003,6 +2030,60 @@ mod tests {
             assert!(sa.selector.node.steps[0].node.pattern.is_none());
         } else {
             panic!("expected SelectAction");
+        }
+    }
+
+    // ── Backslash line continuation ────────────────────────────────
+
+    #[test]
+    fn backslash_continuation_joins_args() {
+        use crate::parse::ast::{ExternalArg, Processor as AstProc};
+        let p = program_ok("at(\"x\") | sed \\\n-e 's/x/y/'");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let chain = sa.chain.as_ref().unwrap();
+            if let AstProc::External(ext) = &chain.node.processors[0].node {
+                assert_eq!(ext.command.node, "sed");
+                assert_eq!(ext.args.len(), 2);
+                assert_eq!(ext.args[0].node, ExternalArg::Unquoted("-e".into()));
+                assert_eq!(ext.args[1].node, ExternalArg::Quoted("s/x/y/".into()));
+            } else {
+                panic!("expected External processor");
+            }
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn backslash_continuation_multiple_lines() {
+        use crate::parse::ast::{ExternalArg, Processor as AstProc};
+        let p = program_ok("at(\"x\") | cmd \\\narg1 \\\narg2");
+        let stmt = &p.statements[0].node;
+        if let Statement::SelectAction(sa) = stmt {
+            let chain = sa.chain.as_ref().unwrap();
+            if let AstProc::External(ext) = &chain.node.processors[0].node {
+                assert_eq!(ext.command.node, "cmd");
+                assert_eq!(ext.args.len(), 2);
+                assert_eq!(ext.args[0].node, ExternalArg::Unquoted("arg1".into()));
+                assert_eq!(ext.args[1].node, ExternalArg::Unquoted("arg2".into()));
+            } else {
+                panic!("expected External processor");
+            }
+        } else {
+            panic!("expected SelectAction");
+        }
+    }
+
+    #[test]
+    fn backslash_trailing_whitespace_error() {
+        let errs = program_err("at(\"x\") | cmd \\  \narg1");
+        assert!(!errs.is_empty());
+        match &errs[0] {
+            ParseError::UnexpectedToken { found, .. } => {
+                assert!(found.contains("trailing whitespace"));
+            }
+            other => panic!("expected UnexpectedToken, got {other:?}"),
         }
     }
 }

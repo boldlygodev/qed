@@ -482,12 +482,15 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] Convert `collect_all_matches` in `exec/fragment.rs` to `par_iter`
 - [x] Verify all 487 tests pass (91 unit + 396 integration)
 
-### 12D — Backslash line continuation
+### 12D — Backslash line continuation ✓
 
-- [ ] `\<newline>` joins lines in external processor args (`cursor.rs`, `parser.rs`)
-- [ ] Trailing whitespace after `\` before newline → hard parse error
-- [ ] Unit tests for continuation and trailing whitespace error
-- [ ] Integration tests (review with user first)
+- [x] `\<newline>` joins lines in external processor args (`parser.rs`)
+- [x] Trailing whitespace after `\` before newline → hard parse error
+- [x] Unit tests for continuation and trailing whitespace error (3 tests)
+- [x] Integration tests: `backslash-continuation`, `backslash-trailing-whitespace`
+- [x] Parse errors formatted as structured diagnostics (not raw Debug)
+- [x] Single-char/zero-width spans display as `1:17` not `1:17-17`
+- [x] Mock harness: fixed `echo -e` arg validation bug (`printf '%s'`)
 
 ### 12E — Shell completions
 

@@ -176,3 +176,49 @@ command = "sidefx"
 input = "empty.txt"
 stdout = "empty.txt"
 stderr = "empty.txt"
+
+# ── backslash line continuation ──────────────────────────────────────────────
+
+[[scenario]]
+id = "backslash-continuation"
+description = "backslash-newline joins lines in external processor argument lists"
+script = "backslash-continuation.qed"
+input = "three-lines.txt"
+stdout = "foo-bar-upper-baz.txt"
+stderr = "empty.txt"
+output = "foo-bar-upper-baz.txt"
+exit_code = 0
+invoke = [
+  """qed "$(cat "$SCRIPT")" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+  """qed -f "$SCRIPT" < "$INPUT" 2> "$STDERR" | tee "$OUTPUT" > "$STDOUT" """,
+]
+
+[[scenario.mock]]
+command = "sed"
+input = "bar.txt"
+stdout = "bar-upper.txt"
+expected_args = ["-e", "s/bar/BAR/"]
+
+[[scenario]]
+id = "backslash-trailing-whitespace"
+description = "trailing whitespace after backslash is a parse error"
+script = "backslash-trailing-whitespace.qed"
+input = "three-lines.txt"
+stdout = "empty.txt"
+stderr = "backslash-trailing-whitespace.txt"
+output = "empty.txt"
+exit_code = 1
+invoke = [
+  """
+  qed "$(cat "$SCRIPT")" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+  """
+  qed -f "$SCRIPT" < "$INPUT" > "$STDOUT" 2> "$STDERR"
+  QED_EXIT=$?
+  cp "$STDOUT" "$OUTPUT"
+  exit $QED_EXIT
+  """,
+]

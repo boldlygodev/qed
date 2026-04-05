@@ -1,0 +1,2 @@
+at("bar") | sed \
+-e 's/bar/BAR/'

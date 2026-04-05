@@ -41,12 +41,15 @@ pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
 /// The end column is inclusive (last character of the span).
 pub fn format_span(source: &str, span: Span) -> String {
     let (line, col_start) = offset_to_line_col(source, span.start);
+    if span.end <= span.start {
+        // Zero-width span — single point
+        return format!("{line}:{col_start}");
+    }
     // End is exclusive in Span, so subtract 1 for inclusive display
-    let end_offset = if span.end > span.start {
-        span.end - 1
+    let (_, col_end) = offset_to_line_col(source, span.end - 1);
+    if col_start == col_end {
+        format!("{line}:{col_start}")
     } else {
-        span.start
-    };
-    let (_, col_end) = offset_to_line_col(source, end_offset);
-    format!("{line}:{col_start}-{col_end}")
+        format!("{line}:{col_start}-{col_end}")
+    }
 }

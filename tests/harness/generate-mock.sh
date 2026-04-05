@@ -128,7 +128,7 @@ if [[ $EXPECTED_ARGS_CT -gt 0 ]]; then
     for ((j = 0; j < EXPECTED_ARGS_CT; j++)); do
         eval "EXPECTED_ARG=\$DECL_${CALL_INDEX}_EXPECTED_ARG_${j}"
         # Expand ${QED_FILE} in the mock's own environment
-        EXPECTED_EXPANDED=$(eval echo "\"$EXPECTED_ARG\"")
+        EXPECTED_EXPANDED=$(eval printf '%s' "\"$EXPECTED_ARG\"")
         if [[ "${ACTUAL_ARGS[$j]}" != "$EXPECTED_EXPANDED" ]]; then
             echo "MOCK ERROR [COMMAND_NAME] call $COUNT: arg $((j+1)) mismatch" >&2
             echo "  expected: $EXPECTED_EXPANDED" >&2

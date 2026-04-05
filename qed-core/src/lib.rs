@@ -130,13 +130,30 @@ pub struct RunDiagnostic {
 
 /// Run a qed script against input text, returning the result with diagnostics.
 pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<RunResult, String> {
-    let program = parse::parse_program(script_source).map_err(|errors| {
-        errors
-            .iter()
-            .map(|e| format!("{e:?}"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    })?;
+    let program = match parse::parse_program(script_source) {
+        Ok(program) => program,
+        Err(errors) => {
+            let diagnostics = errors
+                .iter()
+                .filter(|e| !e.is_warning())
+                .map(|e| {
+                    let span = e.span();
+                    RunDiagnostic {
+                        level: "error",
+                        location: span::format_span(script_source, span),
+                        selector_text: String::new(),
+                        message: parse_error_message(e),
+                    }
+                })
+                .collect();
+            return Ok(RunResult {
+                output: String::new(),
+                diagnostics,
+                has_errors: true,
+                stderr_lines: Vec::new(),
+            });
+        }
+    };
 
     let compile_options = compile::CompileOptions {
         no_env: options.no_env,
@@ -302,5 +319,19 @@ fn compile_error_to_diagnostic(e: &error::CompileError) -> (span::Span, String) 
             format!("{processor}: conflicting parameters: {}", params.join(", ")),
         ),
         error::CompileError::InvalidNthExpr { reason, span } => (*span, reason.clone()),
+    }
+}
+
+/// Extract a human-readable message from a parse error.
+fn parse_error_message(e: &parse::error::ParseError) -> String {
+    match e {
+        parse::error::ParseError::UnexpectedToken {
+            expected, found, ..
+        } => format!("expected {expected}, found {found}"),
+        parse::error::ParseError::UnexpectedEof { expected, .. } => {
+            format!("unexpected end of input, expected {expected}")
+        }
+        parse::error::ParseError::InvalidNthExpr { reason, .. } => reason.clone(),
+        parse::error::ParseError::NthWarning { reason, .. } => reason.clone(),
     }
 }

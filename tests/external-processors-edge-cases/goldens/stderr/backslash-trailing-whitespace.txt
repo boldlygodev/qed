@@ -1,0 +1,1 @@
+qed: error:   1:17: expected newline after '\', found trailing whitespace

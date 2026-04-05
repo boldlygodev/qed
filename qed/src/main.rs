@@ -149,13 +149,22 @@ fn main() {
             }
 
             for d in &result.diagnostics {
-                eprintln!(
-                    "qed: {level:<9}{loc}: {sel}: {msg}",
-                    level = format!("{}:", d.level),
-                    loc = d.location,
-                    sel = d.selector_text,
-                    msg = d.message,
-                );
+                if d.selector_text.is_empty() {
+                    eprintln!(
+                        "qed: {level:<9}{loc}: {msg}",
+                        level = format!("{}:", d.level),
+                        loc = d.location,
+                        msg = d.message,
+                    );
+                } else {
+                    eprintln!(
+                        "qed: {level:<9}{loc}: {sel}: {msg}",
+                        level = format!("{}:", d.level),
+                        loc = d.location,
+                        sel = d.selector_text,
+                        msg = d.message,
+                    );
+                }
             }
             if result.has_errors {
                 std::process::exit(1);
