@@ -492,11 +492,11 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] Single-char/zero-width spans display as `1:17` not `1:17-17`
 - [x] Mock harness: fixed `echo -e` arg validation bug (`printf '%s'`)
 
-### 12E — Shell completions
+### 12E — Shell completions ✓
 
-- [ ] Add `clap_complete` to `qed/Cargo.toml`
-- [ ] `--completions <shell>` hidden flag (bash, zsh, fish)
-- [ ] Verify completions output for each shell
+- [x] Add `clap_complete` to `qed/Cargo.toml`
+- [x] `--completions <shell>` hidden flag (bash, zsh, fish)
+- [x] Verify completions output for each shell
 
 ### 12F — README updates
 

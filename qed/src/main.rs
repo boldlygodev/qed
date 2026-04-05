@@ -11,7 +11,7 @@
 
 mod diff;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use std::io::Read;
 use std::path::PathBuf;
 
@@ -51,12 +51,21 @@ struct Cli {
     #[arg(long)]
     no_env: bool,
 
+    /// Generate shell completions and exit
+    #[arg(long, hide = true, value_name = "SHELL")]
+    completions: Option<clap_complete::Shell>,
+
     /// Positional arguments: [SCRIPT] [FILE] or [FILE] (when -f is used)
     args: Vec<String>,
 }
 
 fn main() {
     let cli = Cli::parse();
+
+    if let Some(shell) = cli.completions {
+        clap_complete::generate(shell, &mut Cli::command(), "qed", &mut std::io::stdout());
+        return;
+    }
 
     // Interpret positional args based on whether -f is used.
     // Without -f: args[0] = script, args[1] = input file (optional)
