@@ -7,7 +7,7 @@
 
 A modern stream editor for source files and config files.
 
-> **Alpha release.** `qed` is functional but incomplete — not all processors are implemented yet. APIs and behavior may change before 1.0.
+> **Alpha 4 — Feature Complete.** All processors and selectors are implemented. APIs and behavior may change before 1.0.
 
 ---
 
@@ -28,7 +28,7 @@ qed --in-place 'at(/^\s*\/\/\s*TODO:/) | qed:delete()' main.go
 qed --in-place 'at(/^version = /) | qed:replace(/=.*/, "= \"2.0.0\"")' Cargo.toml
 
 # Extract only ERROR lines from a log
-qed --extract 'at(/\bERROR\b/)' app.log
+qed --extract 'at(/\bERROR\b/) | qed:skip()' app.log
 
 # Insert a deprecation notice before every Old* function
 qed --in-place '
@@ -141,7 +141,7 @@ cargo build --release
 # binary is at target/release/qed
 ```
 
-**Coming soon:** `cargo install qed` and Homebrew.
+**Planned:** `cargo install qed` and Homebrew tap.
 
 ---
 

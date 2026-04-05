@@ -647,10 +647,11 @@ Clear resolved deferred items.
 - `--completions <shell>` hidden flag prints completions to stdout
 - Support bash, zsh, fish
 
-### 12F — README updates
+### 12F — README updates ✓
 
 - Fix broken logo reference (`assets/qed-log.svg` → `assets/qed-logo.svg`)
 - Update Alpha messaging — feature complete
+- Fix `--extract` example (added `| qed:skip()`)
 - Update installation status
 - Verify examples against built binary
 - Verify internal doc links

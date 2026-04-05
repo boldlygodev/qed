@@ -73,7 +73,7 @@ qed/
 See `docs/qed-roadmap.md` for the full 12-phase plan.
 Phases 0–11 are complete. 396/396 integration tests pass.
 **Alpha 4 — Feature Complete.**
-Sub-phases: 12A (pre-work) ✓, 12B–12G remaining.
+Sub-phases: 12A–12F ✓, 12G remaining.
 
 ---
 

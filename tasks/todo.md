@@ -498,13 +498,14 @@ Remaining deferred items from 5E are folded into this phase.
 - [x] `--completions <shell>` hidden flag (bash, zsh, fish)
 - [x] Verify completions output for each shell
 
-### 12F — README updates
+### 12F — README updates ✓
 
-- [ ] Rename `assets/qed-log.svg` → `assets/qed-logo.svg` (fix broken reference)
-- [ ] Update Alpha messaging (line 10) — feature complete
-- [ ] Update installation status (line 144)
-- [ ] Verify README examples against built binary
-- [ ] Verify internal doc links resolve
+- [x] Rename `assets/qed-log.svg` → `assets/qed-logo.svg` (fix broken reference)
+- [x] Update Alpha messaging (line 10) — feature complete
+- [x] Fix `--extract` example (added `| qed:skip()` — parser requires processor chain)
+- [x] Update installation status (line 144)
+- [x] Verify README examples against built binary
+- [x] Verify internal doc links resolve
 
 ### 12G — Final checkpoint
 
