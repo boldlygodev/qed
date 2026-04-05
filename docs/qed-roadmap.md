@@ -612,13 +612,58 @@ CI runs both unit and integration tests on Linux and macOS.
 ## Phase 12 — Release Polish
 
 **Goal:** the project is ready for a first public release.
+Remaining deferred items from Phase 5E are folded in.
 
-- Shell completions via `clap_complete` (bash, zsh, fish)
-- `--version` flag wired to `Cargo.toml` version
-- README review — verify all examples work against the final implementation
-- `cargo clippy --workspace -- -D warnings` is clean
+### Deferred items resolved
+
+Three deferred 5E items were investigated and found to be already implemented:
+parser error recovery (line-based recovery in `parser.rs`), span accuracy
+(no issues found), and edge cases (empty/comment-only/EOF all handled).
+
+### 12A — Pre-work ✓
+
+Update tracking docs with Phase 12 sub-phase breakdown.
+Clear resolved deferred items.
+
+### 12B — `--version` flag
+
+- Add `version` to `#[command(...)]` in `qed/src/main.rs`
+- Clap pulls version from `Cargo.toml` automatically
+
+### 12C — Rayon parallelization
+
+- Convert `collect_all_matches` in `exec/fragment.rs` from sequential
+  `for` loop to `par_iter` (rayon already a dependency)
+
+### 12D — Backslash line continuation
+
+- `\<newline>` in external processor args joins lines
+- Trailing whitespace after `\` before newline → hard parse error
+- Scope: `eat_unquoted_arg()` in `cursor.rs`, external arg loop in `parser.rs`
+
+### 12E — Shell completions
+
+- Add `clap_complete` dependency
+- `--completions <shell>` hidden flag prints completions to stdout
+- Support bash, zsh, fish
+
+### 12F — README updates
+
+- Fix broken logo reference (`assets/qed-log.svg` → `assets/qed-logo.svg`)
+- Update Alpha messaging — feature complete
+- Update installation status
+- Verify examples against built binary
+- Verify internal doc links
+
+### 12G — Final checkpoint
+
+- `cargo test --workspace` fully green
+- `cargo clippy --workspace -- -D warnings` clean
 - `cargo fmt --check` passes
-- Final README pass: installation instructions, quick reference, comparison table
+- Update tracking docs with final status
+
+**Checkpoint:** README is accurate, all examples verified, completions work,
+`--version` works. Ready for release.
 
 ---
 

@@ -454,11 +454,58 @@
 
 ---
 
-## Deferred
+## Deferred (resolved)
 
-- [ ] 5E: Parser error recovery — skip to next statement boundary
-- [ ] 5E: Span accuracy audit across all productions
-- [ ] 5E: Edge cases — empty program, comment-only, EOF without newline
-- [ ] 5E: `\` line continuation in external processor expressions
-- [ ] 5E: Trailing whitespace after `\` → hard error
-- [ ] Switch `collect_all_matches` in `exec/fragment.rs` to `rayon` parallel iteration (dependency already present)
+- [x] 5E: Parser error recovery — already implemented (line-based recovery in `parser.rs:42-72`)
+- [x] 5E: Span accuracy audit — no issues found, exclusive-end convention consistent
+- [x] 5E: Edge cases (empty program, comment-only, EOF without newline) — all handled in `parse_program()`
+
+---
+
+## Phase 12 — Release Polish
+
+**Goal:** the project is ready for a first public release.
+Remaining deferred items from 5E are folded into this phase.
+
+### 12A — Pre-work ✓
+
+- [x] Update tracking docs with Phase 12 sub-phase breakdown
+- [x] Clear resolved deferred items
+
+### 12B — `--version` flag
+
+- [ ] Add `version` to `#[command(...)]` in `qed/src/main.rs`
+- [ ] Verify `qed --version` prints version from `Cargo.toml`
+
+### 12C — Rayon parallelization
+
+- [ ] Convert `collect_all_matches` in `exec/fragment.rs` to `par_iter`
+- [ ] Verify all 396 integration tests still pass
+
+### 12D — Backslash line continuation
+
+- [ ] `\<newline>` joins lines in external processor args (`cursor.rs`, `parser.rs`)
+- [ ] Trailing whitespace after `\` before newline → hard parse error
+- [ ] Unit tests for continuation and trailing whitespace error
+- [ ] Integration tests (review with user first)
+
+### 12E — Shell completions
+
+- [ ] Add `clap_complete` to `qed/Cargo.toml`
+- [ ] `--completions <shell>` hidden flag (bash, zsh, fish)
+- [ ] Verify completions output for each shell
+
+### 12F — README updates
+
+- [ ] Rename `assets/qed-log.svg` → `assets/qed-logo.svg` (fix broken reference)
+- [ ] Update Alpha messaging (line 10) — feature complete
+- [ ] Update installation status (line 144)
+- [ ] Verify README examples against built binary
+- [ ] Verify internal doc links resolve
+
+### 12G — Final checkpoint
+
+- [ ] `cargo test --workspace` = 396+ integration tests green
+- [ ] `cargo clippy --workspace -- -D warnings` clean
+- [ ] `cargo fmt --check` passes
+- [ ] Update roadmap, CLAUDE.md, todo with final status
