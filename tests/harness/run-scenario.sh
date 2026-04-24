@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # run-scenario.sh — main bash runner, invoked once per Trial
 # Args: $1=temp directory path
+# @spec TINFRA-030, TINFRA-031, TINFRA-033, TINFRA-034, TINFRA-047
 
 set -euo pipefail
 

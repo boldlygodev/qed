@@ -55,6 +55,7 @@ pub mod span;
 
 pub use compile::OnError;
 
+// @spec EXEC-061
 /// Options that control how a qed script is executed.
 pub struct RunOptions {
     /// Disable environment variable expansion in patterns and processor args.
@@ -103,6 +104,7 @@ impl SelectorId {
     }
 }
 
+// @spec EXEC-062
 /// Result of running a qed script.
 pub struct RunResult {
     /// The transformed output text.
@@ -128,6 +130,7 @@ pub struct RunDiagnostic {
     pub message: String,
 }
 
+// @spec EXEC-060, EXEC-063
 /// Run a qed script against input text, returning the result with diagnostics.
 pub fn run(script_source: &str, input: &str, options: &RunOptions) -> Result<RunResult, String> {
     let program = match parse::parse_program(script_source) {

@@ -2,6 +2,7 @@
 
 use similar::TextDiff;
 
+// @spec CLI-030, CLI-031, CLI-032, CLI-033
 /// Produce a unified diff between `original` and `modified`.
 ///
 /// Returns an empty string when the two inputs are identical (avoiding

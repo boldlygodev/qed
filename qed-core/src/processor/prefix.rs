@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError, map_lines};
 
+// @spec TXFM-042
 /// Prepends the configured text to the beginning of each line.
 #[derive(Debug)]
 pub(crate) struct PrefixProcessor {

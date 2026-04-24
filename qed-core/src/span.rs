@@ -5,6 +5,7 @@
 //! compiler and diagnostic layer to point back to exact source positions
 //! without retaining the source string itself.
 
+// @spec LTYP-001
 /// A byte-offset range into source text. `start` is inclusive, `end` is exclusive.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
@@ -12,6 +13,7 @@ pub struct Span {
     pub end: usize,
 }
 
+// @spec LTYP-004, LTYP-005
 /// An AST node paired with its source location.
 #[derive(Debug, Clone)]
 pub struct Spanned<T> {
@@ -19,6 +21,7 @@ pub struct Spanned<T> {
     pub span: Span,
 }
 
+// @spec LTYP-003
 /// Convert a byte offset to a `(line, column)` pair (both 1-based).
 pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
     let mut line = 1;
@@ -37,6 +40,7 @@ pub fn offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
     (line, col)
 }
 
+// @spec LTYP-002
 /// Format a span as `line:col_start-col_end` for diagnostics.
 /// The end column is inclusive (last character of the span).
 pub fn format_span(source: &str, span: Span) -> String {

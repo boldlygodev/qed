@@ -32,6 +32,7 @@ pub(crate) enum ReplaceWith {
     Pipeline(Box<dyn Processor>),
 }
 
+// @spec TXFM-050, TXFM-051, TXFM-052, TXFM-053, TXFM-054, TXFM-055
 /// Find-and-replace processor.
 #[derive(Debug)]
 pub(crate) struct ReplaceProcessor {

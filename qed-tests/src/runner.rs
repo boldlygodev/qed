@@ -3,6 +3,7 @@ use crate::scenario;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+// @spec TINFRA-035
 /// Locate the `qed` binary in the target directory.
 fn find_qed_binary() -> PathBuf {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -29,6 +30,7 @@ fn find_qed_binary() -> PathBuf {
     );
 }
 
+// @spec TINFRA-030, TINFRA-031, TINFRA-032, TINFRA-033, TINFRA-034
 pub(crate) fn run_trial(
     harness_script: &Path,
     suite_dir: &Path,

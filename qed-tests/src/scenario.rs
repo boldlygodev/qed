@@ -1,6 +1,7 @@
 use crate::manifest::Scenario;
 use std::path::Path;
 
+// @spec TINFRA-022, TINFRA-023, TINFRA-024
 pub(crate) fn generate(
     suite_dir: &Path,
     scenario: &Scenario,

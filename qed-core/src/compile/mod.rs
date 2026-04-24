@@ -85,6 +85,7 @@ pub(crate) struct Statement {
     pub(crate) processor_text: String,
 }
 
+// @spec PCOMP-030
 /// What a statement does with its selected text.
 #[derive(Debug)]
 pub(crate) enum StatementAction {
@@ -205,6 +206,7 @@ pub(crate) struct CompiledPattern {
     pub(crate) inclusive: bool,
 }
 
+// @spec PCOMP-013, PCOMP-014, PCOMP-015
 /// The underlying matching strategy for a compiled pattern.
 #[derive(Debug, Clone)]
 pub(crate) enum PatternMatcher {
@@ -256,6 +258,7 @@ impl std::str::FromStr for OnError {
 
 // ── Compilation ────────────────────────────────────────────────────
 
+// @spec PCOMP-010, PCOMP-011, PCOMP-012
 /// Compile a parsed AST `Program` into an executable `Script`.
 ///
 /// Returns `Ok((script, warnings))` on success, where `warnings` contains

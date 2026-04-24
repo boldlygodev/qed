@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-011
 /// Emits the selected region twice consecutively.
 #[derive(Debug)]
 pub(crate) struct DuplicateProcessor;

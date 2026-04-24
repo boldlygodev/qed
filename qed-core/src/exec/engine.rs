@@ -58,6 +58,7 @@ struct PendingRelocation {
     destination: Destination,
 }
 
+// @spec EXEC-020, EXEC-021, EXEC-022, EXEC-023, EXEC-024, EXEC-025, EXEC-026, EXEC-027, EXEC-040, EXEC-041, EXEC-042, EXEC-043, EXEC-044, EXEC-050, EXEC-051, EXEC-052, EXEC-053, EXEC-054
 /// Execute a compiled script against a buffer, producing output and diagnostics.
 ///
 /// When `extract` is true, passthrough fragments are suppressed — only selected

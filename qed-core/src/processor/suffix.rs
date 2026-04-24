@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError, map_lines};
 
+// @spec TXFM-043
 /// Appends the configured text to the end of each line.
 #[derive(Debug)]
 pub(crate) struct SuffixProcessor {

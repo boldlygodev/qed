@@ -9,6 +9,7 @@ use std::fmt;
 
 use crate::span::Span;
 
+// @spec LTYP-025
 /// Discriminates named symbols in the symbol table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SymbolKind {
@@ -27,6 +28,7 @@ impl fmt::Display for SymbolKind {
     }
 }
 
+// @spec LTYP-020, LTYP-021, LTYP-026
 /// Errors produced by the compilation pass.
 ///
 /// All errors are collected before being returned to the caller. Most
@@ -75,6 +77,7 @@ pub enum CompileError {
     InvalidNthExpr { reason: String, span: Span },
 }
 
+// @spec LTYP-022
 /// Warnings produced by the compilation pass.
 ///
 /// Warnings are non-fatal: compilation succeeds and execution proceeds

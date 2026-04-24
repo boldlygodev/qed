@@ -15,6 +15,7 @@ use clap::{CommandFactory, Parser};
 use std::io::Read;
 use std::path::PathBuf;
 
+// @spec CLI-001, CLI-002, CLI-003, CLI-004, CLI-060, CLI-061, CLI-062
 #[derive(Parser)]
 #[command(name = "qed", version, about = "Stream editor")]
 struct Cli {
@@ -59,6 +60,7 @@ struct Cli {
     args: Vec<String>,
 }
 
+// @spec CLI-010, CLI-011, CLI-012, CLI-013, CLI-014, CLI-020, CLI-021, CLI-022, CLI-023, CLI-040, CLI-041, CLI-042, CLI-043, CLI-050, CLI-051, CLI-052
 fn main() {
     let cli = Cli::parse();
 

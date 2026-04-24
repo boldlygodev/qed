@@ -11,6 +11,7 @@ pub(crate) enum SubstringSearch {
     Regex(regex::Regex),
 }
 
+// @spec TXFM-056
 /// Narrows each line to the first span matching the search pattern.
 ///
 /// Lines that do not contain a match are passed through unchanged.

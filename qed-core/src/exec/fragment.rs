@@ -29,6 +29,7 @@ use super::{Buffer, Fragment, FragmentContent, FragmentList, LineRange};
 
 // ── Public API ─────────────────────────────────────────────────────
 
+// @spec EXEC-012, EXEC-013, EXEC-014, EXEC-015, EXEC-016, EXEC-017
 /// Fragment a buffer according to the given selector requests.
 ///
 /// `requests` maps each statement to its selector.

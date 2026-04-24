@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec EXEC-032
 /// Chains multiple processors, feeding each one's output into the next.
 #[derive(Debug)]
 pub(crate) struct ChainProcessor {

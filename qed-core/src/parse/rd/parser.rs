@@ -28,6 +28,7 @@ use super::cursor::Cursor;
 
 // ── Program parser ──────────────────────────────────────────────────
 
+// @spec PCOMP-001, PCOMP-003, PCOMP-004, PCOMP-005, PCOMP-006, PCOMP-007
 /// Parse a complete qed program from source text.
 pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
     let mut cursor = Cursor::new(source);

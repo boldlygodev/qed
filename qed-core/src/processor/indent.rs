@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError, map_lines};
 
+// @spec TXFM-031
 /// Prepends `width` copies of `char` to each line.
 #[derive(Debug)]
 pub(crate) struct IndentProcessor {

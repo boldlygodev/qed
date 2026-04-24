@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-012
 /// Returns the input unchanged. Useful with `--extract` to pass through
 /// selected regions without transformation.
 #[derive(Debug)]

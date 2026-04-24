@@ -7,6 +7,7 @@
 
 use crate::span::Span;
 
+// @spec PCOMP-002
 /// A byte-offset cursor over a `&str` for hand-written parsing.
 pub(super) struct Cursor<'src> {
     source: &'src str,

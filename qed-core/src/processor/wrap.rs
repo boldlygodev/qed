@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-040, TXFM-041
 /// Word-wraps each line at the specified column width.
 ///
 /// Breaks at word boundaries (spaces). Words longer than `width` are

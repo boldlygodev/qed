@@ -14,6 +14,7 @@ pub(crate) struct UnsetVar {
     pub(crate) offset: usize,
 }
 
+// @spec PCOMP-035, PCOMP-036, PCOMP-037, PCOMP-038
 /// Expand `${VAR}` references in `input` from the environment.
 ///
 /// Returns the expanded string and a list of variables that were referenced

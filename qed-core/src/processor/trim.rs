@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError, map_lines};
 
+// @spec TXFM-030
 /// Strips leading and trailing whitespace from each line.
 #[derive(Debug)]
 pub(crate) struct TrimProcessor;

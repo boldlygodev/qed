@@ -45,6 +45,7 @@ pub(crate) struct LineRange {
 
 // ── Fragment model ──────────────────────────────────────────────────
 
+// @spec EXEC-010
 /// The content backing a fragment — either a reference into the original
 /// buffer (via line range) or owned text produced by a processor.
 #[derive(Debug, Clone)]
@@ -53,6 +54,7 @@ pub(crate) enum FragmentContent {
     Owned(String),
 }
 
+// @spec EXEC-011
 /// A fragment is either passthrough (unselected) or selected by one or
 /// more statement/selector pairs.
 #[derive(Debug, Clone)]
@@ -70,6 +72,7 @@ pub(crate) type FragmentList = Vec<Fragment>;
 
 // ── Buffer ──────────────────────────────────────────────────────────
 
+// @spec EXEC-001, EXEC-002, EXEC-003, EXEC-004
 /// Immutable source buffer with precomputed line offsets for O(1) slicing.
 #[derive(Debug, Clone)]
 pub(crate) struct Buffer {

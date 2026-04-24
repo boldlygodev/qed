@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-032, TXFM-033
 /// Removes the common leading whitespace prefix from all lines.
 ///
 /// Computes the shortest run of leading whitespace across all non-empty

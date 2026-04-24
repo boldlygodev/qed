@@ -11,6 +11,7 @@ use crate::span::Span;
 
 use super::ast::NthExpr;
 
+// @spec LTYP-023
 /// Errors and warnings produced during parsing.
 #[derive(Debug, Clone)]
 pub(crate) enum ParseError {
@@ -47,6 +48,7 @@ impl ParseError {
     }
 }
 
+// @spec LTYP-024
 /// Successful parse result — the parsed expression plus any warnings emitted.
 #[derive(Debug, Clone)]
 pub(crate) struct ParseResult {

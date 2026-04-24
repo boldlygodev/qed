@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # compare-golden.sh — golden comparison logic
 # Args: $1=actual file, $2=golden reference, $3=scenario ID, $4=channel name
+# @spec TINFRA-050, TINFRA-051, TINFRA-052, TINFRA-053
 
 set -euo pipefail
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # generate-mock.sh — create an executable mock script for a single command
 # Args: $1=temp directory path, $2=command name
+# @spec TINFRA-040, TINFRA-041, TINFRA-042, TINFRA-043, TINFRA-044, TINFRA-045, TINFRA-046
 #
 # Reads MOCK_* variables from the environment (already sourced from scenario.sh)
 # and generates a self-contained script at $TMPDIR/bin/$COMMAND that:

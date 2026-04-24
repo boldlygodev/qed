@@ -1,0 +1,137 @@
+# Arrow Segment Index
+# One entry per segment. Status values: MAPPED | ACTIVE | STALE
+# blockedBy: segments this one depends on (must be healthy before this segment can change safely)
+
+segments:
+  - id: language-types
+    name: Language Types
+    status: MAPPED
+    prefix: LTYP
+    arrow: docs/arrows/language-types.md
+    lld: docs/llds/language-types.md
+    specs: docs/specs/language-types-specs.md
+    sources:
+      - qed-core/src/span.rs
+      - qed-core/src/error.rs
+      - qed-core/src/parse/ast.rs
+      - qed-core/src/parse/error.rs
+    blockedBy: []
+
+  - id: parser-compiler
+    name: Parser-Compiler
+    status: MAPPED
+    prefix: PCOMP
+    arrow: docs/arrows/parser-compiler.md
+    lld: docs/llds/parser-compiler.md
+    specs: docs/specs/parser-compiler-specs.md
+    sources:
+      - qed-core/src/parse/mod.rs
+      - qed-core/src/parse/rd/cursor.rs
+      - qed-core/src/parse/rd/parser.rs
+      - qed-core/src/parse/rd/mod.rs
+      - qed-core/src/compile/mod.rs
+      - qed-core/src/compile/env.rs
+    blockedBy:
+      - language-types
+
+  - id: execution-engine
+    name: Execution Engine
+    status: MAPPED
+    prefix: EXEC
+    arrow: docs/arrows/execution-engine.md
+    lld: docs/llds/execution-engine.md
+    specs: docs/specs/execution-engine-specs.md
+    sources:
+      - qed-core/src/lib.rs
+      - qed-core/src/exec/mod.rs
+      - qed-core/src/exec/engine.rs
+      - qed-core/src/exec/fragment.rs
+      - qed-core/src/processor/mod.rs
+      - qed-core/src/processor/chain.rs
+    blockedBy:
+      - language-types
+      - parser-compiler
+
+  - id: text-transformation
+    name: Text Transformation
+    status: MAPPED
+    prefix: TXFM
+    arrow: docs/arrows/text-transformation.md
+    lld: docs/llds/text-transformation.md
+    specs: docs/specs/text-transformation-specs.md
+    sources:
+      - qed-core/src/processor/delete.rs
+      - qed-core/src/processor/duplicate.rs
+      - qed-core/src/processor/upper.rs
+      - qed-core/src/processor/lower.rs
+      - qed-core/src/processor/trim.rs
+      - qed-core/src/processor/indent.rs
+      - qed-core/src/processor/dedent.rs
+      - qed-core/src/processor/wrap.rs
+      - qed-core/src/processor/prefix.rs
+      - qed-core/src/processor/suffix.rs
+      - qed-core/src/processor/number.rs
+      - qed-core/src/processor/replace.rs
+      - qed-core/src/processor/substring.rs
+      - qed-core/src/processor/skip.rs
+    blockedBy:
+      - execution-engine
+
+  - id: generation
+    name: Generation
+    status: MAPPED
+    prefix: GEN
+    arrow: docs/arrows/generation.md
+    lld: docs/llds/generation.md
+    specs: docs/specs/generation-specs.md
+    sources:
+      - qed-core/src/processor/uuid.rs
+      - qed-core/src/processor/timestamp.rs
+      - qed-core/src/processor/random.rs
+    blockedBy:
+      - execution-engine
+
+  - id: external-integration
+    name: External Integration
+    status: MAPPED
+    prefix: XINT
+    arrow: docs/arrows/external-integration.md
+    lld: docs/llds/external-integration.md
+    specs: docs/specs/external-integration-specs.md
+    sources:
+      - qed-core/src/processor/external.rs
+      - qed-core/src/processor/file.rs
+    blockedBy:
+      - execution-engine
+      - parser-compiler
+
+  - id: cli
+    name: CLI
+    status: MAPPED
+    prefix: CLI
+    arrow: docs/arrows/cli.md
+    lld: docs/llds/cli.md
+    specs: docs/specs/cli-specs.md
+    sources:
+      - qed/src/main.rs
+      - qed/src/diff.rs
+    blockedBy:
+      - execution-engine
+
+  - id: test-infrastructure
+    name: Test Infrastructure
+    status: MAPPED
+    prefix: TINFRA
+    arrow: docs/arrows/test-infrastructure.md
+    lld: docs/llds/test-infrastructure.md
+    specs: docs/specs/test-infrastructure-specs.md
+    sources:
+      - qed-tests/src/main.rs
+      - qed-tests/src/manifest.rs
+      - qed-tests/src/runner.rs
+      - qed-tests/src/scenario.rs
+      - tests/harness/run-scenario.sh
+      - tests/harness/generate-mock.sh
+      - tests/harness/compare-golden.sh
+    blockedBy:
+      - cli

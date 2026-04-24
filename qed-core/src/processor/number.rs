@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-044, TXFM-045
 /// Prefixes each line with its line number.
 ///
 /// `start` controls the first number (default 1).

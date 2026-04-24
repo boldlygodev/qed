@@ -26,6 +26,7 @@ use crate::span::Spanned;
 
 // ── Top-level ────────────────────────────────────────────────────────
 
+// @spec LTYP-010
 /// Root AST node — a complete qed program parsed from source text.
 #[derive(Debug, Clone)]
 pub(crate) struct Program {
@@ -35,6 +36,7 @@ pub(crate) struct Program {
     pub(crate) statements: Vec<Spanned<Statement>>,
 }
 
+// @spec LTYP-011
 /// A single top-level statement in a qed program.
 #[derive(Debug, Clone)]
 pub(crate) enum Statement {
@@ -81,6 +83,7 @@ pub(crate) enum PatternRefValue {
     Inline(PatternValue),
 }
 
+// @spec LTYP-015
 /// A pattern reference with optional modifiers.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PatternRef {
@@ -94,6 +97,7 @@ pub(crate) struct PatternRef {
 
 // ── Selectors ────────────────────────────────────────────────────────
 
+// @spec LTYP-014
 /// The selector operation keyword.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SelectorOp {
@@ -109,6 +113,7 @@ pub(crate) enum SelectorOp {
     To,
 }
 
+// @spec LTYP-013
 /// A single selector step: an operation, an optional pattern, and
 /// optional parameters (e.g., `nth`).
 #[derive(Debug, Clone)]
@@ -118,6 +123,7 @@ pub(crate) struct SimpleSelector {
     pub(crate) params: Vec<Spanned<Param>>,
 }
 
+// @spec LTYP-012
 /// A selector composed of one or more chained steps. Multi-step selectors
 /// (e.g., `from("start") > to("end")`) intersect their ranges.
 #[derive(Debug, Clone)]
@@ -151,6 +157,7 @@ pub(crate) enum ParamValue {
 
 // ── Processors ───────────────────────────────────────────────────────
 
+// @spec LTYP-016
 /// An ordered chain of processors separated by `|`. Each processor's
 /// output feeds into the next.
 #[derive(Debug, Clone)]
@@ -158,6 +165,7 @@ pub(crate) struct ProcessorChain {
     pub(crate) processors: Vec<Spanned<Processor>>,
 }
 
+// @spec LTYP-017, LTYP-018
 /// A single processor — either a built-in qed processor, an external
 /// shell command, or a reference to a named alias.
 #[derive(Debug, Clone)]
@@ -252,6 +260,7 @@ pub(crate) enum NthTerm {
     Step { coefficient: i64, offset: i64 },
 }
 
+// @spec LTYP-019
 /// A comma-separated list of [`NthTerm`]s, used as the value of the
 /// `nth` parameter on `at()` selectors.
 #[derive(Debug, Clone)]

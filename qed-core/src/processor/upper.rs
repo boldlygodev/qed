@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-020
 /// Converts all characters in the selected text to uppercase.
 #[derive(Debug)]
 pub(crate) struct UpperProcessor;

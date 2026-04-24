@@ -18,6 +18,7 @@ mod scenario;
 use libtest_mimic::{Arguments, Trial};
 use std::path::PathBuf;
 
+// @spec TINFRA-001, TINFRA-002, TINFRA-003
 fn main() {
     let args = Arguments::from_args();
 

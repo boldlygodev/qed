@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-021
 /// Converts all characters in the selected text to lowercase.
 #[derive(Debug)]
 pub(crate) struct LowerProcessor;

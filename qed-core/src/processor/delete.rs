@@ -2,6 +2,7 @@
 
 use super::{Processor, ProcessorError};
 
+// @spec TXFM-010
 /// Deletes the selected text by replacing it with an empty string.
 #[derive(Debug)]
 pub(crate) struct DeleteProcessor;

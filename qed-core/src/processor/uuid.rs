@@ -17,6 +17,7 @@ pub(crate) enum UuidVersion {
     V7,
 }
 
+// @spec GEN-010, GEN-011, GEN-012, GEN-013, GEN-014
 /// Generates a UUID string in the requested version.
 #[derive(Debug)]
 pub(crate) struct UuidProcessor {

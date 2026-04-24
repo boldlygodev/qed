@@ -33,6 +33,7 @@ pub(crate) mod wrap;
 
 use crate::SelectorId;
 
+// @spec EXEC-030
 /// A processor transforms selected text, producing new output or an error.
 ///
 /// `Debug` supertrait enables `Box<dyn Processor>` to implement `Debug`,
@@ -47,6 +48,7 @@ pub(crate) trait Processor: std::fmt::Debug {
     }
 }
 
+// @spec EXEC-031
 /// Errors that can occur during processor execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProcessorError {
@@ -68,6 +70,7 @@ pub(crate) enum ProcessorError {
     FileEmptyRegion { span: crate::span::Span },
 }
 
+// @spec EXEC-033, TXFM-003
 /// Apply a function to each line of the input, preserving trailing newline.
 ///
 /// Splits on `\n`, maps each line through `f`, and rejoins with `\n`.

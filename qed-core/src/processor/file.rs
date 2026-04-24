@@ -11,6 +11,7 @@ use std::io::Write;
 
 use super::{Processor, ProcessorError};
 
+// @spec XINT-020, XINT-021
 /// Compile-time sentinel for `qed:file()`. Passes input through unchanged.
 ///
 /// Remains in the chain when `qed:file()` is not followed by an external
@@ -33,6 +34,7 @@ impl Processor for FileMarker {
     }
 }
 
+// @spec XINT-022, XINT-023, XINT-024, XINT-025, XINT-026, XINT-027, XINT-028
 /// Wraps an external command, writing the input to a temp file and resolving
 /// `${QED_FILE}` in the command arguments before spawning.
 #[derive(Debug)]

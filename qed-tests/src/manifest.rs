@@ -2,11 +2,13 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
 
+// @spec TINFRA-020
 #[derive(Deserialize, Clone)]
 pub(crate) struct Manifest {
     pub(crate) scenario: Vec<Scenario>,
 }
 
+// @spec TINFRA-020, TINFRA-021
 #[derive(Deserialize, Clone)]
 pub(crate) struct Scenario {
     pub(crate) id: String,
@@ -35,6 +37,7 @@ pub(crate) struct MockDecl {
     pub(crate) expected_args: Option<Vec<String>>,
 }
 
+// @spec TINFRA-010, TINFRA-011, TINFRA-012
 pub(crate) fn discover_manifests(tests_dir: &Path) -> Result<Vec<(String, Manifest)>, Vec<String>> {
     let mut results = Vec::new();
     let mut errors = Vec::new();

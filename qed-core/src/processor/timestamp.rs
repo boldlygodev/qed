@@ -34,6 +34,7 @@ pub(crate) enum Timezone {
     Fixed(FixedOffset),
 }
 
+// @spec GEN-020, GEN-021, GEN-022, GEN-023, GEN-024, GEN-025, GEN-026, GEN-027
 /// Generates a formatted timestamp string.
 #[derive(Debug)]
 pub(crate) struct TimestampProcessor {
@@ -81,6 +82,7 @@ fn format_offset(dt: DateTime<FixedOffset>, fmt: &TimestampFormat) -> String {
     }
 }
 
+// @spec GEN-028, GEN-029, GEN-030
 /// Translate an LDML-style format string to a chrono strftime string.
 ///
 /// Supported tokens:
