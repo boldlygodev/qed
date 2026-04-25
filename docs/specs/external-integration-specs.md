@@ -29,7 +29,7 @@ ID prefix: `XINT`
 
 ## Error Handling
 
-- [x] XINT-030: Both processors SHALL return `ProcessorError::ExternalFailed` for any subprocess failure, including spawn failure and non-zero exit.
+- [ ] XINT-030: Both processors SHALL return `ProcessorError::ExternalFailed` for any subprocess failure, including spawn failure and non-zero exit.
 - [ ] XINT-031: WHEN the subprocess cannot be spawned (command not found, permission denied), the processor SHOULD return `ProcessorError::ProcessorFailed` rather than `ProcessorError::ExternalFailed` to distinguish qed plumbing errors from command behavior errors.
 
 ## Non-Features

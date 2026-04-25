@@ -30,7 +30,7 @@ ID prefix: `LTYP`
 - [x] LTYP-022: `CompileWarning` SHALL cover: `UnsetEnvVar`, `DuplicateName`, `InclusiveIgnored`, `NthZeroTerm`, `NthDuplicate` — each carrying a `Span`.
 - [x] LTYP-023: `ParseError` SHALL encode both hard parse errors and nth-parse warnings as variants of the same enum, distinguished by `is_warning()`.
 - [x] LTYP-024: `ParseResult` SHALL carry both a success value and any accumulated parse warnings.
-- [D] LTYP-025: `SymbolKind` SHALL NOT be re-exported from `qed_core::lib.rs`; it is a compiler-internal type.
+- [x] LTYP-025: `SymbolKind` SHALL NOT be re-exported from `qed_core::lib.rs`; it is a compiler-internal type.
 - [ ] LTYP-026: `CompileError::ConflictingParams` and `CompileError::InvalidNthExpr` SHALL either be actively emitted or removed; they SHALL NOT remain as permanently dead variants.
 
 ## Non-Features
