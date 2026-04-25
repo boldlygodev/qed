@@ -288,25 +288,6 @@ fn pair_from_to(
     results
 }
 
-fn union_ranges(ranges: &[LineRange]) -> Option<LineRange> {
-    if ranges.is_empty() {
-        return None;
-    }
-    let start = ranges.iter().map(|r| r.start).min().expect("non-empty");
-    let end = ranges.iter().map(|r| r.end).max().expect("non-empty");
-    Some(LineRange { start, end })
-}
-
-fn intersect_ranges(a: LineRange, b: LineRange) -> Option<LineRange> {
-    let start = a.start.max(b.start);
-    let end = a.end.min(b.end);
-    if start < end {
-        Some(LineRange { start, end })
-    } else {
-        None
-    }
-}
-
 // ── Per-op match collectors ────────────────────────────────────────
 
 /// `at(pattern)` — selects each line that matches `pattern`, producing

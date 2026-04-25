@@ -12,7 +12,9 @@ use crate::parse::ast::{
     PatternRefValue, PatternValue, ProcessorChain, Program, QedArg, QedProcessor, SelectActionNode,
     Selector, SelectorOp, SimpleSelector, Statement,
 };
-use crate::parse::error::{ParseError, ParseResult};
+use crate::parse::error::ParseError;
+#[cfg(test)]
+use crate::parse::error::ParseResult;
 use crate::span::Spanned;
 
 /// Helper: describe the next byte for error messages.
@@ -35,8 +37,8 @@ pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
     let mut statements: Vec<Spanned<Statement>> = Vec::new();
     let mut errors: Vec<ParseError> = Vec::new();
 
-    // Handle shebang line
-    let shebang = parse_shebang(&mut cursor);
+    // Consume shebang line if present
+    parse_shebang(&mut cursor);
 
     eat_whitespace_and_newlines(&mut cursor);
 
@@ -76,10 +78,7 @@ pub(super) fn parse_program(source: &str) -> Result<Program, Vec<ParseError>> {
         return Err(errors);
     }
 
-    Ok(Program {
-        shebang,
-        statements,
-    })
+    Ok(Program { statements })
 }
 
 /// Parse a `#!` shebang line at the very start of the source.
@@ -863,14 +862,12 @@ fn parse_qed_arg(cursor: &mut Cursor) -> Result<Spanned<QedArg>, ParseError> {
                 span: cursor.span_from(start),
             })
         }
-        // Pattern ref (negated `!` or single-quoted `'`)
-        Some(b'!') | Some(b'\'') => {
-            let pat = parse_pattern_ref(cursor)?;
-            Ok(Spanned {
-                node: QedArg::PatternRef(pat.node),
-                span: pat.span,
-            })
-        }
+        // Pattern refs are not supported as processor arguments
+        Some(b'!') | Some(b'\'') => Err(ParseError::UnexpectedToken {
+            expected: "processor argument (string, regex, integer, or processor chain)".into(),
+            found: "pattern reference".into(),
+            span: cursor.span_from(start),
+        }),
         // Processor chain: `qed:name(...)`, bare command, `\command`, `/path`, `./path`
         _ if cursor.peek().is_some_and(|b| {
             b.is_ascii_alphabetic() || b == b'_' || b == b'\\' || b == b'.' || b == b'/'
@@ -898,8 +895,8 @@ fn parse_external_processor(
 ) -> Result<Spanned<crate::parse::ast::Processor>, ParseError> {
     let start = cursor.pos();
 
-    // Check for `\` escape prefix
-    let escaped = cursor.eat_char(b'\\');
+    // Consume optional `\` escape prefix (syntax only, not stored)
+    cursor.eat_char(b'\\');
 
     // Parse command name or path
     let cmd_start = cursor.pos();
@@ -1034,7 +1031,6 @@ fn parse_external_processor(
                 node: command,
                 span: command_span,
             },
-            escaped,
             args,
         }),
         span,
@@ -1083,6 +1079,7 @@ fn skip_to_newline(cursor: &mut Cursor) {
 }
 
 /// Parse a complete nth expression: `nth-term (',' nth-term)*`.
+#[cfg(test)]
 pub(super) fn parse_nth_expr(source: &str) -> Result<ParseResult, Vec<ParseError>> {
     let mut cursor = Cursor::new(source);
     let mut terms: Vec<Spanned<NthTerm>> = Vec::new();
@@ -1979,17 +1976,15 @@ mod tests {
     // ── Shebang ─────────────────────────────────────────────────────
 
     #[test]
-    fn shebang_preserved() {
+    fn shebang_consumed() {
         let p = program_ok("#!/usr/bin/env qed\nat(\"x\") | qed:delete()");
-        assert!(p.shebang.is_some());
-        assert_eq!(p.shebang.unwrap().node, "/usr/bin/env qed");
         assert_eq!(p.statements.len(), 1);
     }
 
     #[test]
     fn no_shebang() {
         let p = program_ok(r#"at("x") | qed:delete()"#);
-        assert!(p.shebang.is_none());
+        assert_eq!(p.statements.len(), 1);
     }
 
     // ── Comments ────────────────────────────────────────────────────

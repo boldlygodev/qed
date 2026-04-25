@@ -9,6 +9,7 @@
 
 use crate::span::Span;
 
+#[cfg(test)]
 use super::ast::NthExpr;
 
 // @spec LTYP-023
@@ -50,6 +51,7 @@ impl ParseError {
 
 // @spec LTYP-024
 /// Successful parse result — the parsed expression plus any warnings emitted.
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(crate) struct ParseResult {
     pub(crate) expr: NthExpr,

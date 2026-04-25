@@ -5,7 +5,6 @@
 //!
 //! ```text
 //!  Program
-//!    ├── shebang?
 //!    └── statements: Vec<Statement>
 //!          ├── PatternDef       pattern name = "..." | /regex/
 //!          ├── AliasDef         alias name = processor_chain
@@ -30,8 +29,6 @@ use crate::span::Spanned;
 /// Root AST node — a complete qed program parsed from source text.
 #[derive(Debug, Clone)]
 pub(crate) struct Program {
-    /// Optional `#!/usr/bin/env qed` shebang line.
-    pub(crate) shebang: Option<Spanned<String>>,
     /// The ordered list of statements that make up the program.
     pub(crate) statements: Vec<Spanned<Statement>>,
 }
@@ -147,12 +144,8 @@ pub(crate) enum ParamValue {
     Identifier(String),
     /// A double-quoted string.
     String(String),
-    /// An integer literal.
-    Integer(i64),
     /// An nth expression used with the `nth` parameter on `at()`.
     NthExpr(NthExpr),
-    /// A pattern reference (for parameters that accept patterns).
-    PatternRef(PatternRef),
 }
 
 // ── Processors ───────────────────────────────────────────────────────
@@ -192,8 +185,6 @@ pub(crate) struct QedProcessor {
 /// A positional argument to a qed processor.
 #[derive(Debug, Clone)]
 pub(crate) enum QedArg {
-    /// A pattern reference (for processors like `replace` that take patterns).
-    PatternRef(PatternRef),
     /// A double-quoted string literal.
     String(String),
     /// A slash-delimited regex literal.
@@ -209,8 +200,6 @@ pub(crate) enum QedArg {
 pub(crate) struct ExternalProcessor {
     /// The command name or path.
     pub(crate) command: Spanned<String>,
-    /// `!!` (double-bang) escapes the output for safe re-embedding.
-    pub(crate) escaped: bool,
     /// Command-line arguments to the external command.
     pub(crate) args: Vec<Spanned<ExternalArg>>,
 }

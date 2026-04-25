@@ -43,9 +43,6 @@
 //! input text and returns the transformed output. All internal types use
 //! `pub(crate)` visibility.
 
-// TODO: remove once modules have consumers
-#![allow(dead_code)]
-
 pub(crate) mod compile;
 pub mod error;
 pub(crate) mod exec;
@@ -78,10 +75,6 @@ pub(crate) struct StatementId(usize);
 impl StatementId {
     pub(crate) fn new(id: usize) -> Self {
         Self(id)
-    }
-
-    pub(crate) fn value(self) -> usize {
-        self.0
     }
 }
 

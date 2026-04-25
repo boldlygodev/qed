@@ -659,7 +659,6 @@ fn format_processor_error(e: &ProcessorError) -> String {
             exit_code: None, ..
         } => "command failed".into(),
         ProcessorError::ProcessorFailed { reason, .. } => reason.clone(),
-        ProcessorError::NoMatch { .. } => "no lines matched".into(),
         ProcessorError::FileEmptyRegion { .. } => "qed:file() ignored for empty region".into(),
     }
 }
