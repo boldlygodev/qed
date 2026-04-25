@@ -55,17 +55,21 @@ fi
 "$HARNESS_DIR/compare-golden.sh" "$OUTPUT" "$OUTPUT_GOLDEN" "$SCENARIO_ID" "output"
 
 # Verify all declared mock calls were consumed (TINFRA-047)
+# Uses per-command files instead of associative arrays for bash 3.2 compatibility.
 if [[ $MOCK_COUNT -gt 0 ]]; then
-    declare -A _mock_expected
+    _expected_dir="$TMPDIR/mock-expected"
+    mkdir -p "$_expected_dir"
     for ((i = 0; i < MOCK_COUNT; i++)); do
         eval "cmd=\$MOCK_${i}_COMMAND"
-        _mock_expected[$cmd]=$(( ${_mock_expected[$cmd]:-0} + 1 ))
+        _n=0
+        [[ -f "$_expected_dir/$cmd" ]] && _n=$(cat "$_expected_dir/$cmd")
+        echo $(( _n + 1 )) > "$_expected_dir/$cmd"
     done
-    for cmd in "${!_mock_expected[@]}"; do
-        expected="${_mock_expected[$cmd]}"
+    for _f in "$_expected_dir"/*; do
+        cmd="$(basename "$_f")"
+        expected=$(cat "$_f")
         actual=0
-        count_file="$MOCK_STATE_DIR/$cmd.count"
-        [[ -f "$count_file" ]] && actual=$(cat "$count_file")
+        [[ -f "$MOCK_STATE_DIR/$cmd.count" ]] && actual=$(cat "$MOCK_STATE_DIR/$cmd.count")
         if [[ $actual -lt $expected ]]; then
             echo "FAIL [$SCENARIO_ID]: mock '$cmd' called $actual time(s), expected $expected — $SCENARIO_DESC" >&2
             exit 1
