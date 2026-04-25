@@ -11,7 +11,7 @@ use std::io::Write;
 
 use super::{Processor, ProcessorError};
 
-// @spec XINT-020, XINT-021
+// @spec XINT-020, XINT-021, XINT-030
 /// Compile-time sentinel for `qed:file()`. Passes input through unchanged.
 ///
 /// Remains in the chain when `qed:file()` is not followed by an external
@@ -27,10 +27,6 @@ impl Processor for FileMarker {
             return Err(ProcessorError::FileEmptyRegion { span: self.span });
         }
         Ok(input.to_owned())
-    }
-
-    fn is_file_marker(&self) -> bool {
-        true
     }
 }
 

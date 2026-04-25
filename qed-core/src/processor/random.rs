@@ -8,7 +8,7 @@ use rand::RngExt;
 
 use super::{Processor, ProcessorError};
 
-// @spec GEN-040, GEN-041, GEN-042
+// @spec GEN-001, GEN-002, GEN-003, GEN-004, GEN-040, GEN-041, GEN-042
 /// Generates a random string of `length` characters drawn from `alphabet`.
 #[derive(Debug)]
 pub(crate) struct RandomProcessor {

@@ -59,6 +59,7 @@ pub(crate) struct CompileOptions {
 
 // ── Script (top-level IR) ───────────────────────────────────────────
 
+// @spec PCOMP-016
 /// Compiled script — the output of the compilation pass and input
 /// to the execution engine.
 #[derive(Debug)]
@@ -1009,6 +1010,7 @@ fn compile_destination_pattern(
     }
 }
 
+// @spec PCOMP-020, PCOMP-021
 /// Compile a processor chain into a single `Box<dyn Processor>`.
 ///
 /// Single-processor chains return the processor directly.
@@ -1119,6 +1121,7 @@ fn compile_single_processor_into(
             out.push(Box::new(ExternalCommandProcessor { command, args }));
             Ok(())
         }
+        // @spec PCOMP-025, PCOMP-026
         ast::Processor::AliasRef(name) => match alias_defs.get(name.as_str()) {
             Some(chain) => {
                 for p in &chain.processors {
@@ -1577,9 +1580,6 @@ fn extract_int_param(params: &[Spanned<Param>], name: &str) -> Option<i64> {
             return None;
         }
         match &p.node.value.node {
-            ParamValue::Integer(n) => Some(*n),
-            // The parser produces NthExpr for bare integers like `width:4`.
-            // Extract the integer when it's a single NthTerm::Integer term.
             ParamValue::NthExpr(nth) if nth.terms.len() == 1 => {
                 if let NthTerm::Integer(n) = &nth.terms[0].node {
                     Some(*n)

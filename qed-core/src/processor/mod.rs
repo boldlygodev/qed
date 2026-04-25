@@ -31,30 +31,19 @@ pub(crate) mod upper;
 pub(crate) mod uuid;
 pub(crate) mod wrap;
 
-use crate::SelectorId;
-
-// @spec EXEC-030
+// @spec EXEC-030, TXFM-001, TXFM-002
 /// A processor transforms selected text, producing new output or an error.
 ///
 /// `Debug` supertrait enables `Box<dyn Processor>` to implement `Debug`,
 /// which lets `Statement` derive `Debug`.
 pub(crate) trait Processor: std::fmt::Debug {
     fn execute(&self, input: &str) -> Result<String, ProcessorError>;
-
-    /// Returns `true` if this processor is a `qed:file()` marker that should
-    /// be fused with the next external command in the chain.
-    fn is_file_marker(&self) -> bool {
-        false
-    }
 }
 
 // @spec EXEC-031
 /// Errors that can occur during processor execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProcessorError {
-    /// The selector matched no lines and the statement's `on_error` mode
-    /// requires an error.
-    NoMatch { selector_id: SelectorId },
     /// A built-in qed processor encountered an error during execution
     /// (e.g., a regex replacement with an invalid capture reference).
     ProcessorFailed { processor: String, reason: String },

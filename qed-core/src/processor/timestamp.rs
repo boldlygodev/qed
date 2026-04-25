@@ -34,7 +34,7 @@ pub(crate) enum Timezone {
     Fixed(FixedOffset),
 }
 
-// @spec GEN-020, GEN-021, GEN-022, GEN-023, GEN-024, GEN-025, GEN-026, GEN-027
+// @spec GEN-001, GEN-002, GEN-003, GEN-004, GEN-020, GEN-021, GEN-022, GEN-023, GEN-024, GEN-025, GEN-026, GEN-027
 /// Generates a formatted timestamp string.
 #[derive(Debug)]
 pub(crate) struct TimestampProcessor {

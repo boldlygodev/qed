@@ -54,4 +54,21 @@ fi
 "$HARNESS_DIR/compare-golden.sh" "$STDERR" "$STDERR_GOLDEN" "$SCENARIO_ID" "stderr"
 "$HARNESS_DIR/compare-golden.sh" "$OUTPUT" "$OUTPUT_GOLDEN" "$SCENARIO_ID" "output"
 
-# Mock unconsumed check placeholder (Phase 7)
+# Verify all declared mock calls were consumed (TINFRA-047)
+if [[ $MOCK_COUNT -gt 0 ]]; then
+    declare -A _mock_expected
+    for ((i = 0; i < MOCK_COUNT; i++)); do
+        eval "cmd=\$MOCK_${i}_COMMAND"
+        _mock_expected[$cmd]=$(( ${_mock_expected[$cmd]:-0} + 1 ))
+    done
+    for cmd in "${!_mock_expected[@]}"; do
+        expected="${_mock_expected[$cmd]}"
+        actual=0
+        count_file="$MOCK_STATE_DIR/$cmd.count"
+        [[ -f "$count_file" ]] && actual=$(cat "$count_file")
+        if [[ $actual -lt $expected ]]; then
+            echo "FAIL [$SCENARIO_ID]: mock '$cmd' called $actual time(s), expected $expected — $SCENARIO_DESC" >&2
+            exit 1
+        fi
+    done
+fi

@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 
 use super::{Processor, ProcessorError};
 
-// @spec XINT-001, XINT-002, XINT-003, XINT-004, XINT-005, XINT-006, XINT-007, XINT-008, XINT-009, XINT-010
+// @spec XINT-001, XINT-002, XINT-003, XINT-004, XINT-005, XINT-006, XINT-007, XINT-008, XINT-009, XINT-010, XINT-030
 /// Runs an external command as a processor.
 ///
 /// The selected text is written to the command's stdin.
