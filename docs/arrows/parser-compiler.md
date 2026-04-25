@@ -4,8 +4,8 @@ Transforms qed source text into executable IR — recursive descent parser, two-
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**PARTIAL** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+Most specs annotated. Two active gaps: PCOMP-022, PCOMP-027. Five `[x]` specs lack `@spec` annotations (PCOMP-016, 020, 021, 025, 026).
 
 ## References
 
@@ -46,14 +46,16 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Parse — selectors | PCOMP-001–PCOMP-020 | *(to be filled)* | 0 | *(to be filled)* |
-| Parse — processors | PCOMP-021–PCOMP-040 | *(to be filled)* | 0 | *(to be filled)* |
-| Parse — script structure | PCOMP-041–PCOMP-060 | *(to be filled)* | 0 | *(to be filled)* |
-| Compile — symbol resolution | PCOMP-061–PCOMP-080 | *(to be filled)* | 0 | *(to be filled)* |
-| Compile — error accumulation | PCOMP-081–PCOMP-090 | *(to be filled)* | 0 | *(to be filled)* |
-| Env expansion | PCOMP-091–PCOMP-100 | *(to be filled)* | 0 | *(to be filled)* |
+| Recursive descent parser | PCOMP-001–PCOMP-008 | 8 | 0 | 0 |
+| Two-pass compiler | PCOMP-010–PCOMP-016 | 7 | 0 | 0 |
+| `qed:file()` fusion | PCOMP-020–PCOMP-022 | 2 | 0 | 1 (PCOMP-022) |
+| AliasRef resolution | PCOMP-025–PCOMP-027 | 2 | 0 | 1 (PCOMP-027) |
+| Stream-control detection | PCOMP-030 | 1 | 0 | 0 |
+| Environment variable expansion | PCOMP-035–PCOMP-038 | 4 | 0 | 0 |
+| Non-features | PCOMP-040–PCOMP-041 | 0 | 2 | 0 |
+| **Total** | | **24** | **2** | **2** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** 24 of 26 behavioral specs implemented. Active gaps: file fusion state machine (PCOMP-022) and alias-typo warning (PCOMP-027).
 
 ## Key Findings
 

@@ -4,8 +4,8 @@ Processors that produce new content, ignoring their input — UUID, timestamp, a
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**PARTIAL** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+23 of 25 behavioral specs implemented. Two active gaps: GEN-015 (UUID v5 exact golden) and GEN-031 (LDML warning).
 
 ## References
 
@@ -41,11 +41,14 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| UUID generation | GEN-001–GEN-010 | *(to be filled)* | 0 | *(to be filled)* |
-| Timestamp generation | GEN-011–GEN-025 | *(to be filled)* | 0 | *(to be filled)* |
-| Random string generation | GEN-026–GEN-035 | *(to be filled)* | 0 | *(to be filled)* |
+| Generative processor contract | GEN-001–GEN-004 | 4 | 0 | 0 |
+| UUID generation | GEN-010–GEN-015 | 5 | 0 | 1 (GEN-015) |
+| Timestamp generation | GEN-020–GEN-031 | 11 | 0 | 1 (GEN-031) |
+| Random string generation | GEN-040–GEN-042 | 3 | 0 | 0 |
+| Non-features | GEN-050–GEN-051 | 0 | 2 | 0 |
+| **Total** | | **23** | **2** | **2** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** 23 of 25 behavioral specs implemented. GEN-001–004 contract specs need `@spec` annotations at the processor entry points.
 
 ## Key Findings
 

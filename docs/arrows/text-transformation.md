@@ -4,8 +4,8 @@ Pure text-in → text-out processors — the core transformation vocabulary of t
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**OK** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+All 25 behavioral specs implemented. No active gaps.
 
 ## References
 
@@ -60,14 +60,16 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Deletion / duplication | TXFM-001–TXFM-005 | *(to be filled)* | 0 | *(to be filled)* |
-| Case conversion | TXFM-006–TXFM-010 | *(to be filled)* | 0 | *(to be filled)* |
-| Whitespace handling | TXFM-011–TXFM-020 | *(to be filled)* | 0 | *(to be filled)* |
-| Indentation | TXFM-021–TXFM-030 | *(to be filled)* | 0 | *(to be filled)* |
-| Replace | TXFM-031–TXFM-050 | *(to be filled)* | 0 | *(to be filled)* |
-| Substring / skip | TXFM-051–TXFM-060 | *(to be filled)* | 0 | *(to be filled)* |
+| General contract | TXFM-001–TXFM-003 | 3 | 0 | 0 |
+| Deletion and structural | TXFM-010–TXFM-012 | 3 | 0 | 0 |
+| Case conversion | TXFM-020–TXFM-021 | 2 | 0 | 0 |
+| Whitespace and indentation | TXFM-030–TXFM-033 | 4 | 0 | 0 |
+| Line formatting | TXFM-040–TXFM-045 | 6 | 0 | 0 |
+| Search and replace | TXFM-050–TXFM-056 | 7 | 0 | 0 |
+| Non-features | TXFM-060–TXFM-061 | 0 | 2 | 0 |
+| **Total** | | **25** | **2** | **0** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** All 25 behavioral specs implemented. Note: TXFM-001 and TXFM-002 are trait-level contract specs; add `@spec TXFM-001, TXFM-002` to `processor/mod.rs` to complete annotation coverage.
 
 ## Key Findings
 

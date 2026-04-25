@@ -4,8 +4,8 @@ Shared type foundations — spans, AST nodes, and error/warning enums used acros
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**PARTIAL** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+All `[x]` specs annotated. One active gap: LTYP-026 (dead `CompileError` variants).
 
 ## References
 
@@ -45,11 +45,13 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Span tracking | LTYP-001–LTYP-005 | *(to be filled)* | 0 | *(to be filled)* |
-| Error/warning types | LTYP-006–LTYP-010 | *(to be filled)* | 0 | *(to be filled)* |
-| AST completeness | LTYP-011–LTYP-020 | *(to be filled)* | 0 | *(to be filled)* |
+| Span and source location | LTYP-001–LTYP-005 | 5 | 0 | 0 |
+| AST node hierarchy | LTYP-010–LTYP-019 | 10 | 0 | 0 |
+| Error and warning types | LTYP-020–LTYP-026 | 6 | 0 | 1 (LTYP-026) |
+| Non-features | LTYP-030–LTYP-031 | 0 | 2 | 0 |
+| **Total** | | **21** | **2** | **1** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** 21 of 22 behavioral specs implemented. One active gap: dead `CompileError` variants (LTYP-026).
 
 ## Key Findings
 

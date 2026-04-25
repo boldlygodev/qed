@@ -4,8 +4,8 @@ Integration test harness — manifest discovery, trial lifecycle, scenario gener
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**PARTIAL** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+28 of 30 behavioral specs implemented. Two active gaps: TINFRA-013 (depth cap) and TINFRA-047 (unconsumed mock check). Note: TINFRA-047 has a premature `@spec` annotation in `run-scenario.sh` — the check is only a placeholder.
 
 ## References
 
@@ -46,12 +46,16 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Manifest discovery | TINFRA-001–TINFRA-005 | *(to be filled)* | 0 | *(to be filled)* |
-| Trial lifecycle | TINFRA-006–TINFRA-015 | *(to be filled)* | 0 | *(to be filled)* |
-| Mock system | TINFRA-016–TINFRA-025 | *(to be filled)* | 0 | *(to be filled)* |
-| Golden comparison | TINFRA-026–TINFRA-033 | *(to be filled)* | 0 | *(to be filled)* |
+| Two-layer architecture | TINFRA-001–TINFRA-003 | 3 | 0 | 0 |
+| Manifest discovery | TINFRA-010–TINFRA-013 | 3 | 0 | 1 (TINFRA-013) |
+| Scenario fields | TINFRA-020–TINFRA-024 | 5 | 0 | 0 |
+| Trial lifecycle | TINFRA-030–TINFRA-035 | 6 | 0 | 0 |
+| Mock generation and validation | TINFRA-040–TINFRA-047 | 7 | 0 | 1 (TINFRA-047) |
+| Golden comparison | TINFRA-050–TINFRA-053 | 4 | 0 | 0 |
+| Non-features | TINFRA-060–TINFRA-061 | 0 | 2 | 0 |
+| **Total** | | **28** | **2** | **2** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** 28 of 30 behavioral specs implemented. TINFRA-047 `@spec` annotation in `run-scenario.sh` is premature — the unconsumed-mock check is a placeholder comment only.
 
 ## Key Findings
 

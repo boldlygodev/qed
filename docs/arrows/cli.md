@@ -4,8 +4,8 @@ Command-line interface and diff display — the user-facing shell tool wrapping 
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**OK** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+All 27 behavioral specs implemented and annotated. No active gaps.
 
 ## References
 
@@ -41,13 +41,17 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Input/output routing | CLI-001–CLI-010 | *(to be filled)* | 0 | *(to be filled)* |
-| In-place and dry-run | CLI-011–CLI-020 | *(to be filled)* | 0 | *(to be filled)* |
-| Diagnostic formatting | CLI-021–CLI-028 | *(to be filled)* | 0 | *(to be filled)* |
-| Exit codes | CLI-029–CLI-032 | *(to be filled)* | 0 | *(to be filled)* |
-| Shell completions | CLI-033–CLI-035 | *(to be filled)* | 0 | *(to be filled)* |
+| Argument parsing and input routing | CLI-001–CLI-004 | 4 | 0 | 0 |
+| Output routing | CLI-010–CLI-014 | 5 | 0 | 0 |
+| In-place editing | CLI-020–CLI-024 | 4 | 1 (CLI-024) | 0 |
+| Dry-run diff | CLI-030–CLI-033 | 4 | 0 | 0 |
+| Diagnostic formatting | CLI-040–CLI-043 | 4 | 0 | 0 |
+| Exit code semantics | CLI-050–CLI-052 | 3 | 0 | 0 |
+| Shell completions | CLI-060–CLI-062 | 3 | 0 | 0 |
+| Non-features | CLI-070–CLI-071 | 0 | 2 | 0 |
+| **Total** | | **27** | **3** | **0** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** All 27 behavioral specs implemented and annotated. No active gaps.
 
 ## Key Findings
 

@@ -4,8 +4,8 @@ Runs compiled IR against input — fragment model, execution loop, processor dis
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**OK** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+All 38 behavioral specs implemented and annotated. No active gaps.
 
 ## References
 
@@ -49,14 +49,17 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Buffer model | EXEC-001–EXEC-005 | *(to be filled)* | 0 | *(to be filled)* |
-| Fragmentation | EXEC-006–EXEC-020 | *(to be filled)* | 0 | *(to be filled)* |
-| Execution loop | EXEC-021–EXEC-040 | *(to be filled)* | 0 | *(to be filled)* |
-| Error/fallback dispatch | EXEC-041–EXEC-055 | *(to be filled)* | 0 | *(to be filled)* |
-| Stream control | EXEC-056–EXEC-065 | *(to be filled)* | 0 | *(to be filled)* |
-| Public API | EXEC-066–EXEC-070 | *(to be filled)* | 0 | *(to be filled)* |
+| Buffer model | EXEC-001–EXEC-004 | 4 | 0 | 0 |
+| Fragment model | EXEC-010–EXEC-017 | 8 | 0 | 0 |
+| Execution loop | EXEC-020–EXEC-027 | 8 | 0 | 0 |
+| Processor contract | EXEC-030–EXEC-033 | 4 | 0 | 0 |
+| Error and fallback | EXEC-040–EXEC-044 | 5 | 0 | 0 |
+| Stream control | EXEC-050–EXEC-054 | 5 | 0 | 0 |
+| Public run API | EXEC-060–EXEC-063 | 4 | 0 | 0 |
+| Non-features | EXEC-070–EXEC-071 | 0 | 2 | 0 |
+| **Total** | | **38** | **2** | **0** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** All 38 behavioral specs implemented and annotated. Diagnostic summary behavior deferred (EXEC-071).
 
 ## Key Findings
 

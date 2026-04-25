@@ -4,8 +4,8 @@ Subprocess delegation and file materialization — the bridge between qed and ex
 
 ## Status
 
-**MAPPED** — last audited 2026-04-24 (git SHA `null`).
-Brownfield mapping pass; no code annotations yet.
+**PARTIAL** — last audited 2026-04-25 (git SHA `ae1b9ec`).
+20 of 21 behavioral specs implemented. One active gap: XINT-031 (spawn failure error classification). Note: XINT-030 and XINT-031 describe contradictory behaviors; resolution needed.
 
 ## References
 
@@ -39,11 +39,13 @@ Brownfield mapping pass; no code annotations yet.
 
 | Category | Spec IDs | Implemented | Deferred | Gaps |
 |---|---|---|---|---|
-| Stdin handoff | XINT-001–XINT-010 | *(to be filled)* | 0 | *(to be filled)* |
-| File materialization | XINT-011–XINT-020 | *(to be filled)* | 0 | *(to be filled)* |
-| Error and fallback | XINT-021–XINT-030 | *(to be filled)* | 0 | *(to be filled)* |
+| ExternalCommandProcessor | XINT-001–XINT-010 | 10 | 0 | 0 |
+| FileHandoffProcessor and `qed:file()` fusion | XINT-020–XINT-028 | 9 | 0 | 0 |
+| Error handling | XINT-030–XINT-031 | 1 | 0 | 1 (XINT-031) |
+| Non-features | XINT-040–XINT-042 | 0 | 3 | 0 |
+| **Total** | | **20** | **3** | **1** |
 
-**Summary:** Spec coverage to be populated during EARS authoring session.
+**Summary:** 20 of 21 behavioral specs implemented. XINT-031 (spawn vs command failure distinction) is an active gap; note that XINT-030 and XINT-031 currently describe contradictory behaviors.
 
 ## Key Findings
 
