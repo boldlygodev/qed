@@ -53,3 +53,7 @@ depends = ["fmt:check", "lint", "test"]
 [tasks."pre-commit"]
 description = "Run before each git commit (fmt check + lint + test)"
 depends = ["fmt:check", "lint", "test"]
+
+[tasks."pre-push"]
+description = "Run before each git push (fmt check + lint + test + integration)"
+depends = ["fmt:check", "lint", "test", "test:integration"]
